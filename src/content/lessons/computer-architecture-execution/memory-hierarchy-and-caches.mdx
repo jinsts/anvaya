@@ -1,0 +1,281 @@
+---
+title: 'Memory hierarchy: Follow the missing cache line'
+shortTitle: Memory hierarchy and caches
+summary: Trace cache lines through a small memory-access model, distinguish data caching from address translation, and estimate access cost under stated assumptions.
+subject: computer-architecture-execution
+path: engineering-fundamentals
+difficulty: foundation
+estimatedMinutes: 55
+learningObjectives:
+  - Trace hits, cold misses and conflict misses in a direct-mapped cache
+  - Relate temporal and spatial locality to the layout of a working set
+  - Calculate average access time with a clearly defined miss penalty
+  - Distinguish CPU caches, TLBs, RAM and persistent storage
+prerequisites:
+  - computer-architecture-execution/binary-and-data-representation
+tags: [memory, caches, locality, complexity]
+skills: [complexity-analysis, data-structures-algorithms, trade-off-analysis]
+status: draft
+drafter: agent
+interviewQuestions:
+  - prompt: Why can two linear scans over the same values take different amounts of time?
+    answer: >-
+      O(n) counts growth in abstract operations, not the latency of each memory
+      access. A sequential layout often uses many values from each fetched cache
+      line, whereas a scattered traversal can fetch a line for each useful value.
+      The working set, access order, prefetching and available memory parallelism
+      affect the actual cost. Compare equivalent work and measure on the target
+      system before claiming a speed difference.
+  - prompt: Why can two addresses repeatedly miss in a cache that has unused capacity?
+    answer: >-
+      A direct-mapped cache gives each memory block exactly one possible slot.
+      Two blocks mapping to the same slot evict one another when accessed
+      alternately, even if other slots are unused. This is a conflict miss rather
+      than proof that the total working set exceeds the cache capacity. Greater
+      associativity allows more blocks in each set, at a hardware cost.
+    followUps:
+      - How would you distinguish a cold miss from a conflict miss in a trace?
+  - prompt: When is the formula hit time plus miss rate times miss penalty useful?
+    answer: >-
+      It estimates average access latency for a simplified cache model when the
+      penalty is additional time after the cache lookup has already been paid.
+      The miss rate must describe the accesses entering that cache level. If the
+      quoted miss latency already includes the lookup, use a weighted average
+      instead to avoid double counting. Overlap, prefetching, queuing and multiple
+      outstanding requests limit its ability to predict whole-program time.
+  - prompt: Is a TLB miss the same as a data-cache miss or a page fault?
+    answer: >-
+      No, a TLB caches virtual-to-physical address translations, while a data
+      cache holds data blocks. A TLB miss requires finding the translation, often
+      through a hardware page-table walk, and the requested data can still be
+      resident in a CPU cache. A page fault is a separate exceptional condition,
+      such as a missing mapping or an access that violates permissions. It does
+      not necessarily require reading a disk.
+  - prompt: Why is a cache write-back different from making file data durable?
+    answer: >-
+      A write-back cache can hold a dirty copy and update a lower memory level
+      later. Moving that data toward RAM does not establish that a persistent
+      storage device has committed a file update. Filesystem and device protocols
+      define the required durability operations. CPU caches, the operating
+      system's file cache and device caches are distinct layers.
+sources:
+  - label: Dive Into Systems — Storage devices, latency and transfer rate
+    url: https://diveintosystems.org/book/C11-MemHierarchy/devices.html
+  - label: Dive Into Systems — Temporal and spatial locality
+    url: https://diveintosystems.org/book/C11-MemHierarchy/locality.html
+  - label: Dive Into Systems — CPU caches, mapping and misses
+    url: https://diveintosystems.org/book/C11-MemHierarchy/caching.html
+  - label: OSTEP, chapter 19 — Paging, faster translations and TLBs
+    url: https://pages.cs.wisc.edu/~remzi/OSTEP/vm-tlbs.pdf
+---
+
+import source from '../../../../labs/computer-architecture-execution/memory-hierarchy-and-caches/example.ts?raw';
+
+## The same number of reads can cost different amounts
+
+Suppose a calculation reads sixteen adjacent four-byte values. If they occupy
+one aligned 64-byte cache line, fetching that line can bring all sixteen values
+closer to the CPU. If the values are scattered across sixteen different lines,
+the calculation may need sixteen line fills. Both algorithms perform sixteen
+logical reads.
+
+A desk, a nearby shelf and a warehouse make a useful analogy: frequently used
+items belong near the worker. It stops being exact because hardware transfers
+fixed blocks, follows placement rules and can overlap requests. A cache does not
+understand which application values you consider useful.
+
+This lesson follows the [representation model](/learn/computer-architecture-execution/binary-and-data-representation/)
+from values to explicit byte addresses. Cache-line sizes and timings below are
+chosen examples, not measurements of the machine running the website.
+
+## The layers serve different purposes
+
+| Layer              | What it provides                                                    | What to ask when work slows down                              |
+| ------------------ | ------------------------------------------------------------------- | ------------------------------------------------------------- |
+| Registers          | Operands named directly by instructions                             | Did register pressure cause spills?                           |
+| CPU caches         | Fast copies of blocks from lower memory levels                      | Does the working set fit, and are fetched bytes reused?       |
+| RAM                | Main memory behind ordinary cacheable accesses                      | Is the workload limited by latency or bandwidth?              |
+| Persistent storage | File and device data that can survive power loss under its contract | Are requests waiting on device work or durability operations? |
+
+Capacity generally grows as we move away from the core, while access latency
+tends to increase. There is no timeless table of exact cycle counts: processor,
+frequency, contention and access pattern matter. **Latency** is delay for a
+request; **bandwidth** is data transferred per unit time. Many independent
+requests can achieve high bandwidth while each still has substantial latency.
+
+A file's bytes normally need to be available in memory before CPU instructions
+consume them as ordinary data. The operating system may satisfy a read from its
+file cache in RAM, without involving the device. Conversely, an ordinary RAM
+load is not automatically a storage read just because persistent storage appears
+lower in a hierarchy diagram.
+
+## A cache moves lines, not individual variables
+
+A **cache line** is the transfer and bookkeeping unit for this model. With
+16-byte lines, addresses 0 through 15 belong to memory block 0, addresses 16
+through 31 to block 1, and so on. The block number is the byte address divided
+by the line size, rounded down. The remainder is the offset inside the line.
+
+A **hit** finds the needed block in the cache. A **miss** requires a fill from
+a lower level before this model can complete the access. A valid bit distinguishes
+an occupied line from an empty slot, while a tag identifies which possible block
+currently occupies it.
+
+For a **direct-mapped** cache with two slots, block number modulo two selects
+the only possible slot. Blocks 0 and 2 both map to slot 0. The simulator stores
+the full block identifier in that slot rather than splitting out a hardware tag;
+checking it gives the same hit decision for this model.
+
+Start with an empty cache and access byte addresses 0, 4, 8, 12, 32, 0:
+
+| Address | Block | Slot | Outcome and reason                 |
+| ------- | ----- | ---- | ---------------------------------- |
+| 0       | 0     | 0    | Miss; first use fills block 0      |
+| 4       | 0     | 0    | Hit; another byte in the same line |
+| 8       | 0     | 0    | Hit; block 0 is still resident     |
+| 12      | 0     | 0    | Hit; block 0 is still resident     |
+| 32      | 2     | 0    | Miss; block 2 evicts block 0       |
+| 0       | 0     | 0    | Miss; the earlier copy was evicted |
+
+The first use of a block is a **cold** or compulsory miss. The final access
+illustrates a **conflict** miss: the cache has a spare slot, but the placement
+rule prevents using it for block 0. A capacity miss instead reflects a working
+set too large to retain even without these direct-mapping conflicts.
+
+A set-associative cache gives each block several candidate ways within one set.
+It reduces some conflicts but needs a replacement policy when all ways are full.
+Increasing capacity, increasing associativity and changing the access pattern
+solve different problems.
+
+## Locality is a property of the access stream
+
+**Spatial locality** means accessing nearby addresses; **temporal locality** means
+reusing the same data soon. A scan through contiguous fixed-width elements often
+uses spatial locality. Reusing a small lookup table inside a loop uses temporal
+locality. The **working set** is the data actively needed over a relevant period,
+not necessarily the entire allocated data structure.
+
+A row-major matrix stores neighboring columns of a row next to one another.
+Walking rows can therefore use more of each line than walking columns with a
+large stride. Blocking a computation into tiles can retain useful rows or
+columns long enough for reuse. These are predictions to test, not speedup
+promises: prefetchers, cache geometry and compiler transformations can alter the
+result.
+
+Writes introduce additional policies. A **write-through** cache propagates writes
+to the next level; a **write-back** cache marks modified lines dirty and writes
+them back later. Write allocation determines whether a write miss fetches a
+line. Our read-only simulator models none of those choices, and says nothing
+about multicore coherence or file durability.
+
+## Estimate one access before predicting the whole program
+
+For a blocking, single-level model:
+
+**Average access time = hit time + miss rate × additional miss penalty.**
+
+If every lookup costs 1 ns, 10% miss, and a miss adds 50 ns, the average is
+1 + 0.1 × 50 = 6 ns. These are invented model parameters used for arithmetic,
+not benchmark results. If 50 ns instead described the entire miss access, the
+weighted average would be 0.9 × 1 + 0.1 × 50 = 5.9 ns.
+
+At multiple levels, a local miss rate is conditional on requests reaching that
+level. Do not treat an L2 local miss rate as a fraction of all original loads.
+Also do not multiply this latency average by every program access to predict
+elapsed time without accounting for overlap. Independent loads, out-of-order
+execution, prefetching and queues can all affect that relationship.
+
+## Translation is a separate lookup
+
+Applications normally use virtual addresses. The **translation lookaside buffer**
+(TLB) caches address translations and associated permissions. A TLB miss looks
+for the translation through the page-table machinery; it does not mean the
+requested data is absent from a data cache.
+
+A **page fault** is a separate event requiring operating-system handling. It may
+reflect missing residency, a lazily established mapping or a permission problem.
+Some faults require storage I/O; others do not. Keep translation misses, data
+cache misses and page faults distinct when reading diagnostic counters. The
+operating-systems subject develops the translation and fault mechanisms further.
+
+## Trace an explicit model
+
+The lab accepts numerical byte addresses; it does not inspect JavaScript array
+addresses or real CPU caches. Every trace starts cold, each read fits within a
+line, each miss fills the line, and no prefetch or overlapping execution occurs.
+
+<CodeExample
+  title="A direct-mapped cache and a separate latency calculation"
+  code={source}
+  verified
+  output={'miss hit hit hit miss miss\naverage model time: 6 ns'}
+/>
+
+The simulator processes n accesses in expected O(n) time under constant-cost map
+operations. It retains at most the lesser of n and the number of cache slots in
+its map, plus O(n) output records. That is a software simulation bound, not a
+statement about hardware lookup taking a JavaScript map operation.
+
+<LabCard
+  title="Three cache investigations"
+  command="pnpm exec vitest run labs/computer-architecture-execution/memory-hierarchy-and-caches/"
+>
+
+1. Predict the results for addresses 0, 32, 0, 32 with two 16-byte lines. Add a
+   test and explain why unused capacity cannot prevent these misses.
+2. Repeat with four lines. Identify exactly which accesses change and whether
+   any compulsory misses remain.
+3. Calculate average access time for a 2 ns hit, 25% miss rate and an additional
+   40 ns penalty. Add tests for both zero misses and all misses before using the
+   formula for the middle case.
+
+</LabCard>
+
+<details>
+  <summary>Hints after your attempt</summary>
+
+1. Blocks 0 and 2 both map to slot 0 with two slots, so each access evicts the
+   other block.
+2. With four slots, blocks 0 and 2 can coexist. Their first accesses still miss
+   because the cache starts empty.
+3. Pay the 2 ns lookup on every access, then add the penalty only for the
+   fraction that miss. The average for the middle case is 12 ns.
+
+</details>
+
+## Check your reasoning
+
+<ConceptCheck
+  id="memory-hierarchy-and-caches-conflict"
+  question="A cold, direct-mapped cache has two 16-byte lines. Reads alternate between addresses 0 and 32. Why does every read miss?"
+  options={[
+    {
+      label:
+        'Both memory blocks map to the same cache slot and evict each other.',
+      correct: true,
+      explanation:
+        'The block numbers are 0 and 2. Both have remainder zero modulo two, so only slot 0 can hold them, despite slot 1 being unused.',
+    },
+    {
+      label:
+        'The cache is too small to hold two memory blocks under any placement rule.',
+      explanation:
+        'Its total capacity is two blocks, exactly enough for this working set. The direct-mapping restriction creates the conflict.',
+    },
+    {
+      label: 'Every cache miss necessarily causes a page fault and disk read.',
+      explanation:
+        'A cache miss obtains a line from a lower memory level. Address translation and page faults are separate mechanisms, and data may already be in another cache or RAM.',
+    },
+  ]}
+/>
+
+## Two-minute recap
+
+- Caches move lines, so useful bytes per line and timely reuse matter.
+- Direct mapping can create conflicts even when total capacity is sufficient.
+- Spatial locality, temporal locality and working-set size describe different
+  properties of an access stream.
+- State whether a miss penalty is additional or total before applying an average.
+- TLB misses, data-cache misses and page faults are separate events.
+- Use model traces to form predictions, then measure the actual target system.

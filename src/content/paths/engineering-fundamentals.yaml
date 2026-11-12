@@ -38,8 +38,8 @@ sections:
       - computer-architecture-execution/cpu-registers-and-instructions
       - computer-architecture-execution/compilation-and-execution
       - computer-architecture-execution/binary-and-data-representation
+      - computer-architecture-execution/memory-hierarchy-and-caches
     planned:
-      - Memory hierarchy, caches, RAM, and storage
       - Stack and heap fundamentals
       - Hardware and software interaction
       - I/O mechanisms
