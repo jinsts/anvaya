@@ -41,8 +41,8 @@ sections:
       - computer-architecture-execution/memory-hierarchy-and-caches
       - computer-architecture-execution/stack-and-heap
       - computer-architecture-execution/hardware-software-interaction
+      - computer-architecture-execution/io-mechanisms
     planned:
-      - I/O mechanisms
       - Performance implications of computer architecture
   - id: operating-systems-runtime-internals
     title: Operating Systems & Runtime Internals

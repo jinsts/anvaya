@@ -1,0 +1,301 @@
+---
+title: 'I/O mechanisms: Follow a request to completion'
+shortTitle: I/O mechanisms
+summary: Follow device submission, data movement, notification, and buffer reclamation while separating completion from persistence.
+subject: computer-architecture-execution
+path: engineering-fundamentals
+difficulty: intermediate
+estimatedMinutes: 55
+learningObjectives:
+  - Separate programmed I/O and DMA from polling and interrupt notification
+  - Trace ownership of a receive buffer through submission, completion, and reclamation
+  - Compare latency, throughput, and CPU cost under stated workload assumptions
+  - Explain why a completed write may require additional steps for durability
+prerequisites:
+  - computer-architecture-execution/hardware-software-interaction
+tags: [memory, hardware, io, performance]
+skills: [debugging, trade-off-analysis, technical-communication]
+status: draft
+drafter: agent
+interviewQuestions:
+  - prompt: Are DMA and interrupts competing ways to perform I/O?
+    answer: >-
+      They answer different questions. DMA moves data between a device and memory
+      without having the CPU copy each transferred word. An interrupt tells the
+      CPU about an event such as completion, while polling discovers status by
+      checking it. A DMA device can use either notification strategy, and drivers
+      can combine them according to load.
+  - prompt: Why can polling sometimes be useful even though it consumes CPU time?
+    answer: >-
+      A waiting CPU can check a completion queue without paying an interrupt and
+      scheduling transition for every event. That may suit a busy queue or a
+      strict latency target when dedicating CPU capacity is acceptable. For sparse
+      or slow events, repeated checks can waste substantial CPU time and energy.
+      Compare the arrival pattern, batching policy, and opportunity cost before
+      choosing a strategy.
+  - prompt: What must hold before software reuses a DMA receive buffer?
+    answer: >-
+      The device must have stopped using that buffer under the device's completion
+      protocol. The driver must process completion and perform any required DMA
+      mapping or cache-synchronization operations before giving ownership back to
+      software. Keeping a mapping alive is also a lifetime requirement during the
+      transfer. A request timing out alone does not prove that the device has
+      stopped writing.
+  - prompt: Does a successful write mean the bytes will survive a power failure?
+    answer: >-
+      A successful buffered write can mean the operating system accepted the bytes
+      into memory, so success alone does not establish durability. The application
+      needs the appropriate persistence operation and must check its result.
+      Filesystem, device-cache, and hardware guarantees determine what that operation
+      promises. Completion, visibility, durability, and atomicity are separate
+      properties that the interface must specify.
+sources:
+  - label: 'OSTEP, chapter 36 — Polling, interrupts, programmed I/O, and DMA'
+    url: https://pages.cs.wisc.edu/~remzi/OSTEP/file-devices.pdf
+  - label: 'OSTEP, chapter 39 — Buffered writes and fsync'
+    url: https://pages.cs.wisc.edu/~remzi/OSTEP/file-intro.pdf
+  - label: 'Linux kernel DMA mapping guide — Addresses, ownership, and synchronization'
+    url: https://docs.kernel.org/core-api/dma-api-howto.html
+---
+
+import example from '../../../../labs/computer-architecture-execution/io-mechanisms/example.ts?raw';
+
+## A request has several finish lines
+
+Imagine a network interface receiving an image. The application asks for bytes,
+but the CPU does not necessarily wait while copying each byte from the device.
+A driver can prepare memory, let the device transfer into it, and resume the
+application after completion becomes visible.
+
+A parcel delivery is a useful analogy: placing an order, receiving a dispatch
+notice, and taking possession of a parcel are different events. The analogy
+stops at memory access: hardware may still hold permission to modify a buffer
+after the application has stopped waiting for the request.
+
+**Input/output**, or I/O, transfers information between a computer and devices
+such as storage, network interfaces, and keyboards. A useful request model has
+four separate questions:
+
+- **Submission:** how does software describe the work to a device?
+- **Movement:** who transfers the payload bytes?
+- **Notification:** how does software learn that progress or completion occurred?
+- **Reclamation:** when may software reuse the memory and request resources?
+
+These questions stay useful across different buses and APIs. A syscall need not
+reach a device: a file read can be satisfied from the operating system's cache.
+An asynchronous API also does not guarantee DMA or eliminate copies.
+
+## Data movement and notification are independent
+
+In **programmed I/O**, the CPU performs the accesses that transfer payload data
+through a device interface. In **direct memory access**, or DMA, a device or DMA
+engine transfers the payload between the device and accessible memory. The CPU
+still sets up the operation and handles completion and errors.
+
+**Polling** reads device status or a completion queue repeatedly. An
+**interrupt** signals an event so the CPU can enter a handler. Polling and
+interrupts do not determine whether the payload was moved with programmed I/O or
+DMA.
+
+| Choice         | What it controls                       | Main trade-off                                                            |
+| -------------- | -------------------------------------- | ------------------------------------------------------------------------- |
+| Programmed I/O | CPU participates in payload transfer   | Simple for small interfaces; consumes CPU work per transfer               |
+| DMA            | Device or engine transfers the payload | Requires setup, valid memory mappings, and ownership discipline           |
+| Polling        | Software checks status                 | Can reduce notification overhead at high load; spends CPU time checking   |
+| Interrupts     | Hardware announces events              | Avoids constant checks for sparse events; handling and wakeups have costs |
+
+Drivers can batch completions or switch strategies under load. An interrupt
+need not correspond to one packet or one request. Conversely, a poll that finds
+nothing has still consumed time. No strategy is always faster: arrival rate,
+queue depth, batching, CPU availability, and latency targets all matter.
+
+## Trace a DMA receive request
+
+The [hardware boundary](/learn/computer-architecture-execution/hardware-software-interaction/)
+established that application pointers and device addresses can belong to
+different translation domains. A typical receive lifecycle adds ownership:
+
+1. **Prepare:** the driver obtains a suitable buffer and establishes the required mapping.
+2. **Submit:** it publishes a descriptor naming the buffer and allowed byte range.
+3. **Transfer:** the device writes the payload and records status under its protocol.
+4. **Observe completion:** polling or an interrupt tells the driver where to check status.
+5. **Reclaim:** the driver confirms completion, performs required synchronization, and returns access to software.
+
+The descriptor must be visible before the device is told to use it. The CPU must
+not use received bytes before the platform's completion and visibility rules
+have been satisfied. These are ordering requirements as well as lifetime
+requirements.
+
+On some platforms DMA participates in cache coherence; on others the driver must
+perform explicit cache maintenance through the operating system's DMA API.
+Even coherent DMA memory can need ordering barriers. A CPU cache being coherent
+with other CPU caches does not establish every device-access guarantee.
+
+<Callout title="A timeout is an observation, not ownership">
+  Stopping a wait does not prove a device stopped its transfer. Cancellation and
+  reset require the device's protocol to establish that the buffer can safely be
+  reclaimed. Reusing or freeing memory too early can let a late transfer corrupt
+  unrelated data.
+</Callout>
+
+## Model ownership without a real device
+
+The lab uses a pure state machine. A request starts `ready`, becomes `in-flight`,
+then becomes `completed` or `failed`, and finally returns to `ready` through
+reclamation. The host may reuse the buffer only in `ready`.
+
+Here `device` ownership means “reserved from host access by the I/O protocol.”
+It includes the completed phase until the driver has reclaimed it; the model
+does not claim that the device is still writing after completion.
+
+<CodeExample
+  title="A receive buffer moves through explicit ownership states"
+  code={example}
+  verified
+  output={'submitted: device\ncompleted: device\nreclaimed: host (4 bytes)'}
+/>
+
+An eight-byte buffer can complete with four received bytes. Reclamation does not
+invent the missing four bytes. Zero-byte completion is also allowed by this
+model; the meaning of zero depends on the real interface. Failure marks contents
+unusable here and reports zero usable bytes. It does not promise that the
+physical buffer was untouched before the failure.
+
+The transition invariant is that transferred bytes stay between zero and
+capacity, and only a terminal result can be reclaimed. Each transition is O(1)
+time and space for a fixed-size request record. These are software model costs,
+not bounds on a real device's transfer time. The model accesses no hardware,
+creates no real mapping, and supplies no cache or persistence guarantees.
+
+## Distinguish latency, throughput, and CPU work
+
+**Latency** measures time until a particular request reaches the specified finish
+line. **Throughput** measures completed work per unit of time. **CPU cost**
+measures processor effort spent on submission, transfer, checking, and handling.
+They can move in different directions.
+
+For a hypothetical device that becomes ready 10 time units after submission,
+polling every 4 units observes completion at time 12 if checks occur at 4, 8,
+and 12. That adds 2 units of detection delay and performs three checks. These
+are illustrative arithmetic values, not measurements of the repository or a
+particular device.
+
+Batching several completions can increase throughput by spreading notification
+overhead across requests, while a request waiting for the batch can see higher
+latency. Keeping more work in flight can hide individual request latency until
+the device, memory bandwidth, or software queue becomes the bottleneck. More
+queued work can then increase waiting time rather than completion rate.
+
+## Completion does not establish durability
+
+For a network receive, completion can mean the bytes are available in a buffer;
+it says nothing about a remote application processing them. For a buffered file
+write, return can mean bytes reached the operating system's cache. Device
+completion can have another contract involving volatile device caches.
+
+**Durability** asks whether an acknowledged operation survives a stated failure,
+such as loss of power. A persistence operation such as `fsync` requests stronger
+guarantees from the filesystem and storage stack and can itself fail. Exact
+requirements depend on the operation: creating a durable filename can also
+require persisting directory metadata. **Atomicity** asks whether a partial
+result can become visible, which is a separate promise.
+
+When reviewing an I/O API, name its finish line. “The write completed” is too
+ambiguous to establish visibility, remote processing, durable storage, and
+all-or-nothing behavior at once.
+
+## Practise a request lifecycle
+
+<LabCard
+  title="01 / Complete fewer bytes"
+  command="pnpm exec vitest run labs/computer-architecture-execution/io-mechanisms/"
+>
+  Add cases completing an eight-byte buffer with zero, three, and eight bytes.
+  Predict ownership before and after reclamation. Then try nine bytes and verify
+  that the transition rejects the overrun without changing its input.
+</LabCard>
+
+<details>
+  <summary>Hint after an attempt</summary>
+
+All three in-range completions retain device ownership until reclaimed; nine
+bytes exceeds the buffer capacity and must throw. A short result is a byte count
+to handle, not a reason to read unreceived data.
+
+</details>
+
+<LabCard
+  title="02 / Handle failure before reuse"
+  command="pnpm exec vitest run labs/computer-architecture-execution/io-mechanisms/"
+>
+  Trace submit, fail, reclaim, and submit again. Add a test rejecting reclaim
+  while still in flight. Explain why replacing the failed event with a timeout
+  would need an additional cancellation protocol in a real driver.
+</LabCard>
+
+<details>
+  <summary>Hint after an attempt</summary>
+
+An explicit terminal failure permits reclamation in this model. A timeout only
+reports that software did not observe completion by a deadline. The device may
+still access the buffer, so a safe extension needs states for cancellation and
+confirmed quiescence before ownership returns.
+
+</details>
+
+<LabCard
+  title="03 / Choose a notification policy"
+  command="pnpm exec vitest run labs/computer-architecture-execution/io-mechanisms/"
+>
+  Design a paper experiment comparing polling and interrupts for sparse and busy
+  queues. State the finish line, the work held constant, and which CPU, latency,
+  and throughput observations you would collect. Explain how batching could
+  change the result without changing the data-movement mechanism.
+</LabCard>
+
+<details>
+  <summary>Hint after an attempt</summary>
+
+Hold payload size and offered load constant within a comparison. Count checks
+and handled notifications alongside latency distributions, completion rate,
+and CPU use. Specify batch size and wakeup policy; otherwise the comparison
+changes several mechanisms at once. Running the lab verifies lifecycle rules,
+not the performance of either notification policy.
+
+</details>
+
+## Check your reasoning
+
+<ConceptCheck
+  id="dma-completion-ownership"
+  question="A DMA receive request timed out while its state is still in-flight. May the application immediately reuse its buffer?"
+  options={[
+    {
+      label: 'Yes, because the application is no longer waiting.',
+      explanation:
+        'A software wait ending does not remove the device’s permission or ability to access the buffer.',
+    },
+    {
+      label:
+        'Only after the device protocol establishes completion or cancellation and the driver performs the required reclamation.',
+      correct: true,
+      explanation:
+        'Lifetime, ownership, and any required synchronization must be settled before reuse; a late DMA write could otherwise corrupt memory.',
+    },
+    {
+      label:
+        'Yes, if the device reports completion with an interrupt instead of polling.',
+      explanation:
+        'Notification policy changes how status is discovered. It does not make an unfinished transfer safe to reclaim.',
+    },
+  ]}
+/>
+
+## Two-minute recap
+
+- Submission, payload movement, notification, and reclamation are separate stages.
+- DMA and programmed I/O describe movement; polling and interrupts describe discovery.
+- Keep buffers mapped and alive until the device protocol permits reclamation.
+- Coherent CPU caches do not remove all DMA synchronization and ordering requirements.
+- Compare latency, throughput, and CPU work at a clearly defined finish line.
+- Completion, durability, and atomicity need separate interface guarantees.
