@@ -222,3 +222,95 @@ width, and axe scans of the new pages. `tests/e2e/catalog.spec.ts` was edited
 scans for one new subject page and the new path. Those edits have not run. Run
 `pnpm exec playwright install --with-deps chromium && pnpm verify` where the
 browser can start before relying on them.
+
+## Computer Architecture & Execution drafts — 2026-11-12
+
+All nine approved topics in the first Engineering Fundamentals section now have
+lessons, each added with its lab and path entry in a separate local commit. All
+nine retain `status: draft` and `drafter: agent`, with no `reviewedAt`. The subject
+name and stable IDs are unchanged. The material includes nine tested educational
+models, 27 exercises with attempt-first hints, nine concept checks, and 41
+interview questions with model answers.
+
+Local environment: Node 24.21.0 and pnpm 9.15.9. Chromium initially lacked
+`libnspr4`, `libnss3`, and ALSA libraries. Ubuntu packages were downloaded and
+extracted under `/tmp/anvaya-browser-deps`; no system packages or repository
+dependencies were installed. The successful full verification command was:
+
+```sh
+PLAYWRIGHT_PORT=4323 \
+  LD_LIBRARY_PATH=/tmp/anvaya-browser-deps/usr/lib/x86_64-linux-gnu \
+  pnpm verify
+```
+
+| Check               | Measured result                                                                                                |
+| ------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `pnpm verify`       | Exit 0; all gates completed in the same run                                                                    |
+| `pnpm check`        | 98 files; zero errors, warnings, or hints; tools and lab TypeScript passed                                     |
+| `pnpm format:check` | Passed                                                                                                         |
+| `pnpm lint`         | ESLint, design-token checks, and placeholder checks passed                                                     |
+| `pnpm test`         | 151 tests in 17 files passed; 85 new model tests include exact displayed outputs and representation boundaries |
+| `pnpm build`        | 29 static pages validated; Pagefind indexed 22 pages; local links, anchors, headings, and recaps passed        |
+| `pnpm test:e2e`     | 36 desktop/mobile Chromium tests passed                                                                        |
+
+The instruction encoder also round-trips all 8,192 valid field combinations
+inside its tests. Other model tests cover branching and step limits, invalid
+relocations, overflow and padding, cold/conflict cache misses, independent frame
+and allocation lifetimes, protected entry and return, I/O ownership transitions,
+and fixed-work CPU-time/Amdahl calculations. These tests establish the models'
+contracts; they are not native hardware measurements.
+
+Four consulted primary references were registered: Dive into Systems, MIT
+Computation Structures, Operating Systems: Three Easy Pieces, and Linux kernel
+documentation. Specific chapter and documentation URLs appear in each lesson.
+Existing MDN references support JavaScript-specific claims.
+
+The three new problem references are Number of 1 Bits, Reverse Bits, and Add
+Binary. Their pages were opened to check titles and difficulty. Blind 75 and
+NeetCode 150 membership for the first two was checked against the published
+[`blind75` and `neetcode150` flags](https://raw.githubusercontent.com/neetcode-gh/leetcode/main/.problemSiteData.json).
+Add Binary claims no list membership. All hints are original. Hardware lessons
+use original lab investigations and interview questions rather than unrelated
+coding-bank problems.
+
+Browser verification found and corrected a path-page selector that expanded
+hidden accessible labels to 200px, and two lesson tables that exceeded a 390px
+viewport. The tables now use the existing scroll-region pattern, with accessible
+names and keyboard focus. Review also corrected an unintended numbered list in
+the execution walkthrough. Long unbroken expected-output values now wrap inside
+`CodeExample`, avoiding an unfocusable horizontal scroll area on phones.
+
+An additional browser audit covered every new lesson at 1440 × 1000 and
+390 × 844 in light and dark themes:
+
+- All 36 lesson viewport/theme combinations fit the document width. Keyboard
+  quiz submissions exercised both wrong and correct explanations.
+- 76 successful axe scans covered the top and settled quiz state of every
+  lesson, plus the subject's question drill in both themes and widths. Final
+  scans reported no violations. Reduced motion kept focus scrolling settled
+  during these measurements.
+- All 18 JavaScript-disabled readings retained prose, tested code, and recaps.
+  Each of the 21 exercise-hint disclosures opened and closed by keyboard at
+  both widths: 84 toggles.
+- Both narrow table regions responded to ArrowRight with JavaScript enabled
+  and disabled. The representation output fit its 348px content area after
+  wrapping.
+- Subject/path links and the nine-lesson order worked. The 41-question drill
+  revealed answers and retained review choices; the representation practice
+  filter showed the three new problems.
+
+Representative hero and code screenshots were inspected in both widths and
+themes. Additional evidence remains local under `/tmp/anvaya-content-review/`,
+including `final-report.json`; it is not a committed visual baseline.
+
+The first browser attempt reused an existing development server, which did not
+serve the production search index; a subsequent preview launch hit Astro's
+server lock. The test configuration now accepts `PLAYWRIGHT_PORT` and starts
+the static preview with `--ignore-lock`, allowing the successful isolated run
+without stopping the existing development server.
+
+Owner pedagogical review and promotion remain pending. The runnable labs are
+TypeScript models, and native compilation experiments, hardware counters, and
+performance benchmarks were not run. Mobile checks use Chromium emulation;
+real-device and manual screen-reader testing are not claimed. No content was
+promoted, pushed, or deployed.
