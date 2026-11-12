@@ -1,0 +1,7 @@
+name: 'Operating Systems: Three Easy Pieces'
+kind: book
+by: Remzi H. Arpaci-Dusseau and Andrea C. Arpaci-Dusseau
+url: https://pages.cs.wisc.edu/~remzi/OSTEP/
+description: >-
+  The authors' University of Wisconsin textbook explains memory virtualization,
+  concurrency, I/O devices, and persistent storage with explicit assumptions.
