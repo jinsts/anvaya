@@ -37,8 +37,8 @@ sections:
       - computer-architecture-execution/how-computers-execute-programs
       - computer-architecture-execution/cpu-registers-and-instructions
       - computer-architecture-execution/compilation-and-execution
+      - computer-architecture-execution/binary-and-data-representation
     planned:
-      - Binary representation and data representation
       - Memory hierarchy, caches, RAM, and storage
       - Stack and heap fundamentals
       - Hardware and software interaction

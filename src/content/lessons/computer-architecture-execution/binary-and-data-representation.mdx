@@ -1,0 +1,283 @@
+---
+title: 'Binary representation: Give bits a meaning'
+shortTitle: Binary and data representation
+summary: Interpret the same bytes as signed values, encoded text or floating-point numbers, and explain overflow, byte order and layout padding.
+subject: computer-architecture-execution
+path: engineering-fundamentals
+difficulty: foundation
+estimatedMinutes: 55
+learningObjectives:
+  - Decode unsigned and two's complement values and distinguish carry from signed overflow
+  - Explain rounding, byte order and alignment with explicit representation rules
+  - Choose byte, code-unit or code-point counts for a text-processing task
+  - Test a fixed-width arithmetic and record-layout model at representation boundaries
+prerequisites:
+  - computer-architecture-execution/cpu-registers-and-instructions
+tags: [binary, memory, representation, complexity]
+skills: [debugging, implementation, complexity-analysis]
+status: draft
+drafter: agent
+interviewQuestions:
+  - prompt: How can the same byte represent both 255 and -1?
+    answer: >-
+      A byte contains a bit pattern, and its type determines the interpretation.
+      Unsigned interpretation gives the eight positions weights from 1 through
+      128, producing 255 for all ones. In eight-bit two's complement the highest
+      position has weight -128, producing -1 for those same bits. Changing the
+      interpretation does not change the stored byte.
+    followUps:
+      - What range can a signed 16-bit two's complement value represent?
+  - prompt: Does a CPU wrapping an addition prove that signed overflow is safe in C?
+    answer: >-
+      No, the machine instruction and the source language have separate contracts.
+      An eight-bit modular adder retains the low eight bits, but ordinary signed
+      overflow in C has undefined behavior. A compiler can optimize on the
+      assumption that defined executions do not overflow. Use checked arithmetic
+      or a suitable unsigned representation when the algorithm needs explicit
+      wraparound, and check the language's conversion rules.
+  - prompt: Why does adding 0.1 and 0.2 fail an exact comparison with 0.3?
+    answer: >-
+      These fractions have repeating binary expansions, so binary floating-point
+      stores nearby representable values. The addition rounds again and can
+      produce a different representable value from the literal 0.3. A tolerance
+      must reflect the scale and error budget of the calculation. For exact
+      decimal quantities, consider scaled integers within a checked range or a
+      decimal arithmetic implementation with an explicit rounding policy.
+  - prompt: Why can a record with fields of 1, 4 and 1 bytes occupy 12 bytes?
+    answer: >-
+      Under a layout rule requiring four-byte alignment for the middle field, it
+      begins at offset 4 after three padding bytes. The final byte starts at
+      offset 8, and trailing padding rounds the record size to a multiple of four.
+      This gives offsets 0, 4 and 8 and a total size of 12. The result depends on
+      the ABI and packing rules; it is not a JavaScript object-layout guarantee.
+    followUps:
+      - How does reordering the fields change the model's total size?
+  - prompt: What does a string's length tell you about its storage and visible characters?
+    answer: >-
+      It depends on the encoding and the API's counting unit. JavaScript length
+      counts UTF-16 code units, so a supplementary code point occupies two units.
+      UTF-8 encodes code points into variable numbers of bytes, and a visible
+      grapheme can contain multiple code points. Choose the counting unit from
+      the task, such as byte limits for a protocol or grapheme segmentation for
+      editing visible text.
+sources:
+  - label: Dive Into Systems — Signed binary integers and their ranges
+    url: https://diveintosystems.org/book/C4-Binary/signed.html
+  - label: Dive Into Systems — Integer overflow and language behavior
+    url: https://diveintosystems.org/book/C4-Binary/overflow.html
+  - label: Dive Into Systems — Integer byte order
+    url: https://diveintosystems.org/book/C4-Binary/byte_order.html
+  - label: Dive Into Systems — Real numbers in binary
+    url: https://diveintosystems.org/book/C4-Binary/floating_point.html
+  - label: Dive Into Systems — Structures and memory layout
+    url: https://diveintosystems.org/book/C2-C_depth/structs.html
+  - label: MDN — String, UTF-16 characters and code points
+    url: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String
+---
+
+import source from '../../../../labs/computer-architecture-execution/binary-and-data-representation/example.ts?raw';
+
+## A byte needs an interpretation
+
+A sensor sends the byte `11111111`. Is the reading 255, -1, part of a text
+character, or eight independent flags? The bits alone cannot answer. The sender
+and receiver must agree on width, signedness, byte order and encoding.
+
+Think of a label reading `10`: the value changes if the label is decimal or
+binary. That analogy explains interpretation, but computer formats also specify
+what happens when a value cannot fit. A wrong format can turn a valid packet into
+an impossible measurement without changing a single bit.
+
+The [instruction lesson](/learn/computer-architecture-execution/cpu-registers-and-instructions/)
+introduced registers and operations. Here we establish what their operands mean.
+We use eight-bit bytes and byte-addressed memory throughout; other machine models
+must state their own units.
+
+## Unsigned and signed integers
+
+A binary digit at position k, counting from zero at the right, contributes 2 to
+the power k. Thus `00001101` means 8 + 4 + 1 = 13. Hexadecimal groups four bits
+per digit: the same byte is `0x0d`. Hexadecimal is a display convention, not a
+separate kind of storage.
+
+An unsigned w-bit integer ranges from 0 through 2 to the power w minus 1.
+For **two's complement**, the highest bit has negative weight. With eight bits,
+`10000000` is -128 and `01111111` is 127. To interpret an unsigned bit pattern u
+whose high bit is set, subtract 256. Therefore `11111111` is 255 - 256 = -1.
+The signed range is asymmetric because zero occupies one of the nonnegative
+patterns.
+
+A fixed-width modular adder retains the low w result bits. For eight bits:
+
+| Inputs interpreted as unsigned | Retained byte | Unsigned carry | Signed interpretation                          |
+| ------------------------------ | ------------- | -------------- | ---------------------------------------------- |
+| 127 + 1                        | `10000000`    | No             | 127 + 1 cannot fit; retained result means -128 |
+| 255 + 1                        | `00000000`    | Yes            | -1 + 1 = 0 fits                                |
+
+**Carry** reports a result beyond the unsigned range. **Signed overflow** reports
+a signed mathematical result beyond the signed range. Neither condition implies
+the other.
+
+<Callout
+  title="Machine behavior and language behavior are separate"
+  variant="warning"
+>
+  The lab deliberately implements eight-bit modular arithmetic. Ordinary signed
+  integer overflow in C has undefined behavior; C unsigned arithmetic is
+  modular. JavaScript ordinary numbers use binary64 floating point, while its
+  number bitwise operators convert operands to 32-bit integer representations.
+  The explicit byte checks below prevent these language rules from silently
+  defining our model.
+</Callout>
+
+## Read and manipulate individual bits
+
+A **mask** selects positions: bitwise AND keeps a position only when both inputs
+have a one there. To read one bit, shift its position down to position zero and
+mask off every other bit. The lab's `bitAt` applies this to a checked byte and a
+position from zero through seven.
+
+A logical right shift fills the vacated high positions with zeros. An arithmetic
+right shift repeats the sign bit, preserving the sign of a two's complement
+operand. JavaScript spells these number operations `>>>` and `>>`, respectively;
+their 32-bit conversions still apply. A shift is not a universal replacement for
+division across languages, signed values and rounding rules.
+
+In binary addition, each column receives the two operand bits and any carry
+from the previous column. Keeping only the result bit and propagating the carry
+explains why a sum may require an extra position. Choose the output width before
+deciding whether to retain, report or reject that extra bit.
+
+## Floating point buys range with limited precision
+
+IEEE 754 binary floating point separates a sign, an exponent and a significand.
+The exponent scales a finite collection of significand bits. Large magnitudes
+therefore have wider gaps between adjacent representable values; the format does
+not retain the same decimal resolution everywhere.
+
+Binary64 has 53 bits of significand precision for normal values. Fractions such
+as one tenth repeat in binary, so storing them requires rounding. The tested
+example produces `0.30000000000000004` when adding the stored approximations of
+0.1 and 0.2. Changing the display to one decimal place does not change the stored
+value.
+
+The format also has subnormal numbers, signed zeros, infinities and NaN. NaN is
+not equal to itself under ordinary numeric equality. Do not use one universal
+small constant as a cure for every comparison: tolerance should account for
+magnitude, accumulated error and the application's decision boundary. Exact
+currency totals may suit integer minor units, provided the scale, rounding and
+maximum range are specified.
+
+## Byte order and record layout
+
+A 16-bit value `0x1234` has a high byte `0x12` and a low byte `0x34`.
+**Little-endian** order stores the low byte first, at the lower address;
+**big-endian** stores the high byte first. Byte order does not reverse the bits
+inside each byte. Network and file formats should name an order explicitly
+rather than inherit the sender's host order.
+
+**Alignment** constrains the address at which a field begins. Suppose our chosen
+record rules give one-byte fields alignment one and a four-byte field alignment
+four. A byte, integer, byte record then has offsets 0, 4 and 8. Three bytes of
+interior padding and three of trailing padding make its total size 12. Trailing
+padding allows the next record in an array to begin suitably aligned.
+
+These are explicit model inputs. Real ABI rules decide field alignment, record
+alignment and exceptions. Reordering the fields can reduce padding, but can also
+change a public binary interface. Serializing raw records risks exposing padding
+and depending on host rules; encode protocol fields deliberately.
+
+## Text has several different lengths
+
+Unicode assigns **code points** to characters and other text elements. UTF-8
+encodes a code point into one to four bytes; UTF-16 uses one or two 16-bit code
+units for Unicode scalar values. JavaScript strings expose UTF-16 code units.
+For example, the supplementary code point in `🙂` uses two code units and four
+UTF-8 bytes.
+
+A visible grapheme can combine several code points, as with a letter and a
+combining accent. Thus bytes, code units, code points and visible text units are
+four different counts. A network byte limit and a cursor moving over visible
+text require different operations. Decide which boundary the task actually asks
+for before indexing or truncating text.
+
+## Test representation boundaries
+
+This TypeScript lab is an executable educational model, not an inspection of
+native object layout. Its arithmetic and layout rules are explicit. The output
+below is checked exactly by its tests.
+
+<CodeExample
+  title="Interpret bytes and apply explicit layout rules"
+  code={source}
+  verified
+  output={
+    '255 as signed byte: -1\n127 + 1: {"unsigned":128,"signed":-128,"carry":false,"signedOverflow":true}\n0x1234 little-endian: 52, 18\n0.1 + 0.2: 0.30000000000000004\nrecord: {"offsets":[0,4,8],"size":12,"paddingBytes":6}'
+  }
+/>
+
+For fixed eight-bit and 16-bit widths the arithmetic functions use O(1) work and
+space. For f fields, `layoutRecord` uses O(f) work and O(f) output space under
+constant-cost safe-integer arithmetic. Arbitrary-precision integers require a
+cost model that includes the number of machine words processed.
+
+<LabCard
+  title="Three representation investigations"
+  command="pnpm exec vitest run labs/computer-architecture-execution/binary-and-data-representation/"
+>
+
+1. Predict the signed result, carry and signed overflow for the bytes 128 and 255. Add a test that distinguishes all three properties.
+2. Reorder the modeled fields to integer, byte, byte. Predict every offset and
+   the final size, then confirm the padding with `layoutRecord`.
+3. Use `bitAt` to count the one bits in every byte from 0 through 255. Check zero,
+   all ones and a byte with only its highest bit set.
+
+</LabCard>
+
+<details>
+  <summary>Hints after your attempt</summary>
+
+1. Interpret 128 and 255 as signed values before adding: -128 + -1 is below the
+   signed minimum, while unsigned addition also exceeds 255.
+2. The first field already meets alignment four. Round the final occupied end
+   up to alignment four even when no interior padding was needed.
+3. Visit exactly eight positions. This O(8) bound is constant for a byte; a
+   generalized w-bit scan uses O(w) bit inspections.
+
+</details>
+
+## Check your reasoning
+
+<ConceptCheck
+  id="binary-and-data-representation-overflow"
+  question="An eight-bit modular addition retains 10000000 after adding 01111111 and 00000001. Which conclusion follows?"
+  options={[
+    {
+      label: 'The signed result overflowed, but the unsigned result fits.',
+      correct: true,
+      explanation:
+        '127 + 1 is 128, outside the signed range -128 through 127 but inside the unsigned range 0 through 255. The retained bits represent -128 only under signed interpretation.',
+    },
+    {
+      label:
+        'Both signed and unsigned addition overflowed because the top bit is one.',
+      explanation:
+        'The top bit is a value bit for unsigned interpretation. Unsigned overflow requires a mathematical result above 255, which did not occur.',
+    },
+    {
+      label: 'A C program can safely rely on the signed value becoming -128.',
+      explanation:
+        'The model specifies modular behavior. Ordinary signed overflow in C is undefined, so this machine-level trace does not create a source-language guarantee.',
+    },
+  ]}
+/>
+
+## Two-minute recap
+
+- Width and interpretation give a bit pattern meaning; two's complement has an
+  asymmetric signed range.
+- Unsigned carry and signed overflow answer different questions.
+- Floating point represents a finite set of values, so rounding and scale matter.
+- Byte order, alignment and padding belong to explicit format or ABI rules.
+- Count text in bytes, code units, code points or graphemes according to the task.
+- Test the smallest, largest and just-outside representable values.
