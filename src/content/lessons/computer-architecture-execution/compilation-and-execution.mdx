@@ -1,0 +1,307 @@
+---
+title: 'Compilation: Connect source code to a running program'
+shortTitle: Compilation and execution
+summary: Follow a native build through compilation, assembly, linking, and loading, then trace symbol relocation in a tested model.
+subject: computer-architecture-execution
+path: engineering-fundamentals
+difficulty: foundation
+estimatedMinutes: 40
+learningObjectives:
+  - Distinguish the artifacts and errors produced by compilation, assembly, linking, and loading
+  - Resolve a symbolic reference after assigning addresses to separate object modules
+  - Compare static linking, dynamic linking, interpretation, and just-in-time compilation
+  - Explain why optimized machine code need not resemble the original source
+prerequisites: [computer-architecture-execution/cpu-registers-and-instructions]
+tags: [compilation, instructions, execution, debugging]
+skills: [debugging, implementation, trade-off-analysis]
+status: draft
+drafter: agent
+interviewQuestions:
+  - prompt: Why can a source file compile successfully but the final program fail to link?
+    answer: >-
+      Compilation can translate a file using declarations for functions whose
+      implementations live elsewhere. The resulting object can retain unresolved
+      symbolic references. Linking must find compatible definitions in other
+      objects or libraries and arrange the required relocations. A missing
+      definition or incompatible build input can therefore fail after successful
+      compilation, while a missing runtime dependency can fail later at loading.
+  - prompt: How do symbol resolution and relocation differ?
+    answer: >-
+      Symbol resolution decides which definition a reference names. Relocation
+      adjusts encoded references to match the addresses or relative offsets
+      required by the final layout. An object can know that it calls a named
+      function before that function's final address is assigned. Real formats
+      define many relocation kinds; our lab models only absolute word addresses.
+  - prompt: What changes when a library is linked dynamically instead of statically?
+    answer: >-
+      Static linking incorporates the selected library object code into the
+      linked output. Dynamic linking leaves some dependencies to shared objects
+      resolved by the runtime loading machinery. Shared libraries can be reused
+      and updated independently, but compatible versions must be available when
+      the program runs. Startup cost, deployment size and compatibility depend
+      on the platform and dependency set rather than a universal speed rule.
+  - prompt: Why might an optimized function have no instructions corresponding to a source variable?
+    answer: >-
+      A compiler preserves the language's required observable behavior, not a
+      one-to-one mapping between statements and instructions. It can eliminate
+      unused work, fold constants, inline calls, and keep values only in
+      registers. The optimization depends on what the language allows and what
+      the compiler can prove. Undefined behavior or invalid benchmark assumptions
+      can therefore invalidate conclusions drawn from source code alone.
+    followUps:
+      - How can an unused benchmark result cause the measured computation to disappear?
+  - prompt: Does interpreting JavaScript mean that the processor executes JavaScript syntax directly?
+    answer: >-
+      An interpreter is itself a program implemented by native instructions.
+      It reads or dispatches a representation of the user's program and performs
+      its operations. A just-in-time compiler can instead generate native code
+      for some of that work during execution. Runtime strategies can mix these
+      approaches, so interpretation and compilation are not exclusive labels
+      for an entire language.
+sources:
+  - label: 'Dive into Systems — C libraries, compilation, and linking'
+    url: https://diveintosystems.org/book/C2-C_depth/advanced_libraries.html
+  - label: 'Dive into Systems — Compiler optimization and function inlining'
+    url: https://diveintosystems.org/book/C12-CodeOpt/loops_functions.html
+  - label: 'Operating Systems: Three Easy Pieces — Process creation and loading'
+    url: https://pages.cs.wisc.edu/~remzi/OSTEP/cpu-intro.pdf
+  - label: 'MDN — Just-in-time compilation'
+    url: https://developer.mozilla.org/en-US/docs/Glossary/Just_In_Time_Compilation
+---
+
+import example from '../../../../labs/computer-architecture-execution/compilation-and-execution/example.ts?raw';
+
+## A build has several different jobs
+
+Suppose a program calls a helper function maintained in a different source file.
+One tool can understand the call without yet knowing where the helper's
+instructions will sit in memory. Another tool joins the pieces, and the
+operating system later arranges an execution context. Distinguishing these jobs
+makes “it builds here but will not run there” a tractable investigation.
+
+Think of making a book from separately written chapters. Editing each chapter,
+joining the chapters, resolving page references, and putting a copy on a reader's
+desk are different tasks. The analogy stops at execution: an executable has
+strict binary formats, platform agreements and address calculations that a
+reader cannot improvise around.
+
+We will describe a conventional ahead-of-time native build, using C terminology.
+Other languages and toolchains may combine stages or emit intermediate code.
+The roles remain useful even when one command runs several tools.
+
+## Identify the artifact at each boundary
+
+| Stage        | Main job                                                                     | Typical artifact or effect                     |
+| ------------ | ---------------------------------------------------------------------------- | ---------------------------------------------- |
+| Preprocess C | Expand includes and macros under the selected build definitions              | Preprocessed source                            |
+| Compile      | Check language rules and translate expressions and control flow for a target | Assembly or another lower-level representation |
+| Assemble     | Encode instructions and record definitions and unresolved references         | Relocatable object file                        |
+| Link         | Combine objects, resolve symbols, and apply supported relocations            | Executable or shared library                   |
+| Load         | Establish mappings, dependencies and initial process state                   | A process ready to begin execution             |
+
+A **symbol** is a name used for an addressable entity, such as a function or
+global object. An object file can define some symbols and reference others. A
+**relocation** records a place where a reference needs adjustment after layout
+or binding is known. An object therefore contains more than raw instruction
+bytes: it can include sections, symbols, relocations and debugging information.
+
+The compiler and assembler need a target ISA. The full target also includes
+platform requirements such as the ABI and object-file format. Machine code for
+one processor family is not automatically a usable executable on every operating
+system with that processor.
+
+## Resolve a reference after assigning positions
+
+Our illustrative linker uses word-addressed memory. A word is one array element,
+not a real machine's byte or fixed-width instruction. Every module supplies
+words, symbol definitions as offsets within those words, and reference sites to
+patch with absolute addresses.
+
+The first module has two words, positions 0 and 1, and defines entry at its local
+position 0. Its first word contains a reference to helper. The second module has
+one word and defines helper at its own local position 0. Lay the modules out in
+that order at load base 100:
+
+| Module           | Position in combined image | Absolute addresses | Defined symbol |
+| ---------------- | -------------------------- | ------------------ | -------------- |
+| First, two words | 0 and 1                    | 100 and 101        | entry → 100    |
+| Second, one word | 2                          | 102                | helper → 102   |
+
+Resolving helper selects the definition from the second module. Relocating the
+reference replaces the first word with 102. Other words, 99 and 7, remain data in
+this model. They are not claimed to be valid native instructions.
+
+<CodeExample
+  title="Absolute-address symbol relocation in a teaching linker"
+  code={example}
+  verified
+  output={'image: [102, 99, 7]\nentry: 100\nhelper: 102'}
+/>
+
+The linker first collects all definitions and locations, then patches references.
+That ordering handles a forward reference to a module that has not yet been
+visited. It rejects duplicate names and unresolved references instead of picking
+an arbitrary definition. It also rejects invalid offsets and overlapping patches.
+The tests check these cases and confirm that linking does not mutate its inputs.
+
+The central invariant is that each patched site contains the address assigned to
+its selected symbol. Moving the same image to base 200 would put helper at 202,
+so the absolute reference must change. Real systems can also use relative
+references, indirection tables and position-independent code; this model does
+not implement them or parse a real object format.
+
+For W words, D definitions and R references, the model does O(W + D + R) work
+under the usual expected constant-cost map/set model for bounded-length symbol
+names. It retains O(W + D + R) data. Long symbol names add hashing and comparison
+costs, and these bounds do not describe production linker performance.
+
+## Loading is more than copying a file
+
+An executable file is not a running process. On a conventional operating system,
+loading establishes the program's virtual memory mappings and initial state,
+including a starting execution position and arguments. Pages can be populated
+on demand instead of copying every byte eagerly. Startup code then prepares the
+language runtime before reaching the user-facing entry function.
+
+**Static linking** incorporates selected object code from libraries into the
+linked output. **Dynamic linking** defers some dependencies to shared libraries
+handled by the runtime loading machinery. The system may bind references during
+startup or later, depending on its format and configuration. Dynamic linking is
+not the same as fetching library source over a network.
+
+Static linking can simplify some deployment dependencies but does not make a
+binary independent of its ISA, ABI or operating system requirements. Dynamic
+linking can share library code across processes and allow separate updates, but
+it introduces availability and compatibility requirements. Neither choice
+universally wins on speed or package size.
+
+## Optimization changes the shape of the program
+
+A compiler must preserve the observable behavior required by the language and
+build options for valid inputs. It need not preserve a visible instruction for
+every source expression. Constants may be folded, unused calculations removed,
+functions inlined, and repeated accesses combined when legal.
+
+This explains two common debugging surprises. A source variable may be
+unavailable because it has no persistent storage location. A benchmark may time
+almost nothing because its unused result allowed the compiler to remove the
+calculation. Before inferring a hardware bottleneck, check what work remains in
+the generated program and whether the experiment makes its result observable.
+
+An **interpreter** performs operations by running an implementation of a
+program's representation. A **just-in-time compiler**, or JIT, generates native
+code during execution. Systems can begin with interpretation, compile frequently
+used work, and change strategies as information becomes available. JIT
+compilation adds startup and compilation work in exchange for possible later
+savings. A language's name alone does not identify its execution strategy.
+
+<Callout title="Local examples model mechanisms">
+  This repository executes the TypeScript lab with its test runner. The lab
+  models symbol layout and relocation; it does not claim to run a native build,
+  inspect compiler output, or measure optimization speedups.
+</Callout>
+
+## Diagnose the boundary that failed
+
+Use the artifact you have to narrow the failure. A language error while
+translating one source file points to compilation. An undefined symbol while
+combining objects points to linking. A missing shared object when starting an
+already-built executable points to loading. A crash after entry requires
+investigating execution state; rebuilding successfully does not establish
+runtime correctness.
+
+Keep the target, build options, input artifacts and dependency versions with any
+reproduction. A mismatch between a declaration and its implementation can cross
+several successful tool stages before producing invalid behavior. Success at a
+boundary proves only that stage's checks passed.
+
+## Practise layout and failure diagnosis
+
+<LabCard
+  title="01 / Move the image"
+  command="pnpm exec vitest run labs/computer-architecture-execution/compilation-and-execution/"
+>
+  Recreate the two-module example in a test at load bases 0 and 200. Predict the
+  relocated first word and both symbol addresses. Confirm that the original
+  module words remain unchanged after both links.
+</LabCard>
+
+<details>
+  <summary>Hint after an attempt</summary>
+
+The helper is always two words after the base, so its addresses are 2 and 202.
+Entry begins at the base. Only the reference site changes; the untouched words
+are still 99 and 7. Reusing unchanged input matters when testing another layout.
+
+</details>
+
+<LabCard
+  title="02 / Distinguish a missing name from an invalid site"
+  command="pnpm exec vitest run labs/computer-architecture-execution/compilation-and-execution/"
+>
+  Add one test referencing an undefined helper and another placing a reference
+  just beyond its module's final word. Predict which validation fails first and
+  explain why adding another module fixes only one of these errors.
+</LabCard>
+
+<details>
+  <summary>Hint after an attempt</summary>
+
+A definition can satisfy a missing symbol. It cannot make an out-of-range local
+patch site valid. The model validates sites while collecting modules, then
+checks unresolved names while applying relocations.
+
+</details>
+
+<LabCard
+  title="03 / Reorder independent modules"
+  command="pnpm exec vitest run labs/computer-architecture-execution/compilation-and-execution/"
+>
+  Place the one-word helper module before the two-word entry module. At load
+  base 100, predict the image and symbol addresses and add a test. Explain why
+  names still resolve even though their addresses change.
+</LabCard>
+
+<details>
+  <summary>Hint after an attempt</summary>
+
+Helper becomes 100 and entry becomes 101. The words become 7, 100, 99: the
+reference has moved with its containing module and now points backward. Symbols
+identify definitions independently of a particular layout.
+
+</details>
+
+## Check your reasoning
+
+<ConceptCheck
+  id="compilation-unresolved-reference"
+  question="A file compiles using a declaration of helper, but no linked object defines helper. Which stage is missing required information?"
+  options={[
+    {
+      label: 'Linking, because the reference needs a compatible definition.',
+      correct: true,
+      explanation:
+        'A declaration can provide enough information to compile a call. The link still needs the implementation or an allowed dynamic dependency.',
+    },
+    {
+      label: 'CPU decoding, because every source identifier is an opcode.',
+      explanation:
+        'A source symbol is a name used by language and build machinery. It is not an ISA opcode that the CPU decodes.',
+    },
+    {
+      label:
+        'The call is valid because successful compilation guarantees a runnable program.',
+      explanation:
+        'Compilation checks one boundary. Missing linked definitions, unavailable runtime libraries and runtime defects can still prevent correct execution.',
+    },
+  ]}
+/>
+
+## Two-minute recap
+
+- Compilation, assembly, linking and loading produce different artifacts and detect different errors.
+- Symbol resolution selects a definition; relocation adjusts references for the chosen layout.
+- The lab demonstrates absolute word addresses, with explicit validation and unchanged inputs.
+- A native executable still depends on its target ISA, ABI and runtime environment.
+- Optimized machine code preserves required behavior without mirroring each source statement.
+- Interpretation and JIT compilation can coexist, with different startup and steady-state costs.
