@@ -1,0 +1,318 @@
+---
+title: 'Architecture and performance: Explain where the time goes'
+shortTitle: Architecture and performance
+summary: Relate instructions, pipelines, locality, and parallel limits to a performance hypothesis you can measure.
+subject: computer-architecture-execution
+path: engineering-fundamentals
+difficulty: intermediate
+estimatedMinutes: 60
+learningObjectives:
+  - Calculate a CPU-time estimate from instruction count, average CPI, and frequency
+  - Explain how dependencies, speculation, and memory stalls limit instruction overlap
+  - Apply Amdahl's law to a fixed workload with an explicit serial fraction
+  - Design a benchmark that distinguishes correctness, timing, and a proposed hardware cause
+prerequisites:
+  - computer-architecture-execution/memory-hierarchy-and-caches
+  - computer-architecture-execution/io-mechanisms
+tags: [complexity, memory, performance, execution]
+skills:
+  [
+    complexity-analysis,
+    profiling-measurement,
+    ai-assisted-verification,
+    trade-off-analysis,
+  ]
+status: draft
+drafter: agent
+interviewQuestions:
+  - prompt: If a processor has a higher clock frequency, must it finish a program sooner?
+    answer: >-
+      CPU time depends on executed instruction count, average cycles per
+      instruction, and cycle duration. A higher frequency helps only in the
+      context of the other terms, which can differ between processors and
+      workloads. Memory stalls, throttling, and available parallelism also
+      change the observed result. Compare completion time for the same correct
+      workload rather than ranking programs or machines by frequency alone.
+  - prompt: Why does pipelining improve throughput without guaranteeing lower latency for one instruction?
+    answer: >-
+      Pipelining overlaps stages from several instructions so the machine can
+      finish work more frequently once the pipeline is filled. One instruction
+      still passes through its required stages, which also have pipeline-register
+      overhead. Data dependencies, resource conflicts, and unresolved control
+      flow can introduce stalls or discarded work. The benefit depends on the
+      available instruction-level parallelism and the workload's hazards.
+  - prompt: A quarter of baseline runtime is serial. What is the speedup if the remaining work becomes four times faster?
+    answer: >-
+      For fixed work with no added overhead, normalized time becomes 0.25 plus
+      0.75 divided by 4, which is 0.4375. Overall speedup is therefore about
+      2.286, rather than four. Even an arbitrarily fast parallel portion leaves
+      the serial quarter, giving a limiting speedup of four. Synchronization,
+      bandwidth limits, and changed workloads can invalidate the simple model.
+  - prompt: Why can independent per-thread counters become slow without a data race?
+    answer: >-
+      Distinct counters can occupy the same cache line, so writes by different
+      cores repeatedly transfer ownership or invalidate cached copies of that
+      line. This is false sharing: the coherence unit is larger than the
+      independently updated variables. Keeping updates local and combining them
+      later can reduce traffic, while padding trades memory for separation.
+      Confirm the layout and measure before choosing either change.
+  - prompt: What evidence would you want before claiming a rewrite is faster because of branch prediction?
+    answer: >-
+      First verify identical required results and comparable inputs, compiler
+      settings, and execution conditions. Repeat measurements and report the
+      timing distribution alongside relevant branch and instruction counters
+      where available. Inspect generated code because a compiler may remove or
+      replace the branch entirely. A timing improvement alone does not identify
+      its cause, and a small synthetic input need not represent production.
+sources:
+  - label: 'MIT Computation Structures, lecture 21 — CPU time, instruction overlap, and parallel execution'
+    url: https://computationstructures.org/lectures/parallel/parallel.html
+  - label: 'Dive into Systems, section 14.4.1 — Speedup and Amdahl’s law'
+    url: https://diveintosystems.org/book/C14-SharedMemory/performance_basics.html
+  - label: 'Dive into Systems, section 14.5 — Cache coherence and false sharing'
+    url: https://diveintosystems.org/book/C14-SharedMemory/cache_coherence.html
+  - label: 'Dive into Systems, chapter 15 — Instruction streams and SIMD'
+    url: https://diveintosystems.org/book/C15-Parallel/index.html
+---
+
+import example from '../../../../labs/computer-architecture-execution/architecture-and-performance/example.ts?raw';
+
+## The same Big-O can hide different work
+
+Two programs both scan a million records, so both take O(n) time under a fixed
+cost per record. One follows scattered pointers; another reads a compact array
+containing only the fields it needs. Their asymptotic bounds can agree while
+their instruction counts, cache traffic, and completion times differ.
+
+Think of a kitchen assembly line. Overlapping chopping, cooking, and serving
+can raise the number of meals finished per hour, but a dish still needs its
+dependencies completed in order. The analogy stops at a processor's speculative
+work and its ability to discard results before they become architectural state.
+
+Use complexity analysis to explain how work scales. Use an architectural cost
+model to form a hypothesis about a constant factor or bottleneck. Use
+measurement to discover whether the hypothesis explains the actual workload.
+
+## Count instructions, cycles, and seconds
+
+For a fixed run, a useful CPU-time relation is:
+
+**CPU time = executed instructions × average cycles per instruction / clock frequency.**
+
+Cycles per instruction is abbreviated **CPI**. Its reciprocal, instructions per
+cycle or **IPC**, is another aggregate measure over the same counted interval.
+A superscalar core can complete multiple instructions per cycle on average, so
+CPI may be below one. CPI is not a constant shared by every instruction or every
+run of a processor.
+
+The frequency form assumes a suitable fixed or effective frequency for the
+interval. Frequency scaling, throttling, and the definitions of measured cycles
+complicate using a nominal GHz number with counter readings. CPU execution time
+also differs from elapsed time: waiting for I/O or being descheduled can make
+wall-clock completion much longer.
+
+Suppose a hypothetical run executes two billion instructions at CPI 1.5 and
+3 GHz. The estimate is one second. A candidate executes 1.5 billion instructions
+at CPI 1.8 and the same frequency: its estimate is 0.9 seconds. CPI gets worse,
+yet total estimated time improves because the instruction reduction is larger.
+
+## Overlap helps until dependencies or resources intervene
+
+A **pipeline** divides work into stages and overlaps different instructions at
+different stages. It primarily improves throughput and can enable a shorter
+clock period; it does not promise that one instruction finishes sooner.
+
+Three kinds of hazards limit overlap:
+
+- A **data hazard** occurs when an instruction needs a result that is not ready.
+- A **structural hazard** occurs when operations compete for a limited resource.
+- A **control hazard** occurs when the next useful instruction depends on unresolved control flow.
+
+Forwarding and scheduling can resolve some dependencies without waiting for
+every earlier instruction to finish, but a dependent chain still has a critical
+path. Multiple execution units cannot compute a sum before its required inputs
+exist.
+
+**Superscalar execution** uses multiple issue or execution opportunities per
+cycle. **Out-of-order execution** finds ready independent work beyond a stalled
+instruction while preserving the required architectural behavior. A common
+implementation commits completed instructions in program order, even when their
+execution overlapped or occurred in another order.
+
+**Branch prediction** chooses a likely control-flow path before the branch is
+resolved. **Speculation** executes work on that assumption. A wrong prediction
+discards the affected speculative architectural results and redirects execution;
+it can waste work and leave observable microarchitectural effects such as cache
+changes. It does not give software permission to depend on an incorrect path's
+architectural results.
+
+## Make useful bytes easy to reach
+
+The [memory hierarchy lesson](/learn/computer-architecture-execution/memory-hierarchy-and-caches/)
+explained spatial and temporal locality. A contiguous scan can use more bytes
+from each fetched cache line than pointer chasing. But “array” at the source
+level does not establish the actual layout: runtime representation, element
+types, and indirection still matter.
+
+For a loop that reads only the temperature from each record, separate contiguous
+temperature storage may fetch fewer unused bytes than records containing many
+other fields. The alternative can be worse when every operation needs all
+fields together. Compare the repeated accesses rather than declaring one layout
+universally superior.
+
+**SIMD**, single instruction multiple data, applies one operation to several data
+lanes. Regular contiguous data and independent iterations can help a compiler
+vectorize a loop. Aliasing, dependencies, control flow, alignment requirements,
+and numeric semantics can limit that transformation. Vector width alone does
+not establish speedup when memory bandwidth is already saturated.
+
+On multicore systems, two threads can update distinct counters that occupy one
+cache line. Coherence then coordinates writes to the shared line even though the
+logical variables are independent. This is **false sharing**. Local accumulation
+followed by a merge can reduce traffic. Padding may help if it actually separates
+the counters for the target layout, but consumes space and can harm locality.
+
+## Bound an optimization with Amdahl's law
+
+Let `f` be the fraction of **baseline elapsed time** that remains unchanged, and
+let `s` be the speedup applied to the remaining fraction. For the same workload
+and no new overhead:
+
+**Overall speedup = 1 / (f + (1 − f) / s).**
+
+With `f = 0.25` and `s = 4`, normalized time is 0.4375 and speedup is about 2.286.
+Even an arbitrarily fast improved portion cannot remove the remaining quarter;
+the limiting speedup is four. The fraction describes baseline time, not a
+percentage of source lines or functions.
+
+When `s` represents ideal parallelization on four cores, the model assumes that
+portion scales fourfold and adds no overhead. Real synchronization, load
+imbalance, cache effects, and communication can change the result. Scaling the
+input size with the core count asks a different question from this fixed-work
+comparison.
+
+<CodeExample
+  title="Check CPU-time estimates and fixed-work speedup"
+  code={example}
+  verified
+  output={
+    'baseline: 1.000 s\ncandidate: 0.900 s\nspeedup: 1.111x\n25% serial, 4x parallel: 2.286x'
+  }
+/>
+
+The lab tests these calculations and invalid inputs. It measures no processor
+timings, counters, or power. Both arithmetic helpers use O(1) operations and
+O(1) space under the fixed-width number model; their returned estimates do not
+include JavaScript execution overhead.
+
+## Turn a performance claim into an experiment
+
+Before optimizing, state a falsifiable prediction: “This layout reduces memory
+traffic for a scan that reads only temperatures.” Then define what a correct
+result is and which evidence would support or weaken that explanation.
+
+1. **Fix the workload.** Record inputs, output requirements, sizes, and the timed boundary. Separate startup from steady state when that distinction matters.
+2. **Fix the environment.** Record machine, runtime or compiler, optimization options, thread count, and relevant background load.
+3. **Validate results.** Check outputs outside the timed region where possible, while ensuring the optimizer cannot eliminate the work being studied.
+4. **Repeat and alternate.** Collect a distribution and compare candidates under comparable cache and warmup policies. Avoid treating one short run as a stable result.
+5. **Inspect causes.** Use available profiler samples, counters, and generated code to test the proposed mechanism. State counter definitions and measurement limitations.
+
+An input sorted by a branch condition might improve prediction, change cache
+behavior, or let optimization change the generated loop. A faster timing alone
+does not distinguish those explanations. Likewise, fewer cache misses can
+coexist with a slower program if extra instructions or synchronization outweigh
+the benefit. Report the observed outcome separately from the causal inference.
+
+## Practise making and testing a prediction
+
+<LabCard
+  title="01 / Fewer instructions, higher CPI"
+  command="pnpm exec vitest run labs/computer-architecture-execution/architecture-and-performance/"
+>
+  Compare a baseline of 1,000 instructions at CPI 1 with a candidate of 500
+  instructions at CPI 3, both at 1,000 cycles per second. Predict time and
+  speedup, add assertions, and explain why instruction count alone misleads.
+</LabCard>
+
+<details>
+  <summary>Hint after an attempt</summary>
+
+The estimates are one and 1.5 seconds. Baseline divided by candidate time is
+two-thirds, so the candidate is slower. These deliberately small frequencies
+are arithmetic inputs, not a claim about a modern CPU.
+
+</details>
+
+<LabCard
+  title="02 / Test serial limits"
+  command="pnpm exec vitest run labs/computer-architecture-execution/architecture-and-performance/"
+>
+  Test serial fractions zero, one-half, and one with speedups 1, 2, and 8. Which
+  combinations cannot improve total time? For the half-serial case, explain why
+  adding arbitrarily many ideal workers cannot exceed a limiting speedup of two.
+</LabCard>
+
+<details>
+  <summary>Hint after an attempt</summary>
+
+Speedup one changes nothing, and a fully serial workload remains unchanged for
+every worker speedup. With half the baseline time unchanged, the denominator
+always exceeds one-half for finite positive improvement of the other half.
+
+</details>
+
+<LabCard
+  title="03 / Audit a proposed benchmark"
+  command="pnpm exec vitest run labs/computer-architecture-execution/architecture-and-performance/"
+>
+  Review the claim “padded counters are twice as fast” without running a
+  hardware experiment. List the missing layout, workload, correctness, and
+  measurement details. Write a prediction and identify observations that could
+  distinguish false sharing from a change in instruction count or allocation
+  cost.
+</LabCard>
+
+<details>
+  <summary>Hint after an attempt</summary>
+
+Ask which cores run the threads, which bytes share a line, how often counters
+are written, and whether allocation is timed. Hold useful work constant and
+check output first. A runtime improvement plus suitable coherence-traffic
+evidence is stronger than a timing ratio alone, but available counters and their
+interpretation depend on the machine.
+
+</details>
+
+## Check your reasoning
+
+<ConceptCheck
+  id="amdahl-fixed-work"
+  question="Half of baseline time cannot change, and the other half becomes four times faster with no overhead. What is the overall speedup?"
+  options={[
+    {
+      label: '4x, because the optimized work is four times faster.',
+      explanation:
+        'That applies only to half the baseline time; the unchanged half still contributes to total time.',
+    },
+    {
+      label: '1.6x, because normalized time is 0.5 + 0.5 / 4 = 0.625.',
+      correct: true,
+      explanation:
+        'Speedup is baseline time divided by new time: 1 / 0.625. The fixed-work and no-overhead assumptions are essential.',
+    },
+    {
+      label: '2.5x, the average of 1x and 4x.',
+      explanation:
+        'Speedup factors are not averaged this way. Add the time spent in each portion first, then take the ratio.',
+    },
+  ]}
+/>
+
+## Two-minute recap
+
+- CPU time depends on instruction count, average CPI, and cycle duration together.
+- Pipelines and multiple execution units exploit overlap; dependencies and hazards limit it.
+- Locality, SIMD, and false sharing depend on actual accesses and data layout.
+- Amdahl's law bounds a fixed-work improvement using baseline time fractions.
+- Elapsed time, CPU time, throughput, and hardware counters describe different things.
+- Verify correctness, measure repeatably, and test the proposed cause separately from the timing result.
