@@ -1,0 +1,304 @@
+---
+title: 'Stack and heap: Separate calls from lifetimes'
+shortTitle: Stack and heap
+summary: Trace nested calls and independent allocations, explain calling-convention responsibilities, and diagnose lifetime errors without assuming a language's physical layout.
+subject: computer-architecture-execution
+path: engineering-fundamentals
+difficulty: foundation
+estimatedMinutes: 50
+learningObjectives:
+  - Trace call frames, return locations and saved state through nested calls
+  - Distinguish a reference's lifetime from the lifetime of the object it names
+  - Explain stack overflow, dangling references, leaks and fragmentation
+  - Test independent frame and allocation lifetimes in an explicit model
+prerequisites:
+  - computer-architecture-execution/compilation-and-execution
+  - computer-architecture-execution/binary-and-data-representation
+tags: [memory, stack, heap, lifetime]
+skills: [debugging, implementation, trade-off-analysis]
+status: draft
+drafter: agent
+interviewQuestions:
+  - prompt: What must caller and callee agree on for a function call to work?
+    answer: >-
+      Their calling convention specifies how arguments and results are passed,
+      which registers each side must preserve, and how stack alignment is
+      maintained. The call must also retain a return location so execution can
+      resume after the call. Some architectures place it on the stack, while
+      others use a link register that may later be saved. Compilers can omit or
+      reshape frames when observable behavior and the interface rules permit it.
+  - prompt: Does returning from a function destroy everything it created?
+    answer: >-
+      Returning ends the call's activation, but an independently allocated object
+      can outlive that call. A local pointer or reference and its target have
+      separate lifetimes. In a manual-allocation model, the target remains until
+      explicitly released by its owner; in a tracing collector it can remain
+      while reachable. Returning a reference to expired automatic storage is
+      unsafe, unlike returning a reference to a still-live allocation.
+  - prompt: Why can recursive code overflow the stack even when the machine has free RAM?
+    answer: >-
+      A thread normally has a finite stack budget, independent of the machine's
+      total available RAM. Without an applicable optimization, every outstanding
+      recursive call retains a frame, so depth multiplies per-frame demand.
+      Replacing recursion with an explicit work structure can move that storage
+      into independently managed memory but does not remove its size cost.
+      Bound the depth or change the traversal according to the input constraints.
+  - prompt: Does garbage collection eliminate memory leaks and lifetime reasoning?
+    answer: >-
+      A tracing collector can reclaim objects that are no longer reachable from
+      its roots, including unreachable cycles. It cannot know that a reachable
+      cache entry or listener is no longer useful to the application. Such
+      retained references can keep memory growing, and reclamation timing is
+      generally not a prompt resource-release guarantee. Files, locks and other
+      resources still need appropriate explicit lifecycle handling.
+  - prompt: Is heap allocation always slower than stack allocation?
+    answer: >-
+      There is no universal comparison independent of allocator, size and context.
+      Conventional stack reservation often adjusts a pointer, while a heap
+      allocator may use a fast local free list or need slower metadata work and
+      fresh pages. Initialization, page faults, synchronization and later
+      reclamation can dominate either path. Choose from ownership and lifetime
+      requirements, then measure the relevant workload.
+sources:
+  - label: Dive Into Systems — Functions in assembly and call-frame management
+    url: https://diveintosystems.org/book/C7-x86_64/functions.html
+  - label: Dive Into Systems — Dynamic memory allocation and pointers
+    url: https://diveintosystems.org/book/C2-C_depth/dynamic_memory.html
+  - label: OSTEP, chapter 13 — The abstraction of an address space
+    url: https://pages.cs.wisc.edu/~remzi/OSTEP/vm-intro.pdf
+  - label: OSTEP, chapter 17 — Free-space management and fragmentation
+    url: https://pages.cs.wisc.edu/~remzi/OSTEP/vm-freespace.pdf
+  - label: MDN — Memory management, references and garbage collection
+    url: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Memory_management
+---
+
+import source from '../../../../labs/computer-architecture-execution/stack-and-heap/example.ts?raw';
+
+## A returning function can leave a live result
+
+Imagine a function that creates a large buffer and returns a reference to it.
+The function's call ends, yet the caller still needs the buffer. If all storage
+followed the lifetime of the call, that result would disappear too soon.
+
+A stack of trays gives a useful picture of nested calls: remove the top tray
+before reaching the one below. Heap allocations are more like separately checked
+out tools that can be returned in a different order. These analogies explain
+lifetime order, but they do not specify physical addresses, allocation algorithms
+or a programming language's object placement.
+
+The [compilation lesson](/learn/computer-architecture-execution/compilation-and-execution/)
+explains how code reaches execution. The
+[representation lesson](/learn/computer-architecture-execution/binary-and-data-representation/)
+explains byte layout. Here we ask how long the storage holding those bytes stays
+valid.
+
+## Call frames preserve an unfinished computation
+
+A **call frame**, also called an activation record, holds state associated with
+one active function invocation. Depending on the target and compiler, that state
+can include a return location, saved registers, arguments that do not fit in
+argument registers, spilled values and space for local storage.
+
+A conventional thread's **call stack** manages these frames in last-in,
+first-out order. Suppose `main` calls `parse`, which calls `readField`. The calls
+remain unfinished in that order, while `readField` executes. Returning from
+`readField` resumes `parse`; returning from `parse` resumes `main`.
+
+The **stack pointer** tracks the current stack boundary. A frame pointer, when
+used, provides a stable base for references inside a frame. A compiler may omit
+the frame pointer or keep a value entirely in a register. Source-level local
+variables do not imply one fixed stack slot each.
+
+A **calling convention** is the agreement that lets separately compiled functions
+cooperate. It specifies argument and return-value locations, register-preservation
+responsibilities and stack-alignment requirements. Caller-saved registers can be
+clobbered by a call; the caller preserves any values it still needs. A callee
+that uses a callee-saved register must restore the agreed value before returning.
+
+On a conventional x86-64 call, the return address is pushed to the stack. Other
+architectures may first place it in a link register. A nested callee then needs
+to preserve that return information if the next call would overwrite it. Neither
+mechanism makes the return address a pointer to a local variable: it identifies
+where instruction execution resumes.
+
+## Independently allocated storage has another lifetime
+
+**Heap allocation** requests storage whose release need not follow the nesting
+of calls. The term here refers to dynamically managed storage, not the heap data
+structure used in a priority queue. A heap can span multiple mapped regions;
+there is no requirement that all live allocations occupy one contiguous physical
+area.
+
+Consider these explicit model events:
+
+| Event                                    | Active modeled stack bytes | Live modeled heap bytes |
+| ---------------------------------------- | -------------------------- | ----------------------- |
+| `main` enters with a 16-byte frame       | 16                         | 0                       |
+| `makeBuffer` enters with a 24-byte frame | 40                         | 0                       |
+| `makeBuffer` allocates a 128-byte buffer | 40                         | 128                     |
+| `makeBuffer` returns                     | 16                         | 128                     |
+| The owner releases the buffer            | 16                         | 0                       |
+
+The temporary reference in the callee and the buffer it names have separate
+lifetimes. Returning or copying a reference does not copy the whole target.
+The API must say who may use the target, who releases it and when that release
+is allowed.
+
+In C, returning a pointer to an automatic local object whose lifetime ends on
+return produces an invalid access if the caller later dereferences it. Returning
+a pointer to a still-live allocation is a different operation. Its owner must
+still avoid freeing it while another user needs it.
+
+## Failure modes follow ownership and limits
+
+A **dangling reference** names an object after its lifetime ends. A
+**use-after-free** uses storage after its explicit release, and a **double free**
+tries to release the same allocation twice. The old bytes may remain temporarily,
+which can make a bug appear to work before reuse exposes it. Their persistence
+does not extend the object's valid lifetime.
+
+A **memory leak** retains storage the application no longer needs. With manual
+allocation, losing the only owning pointer can make release impossible. With
+automatic collection, keeping an obsolete object reachable from a long-lived
+cache or listener can prevent reclamation.
+
+**Stack overflow** means the thread's stack demand exceeds its allowed capacity.
+Deep recursion and large frames can trigger it even while other memory remains
+available. Conventional recursion with depth d and bounded frame size f needs
+O(d × f) frame storage. An optimization such as tail-call elimination changes
+that result only when the actual compiler and call permit it; do not assume it
+for every language or function.
+
+Rewriting recursion with an explicit array or linked work structure changes how
+the pending work is represented. It can avoid a small call-stack budget, but
+still needs space for the same unresolved work. Choose traversal order, input
+limits and ownership deliberately.
+
+## Allocation costs include more than reserving bytes
+
+Conventional stack reservation often adjusts a pointer, with release following
+return order. Initialization of a large local array still costs time proportional
+to the initialized bytes, and obtaining previously untouched pages can add work.
+The cheap pointer update is only one part of the operation.
+
+A general allocator manages free regions, size classes and metadata. Small
+requests may use an efficient local path; other requests can need coalescing,
+synchronization or operating-system page allocation. One application allocation
+does not necessarily require one system call.
+
+**Internal fragmentation** is unused space inside an allocated block, such as
+rounding a request to a larger size class. **External fragmentation** is free
+space split into separated regions that cannot satisfy a larger contiguous
+request under a nonmoving allocator's rules. A moving collector may compact
+objects, provided it can update the necessary references. These policies trade
+space, bookkeeping and pause behavior differently.
+
+## Managed languages still need lifetime reasoning
+
+A tracing garbage collector begins from **roots**, such as live execution state
+and other runtime-defined reachable locations, and follows object references.
+An object unreachable from every root can become eligible for reclamation.
+Unreachable cycles do not need to remain forever under this model, unlike a
+simple reference-counting system without cycle handling.
+
+Eligibility is not a promise of immediate collection. A live reference held by
+an old event listener or an unbounded cache can keep an otherwise unused object
+reachable. Also, reclaiming memory does not by itself promptly close an open file
+or release an application lock.
+
+JavaScript specifies behavior and reachability-visible effects, not a universal
+physical rule that every primitive is on the stack and every object is on the
+heap. Runtimes can inline, eliminate or relocate storage when permitted. Keep
+the language's lifetime contract separate from an illustrative memory diagram.
+
+## Test lifetimes without inspecting the runtime
+
+The TypeScript lab below records explicit frame sizes and allocation IDs.
+Those IDs are model handles, not native addresses. There are no reads through
+freed pointers, real process memory measurements or garbage-collection timing
+claims. The model rejects invalid sizes, an exceeded stack budget and releasing
+unknown allocations.
+
+<CodeExample
+  title="Independent frame and allocation lifetimes"
+  code={source}
+  verified
+  output={
+    'during call: stack=40, heap=128\nafter return: stack=16, heap=128\nafter free: heap=0'
+  }
+/>
+
+Its accounting intentionally uses simple scans: `stackBytes` is O(d) for d active
+frames, and `heapBytes` is O(a) for a live allocations. Consequently `enter` scans
+the frames and `allocate` scans the allocations when checking totals. Under
+expected constant-cost map operations, `free` is expected O(1); the stored model
+state is O(d + a). These software costs do not describe native stack-pointer
+updates or a production allocator.
+
+<LabCard
+  title="Three lifetime investigations"
+  command="pnpm exec vitest run labs/computer-architecture-execution/stack-and-heap/"
+>
+
+1. Give the model a 64-byte stack limit and repeatedly enter eight-byte recursive
+   frames. Predict the maximum outstanding calls and test the first failure.
+2. Allocate two buffers in an inner call, return from it, and release the buffers
+   in creation order. Check that their lifetime order is independent of the
+   frame's return order.
+3. Attempt a double free and a return from an empty stack. Verify that each is
+   rejected and the remaining live byte counts stay correct.
+
+</LabCard>
+
+<details>
+  <summary>Hints after your attempt</summary>
+
+1. Eight equal frames fit when no other frame is present. The ninth must fail
+   without adding a partial frame.
+2. Returning removes only the most recent frame. Neither allocation disappears
+   until its own release event.
+3. Record the state before each invalid operation and compare it afterwards.
+   Rejection should preserve unrelated live state.
+
+</details>
+
+## Check your reasoning
+
+<ConceptCheck
+  id="stack-and-heap-lifetimes"
+  question="In an explicit-allocation model, a function returns a handle to a live heap buffer. What must happen to that buffer when the function's frame is removed?"
+  options={[
+    {
+      label:
+        'It can remain live; its owner must arrange release after the last valid use.',
+      correct: true,
+      explanation:
+        'Independent allocations need not follow call nesting. Removing a frame ends that activation, while the allocated object has its own lifetime and ownership contract.',
+    },
+    {
+      label:
+        'It is necessarily released because every local creation belongs to the frame.',
+      explanation:
+        'The local reference and the referenced buffer are separate. A buffer allocated independently of the frame can outlive the call.',
+    },
+    {
+      label:
+        'It becomes safe to release twice because the original local reference is gone.',
+      explanation:
+        'Removing a local reference does not create another allocation or a second release right. Double release remains invalid in this model.',
+    },
+  ]}
+/>
+
+## Two-minute recap
+
+- A call frame preserves one unfinished invocation; nested calls normally return
+  in last-in, first-out order.
+- Calling conventions specify arguments, results, preserved state and alignment.
+- A reference and its target can have different lifetimes.
+- Heap allocation permits independent lifetimes but still needs an ownership and
+  reclamation policy.
+- Stack overflow, dangling references and retained allocations are different
+  failure mechanisms.
+- Garbage collection handles reachability; physical placement and prompt resource
+  release require separate reasoning.
