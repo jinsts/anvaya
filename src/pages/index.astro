@@ -5,7 +5,12 @@ import PathCard from '../components/catalog/PathCard.astro';
 import SubjectCard from '../components/catalog/SubjectCard.astro';
 import { capitalize, plural } from '../lib/format';
 import { getCatalog } from '../lib/catalog';
-import { categoryAncestors, lessonUrl, pathLessonIds } from '../lib/path-model';
+import {
+  categoryAncestors,
+  lessonUrl,
+  pathLessonIds,
+  pathSubjects,
+} from '../lib/path-model';
 const {
   lessons,
   lessonById,
@@ -16,9 +21,8 @@ const {
   problems,
   problemsByLesson,
 } = await getCatalog();
-const activePaths = paths.filter((path) => pathLessonIds(path).length > 0);
-// Paths are sorted by `order`, so the first one is the suggested starting point.
-const startPath = activePaths[0];
+// Paths are sorted by `order`; the first with lessons is the starting point.
+const startPath = paths.find((path) => pathLessonIds(path).length > 0);
 const startLesson = startPath
   ? lessonById.get(pathLessonIds(startPath)[0]!)
   : lessons[0];
@@ -30,7 +34,7 @@ const subjectStats = (id: string) => {
   const subjectLessons = lessons.filter((lesson) => lesson.data.subject === id);
   return {
     lessons: subjectLessons.length,
-    paths: activePaths.filter((path) => path.subject === id).length,
+    paths: paths.filter((path) => pathSubjects(path).includes(id)).length,
     problems: new Set(
       subjectLessons.flatMap((lesson) =>
         (problemsByLesson.get(lesson.id) ?? []).map((problem) => problem.id),
@@ -56,7 +60,7 @@ const subjectStats = (id: string) => {
       </div>
       <div>
         <dt>Paths</dt>
-        <dd>{activePaths.length}</dd>
+        <dd>{paths.length}</dd>
       </div>
       <div>
         <dt>Lessons</dt>
@@ -150,7 +154,7 @@ const subjectStats = (id: string) => {
     </section>
   </div>
 
-  {activePaths.length > 0 && (
+  {paths.length > 0 && (
     <section aria-labelledby="paths-title">
       <div class="section-head">
         <h2 id="paths-title">Learning paths</h2>
@@ -159,10 +163,10 @@ const subjectStats = (id: string) => {
         </a>
       </div>
       <div class="card-grid">
-        {activePaths.slice(0, 6).map((path) => (
+        {paths.slice(0, 6).map((path) => (
           <PathCard
             path={path}
-            subject={subjectById.get(path.subject)!}
+            subject={path.subject ? subjectById.get(path.subject) : undefined}
             lessons={pathLessonIds(path).map((id) => lessonById.get(id)!)}
           />
         ))}

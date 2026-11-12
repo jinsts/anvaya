@@ -1,0 +1,296 @@
+---
+// The curriculum overview of a subject. The topic outline comes from the path
+// sections that teach the subject, so planned topics are stored only once.
+import Icon from '../ui/Icon.astro';
+import SyllabusList from './SyllabusList.astro';
+import { inlineMarkdown } from '../../lib/format';
+import { getCatalog, type CatalogSubject } from '../../lib/catalog';
+import {
+  pathLabel,
+  pathLessonIds,
+  pathUrl,
+  subjectUrl,
+  type LearningPath,
+  type PathSection,
+  type SubjectLink,
+} from '../../lib/path-model';
+interface Props {
+  subject: CatalogSubject;
+  outline: { path: LearningPath; section: PathSection }[];
+}
+const { subject, outline } = Astro.props;
+const { overview } = subject;
+const { lessonById, subjectById, skillById, availableSubjects } =
+  await getCatalog();
+const shown = new Set(availableSubjects.map((entry) => entry.id));
+const panels = overview
+  ? [
+      {
+        id: 'mechanisms',
+        title: 'Internal mechanisms to understand',
+        items: overview.mechanisms,
+      },
+      {
+        id: 'applications',
+        title: 'Practical engineering applications',
+        items: overview.applications,
+      },
+      {
+        id: 'experiments',
+        title: 'Experiments and investigations',
+        items: overview.experiments,
+      },
+      {
+        id: 'architecture',
+        title: 'Connections to software architecture',
+        items: overview.architecture,
+      },
+      {
+        id: 'competencies',
+        title: 'Expected competencies',
+        items: overview.competencies,
+      },
+      {
+        id: 'interview-relevance',
+        title: 'Interview relevance',
+        items: overview.interview,
+      },
+    ]
+  : [];
+const linkGroups = [
+  { id: 'study-first', title: 'Study first', links: subject.prerequisites },
+  { id: 'related', title: 'Related subjects', links: subject.related },
+].filter((group) => group.links.length > 0);
+const linked = (link: SubjectLink) => subjectById.get(link.subject)!;
+---
+
+{overview && (
+  <>
+    <section class="overview-prose" aria-labelledby="introduction">
+      <h2 id="introduction">Introduction</h2>
+      <p set:html={inlineMarkdown(overview.introduction)} />
+    </section>
+    <section class="overview-prose" aria-labelledby="why-it-matters">
+      <h2 id="why-it-matters">Why it matters</h2>
+      <p set:html={inlineMarkdown(overview.whyItMatters)} />
+    </section>
+    <section aria-labelledby="objectives">
+      <h2 id="objectives">Learning objectives</h2>
+      <ul class="card point-list">
+        {overview.objectives.map((item) => (
+          <li set:html={inlineMarkdown(item)} />
+        ))}
+      </ul>
+    </section>
+  </>
+)}
+{overview && outline.length > 0 && (
+  <section aria-labelledby="topic-outline">
+    <div class="section-head">
+      <h2 id="topic-outline">Topic outline</h2>
+      <p class="muted">Initial scope; it grows as lessons are written</p>
+    </div>
+    {outline.map(({ path, section }) => (
+      <div class="outline-group">
+        <p class="outline-source">
+          <Icon name="route" size={15} />
+          <span>
+            In <a href={pathUrl(path.id)}>{pathLabel(path)}</a>,{' '}
+            <a href={`${pathUrl(path.id)}#section-${section.id}`}>
+              {section.title}
+            </a>
+          </span>
+        </p>
+        <SyllabusList
+          lessons={section.lessons.map((id) => lessonById.get(id)!)}
+          planned={section.planned}
+          pathId={path.id}
+          order={pathLessonIds(path)}
+        />
+      </div>
+    ))}
+  </section>
+)}
+{panels.length > 0 && (
+  <div class="overview-grid">
+    {panels.map((panel) => (
+      <section class="card" aria-labelledby={panel.id}>
+        <h2 id={panel.id}>{panel.title}</h2>
+        <ul>
+          {panel.items.map((item) => (
+            <li set:html={inlineMarkdown(item)} />
+          ))}
+        </ul>
+      </section>
+    ))}
+  </div>
+)}
+{subject.skills.length > 0 && (
+  <section aria-labelledby="skills">
+    <div class="section-head">
+      <h2 id="skills">Cross-cutting skills</h2>
+      <p class="muted">How this subject exercises each skill</p>
+    </div>
+    <ul class="card row-list">
+      {subject.skills.map(({ skill, focus }) => (
+        <li>
+          <h3>{skillById.get(skill)!.title}</h3>
+          <p set:html={inlineMarkdown(focus)} />
+        </li>
+      ))}
+    </ul>
+  </section>
+)}
+{linkGroups.length > 0 && (
+  <section aria-labelledby="related-subjects">
+    <h2 id="related-subjects">Prerequisites and related subjects</h2>
+    <div class="link-groups">
+      {linkGroups.map((group) => (
+        <div>
+          <h3 id={group.id}>{group.title}</h3>
+          <ul class="card row-list" aria-labelledby={group.id}>
+            {group.links.map((link) => (
+              <li data-tone={linked(link).tone}>
+                <span class="icon-tile">
+                  <Icon name={linked(link).icon} size={16} />
+                </span>
+                <span>
+                  {shown.has(link.subject) ? (
+                    <a href={subjectUrl(link.subject)}>{linked(link).title}</a>
+                  ) : (
+                    <strong>{linked(link).title}</strong>
+                  )}
+                  <span
+                    class="link-why"
+                    set:html={inlineMarkdown(link.why ?? '')}
+                  />
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
+    </div>
+  </section>
+)}
+{overview && (
+  <section aria-labelledby="future-chapters">
+    <div class="section-head">
+      <h2 id="future-chapters">Future chapters</h2>
+      <p class="muted">Proposed grouping, not yet written</p>
+    </div>
+    <ol class="card point-list chapter-list">
+      {overview.chapters.map((item) => (
+        <li set:html={inlineMarkdown(item)} />
+      ))}
+    </ol>
+  </section>
+)}
+<style>
+  section {
+    margin-top: var(--space-12);
+  }
+  .overview-prose p {
+    max-width: var(--article-measure);
+    margin: 0;
+    font-size: var(--text-prose);
+    line-height: var(--leading-prose);
+  }
+  .point-list {
+    display: grid;
+    gap: var(--space-3);
+    margin: 0;
+    padding: var(--space-5) var(--space-6) var(--space-5) var(--space-10);
+  }
+  .point-list li,
+  .overview-grid li {
+    max-width: var(--article-measure);
+    padding-left: var(--space-1);
+  }
+  .outline-group + .outline-group {
+    margin-top: var(--space-6);
+  }
+  .outline-source {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin: 0 0 var(--space-3);
+    color: var(--muted);
+    font-size: var(--text-sm);
+  }
+  .overview-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+    gap: var(--space-5);
+    margin-top: var(--space-12);
+  }
+  .overview-grid section {
+    margin: 0;
+  }
+  .overview-grid h2 {
+    margin-bottom: var(--space-3);
+    font-size: var(--text-lg);
+  }
+  .overview-grid ul {
+    display: grid;
+    gap: var(--space-2);
+    margin: 0;
+    padding-left: var(--space-5);
+    font-size: var(--text-sm);
+    line-height: var(--leading);
+  }
+  .row-list {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    list-style: none;
+  }
+  .row-list > li {
+    padding: var(--space-4) var(--space-5);
+  }
+  .row-list > li + li {
+    border-top: 1px solid var(--border);
+  }
+  .row-list h3 {
+    margin-bottom: var(--space-1);
+    font-size: var(--text-base);
+  }
+  .row-list p {
+    margin: 0;
+    color: var(--muted);
+    font-size: var(--text-sm);
+  }
+  .link-groups {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+    gap: var(--space-5);
+  }
+  .link-groups h3 {
+    margin-bottom: var(--space-3);
+    font-size: var(--text-lg);
+  }
+  .link-groups li {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-3);
+  }
+  .link-groups .icon-tile {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-sm);
+  }
+  .link-groups a {
+    font-weight: 600;
+  }
+  .link-why {
+    display: block;
+    margin-top: var(--space-1);
+    color: var(--muted);
+    font-size: var(--text-sm);
+  }
+  .chapter-list li::marker {
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+  }
+</style>

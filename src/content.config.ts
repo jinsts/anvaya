@@ -5,6 +5,7 @@ import {
   categorySchema,
   pathSchema,
   problemSchema,
+  skillSchema,
   sourceSchema,
   subjectSchema,
 } from './lib/content-schemas';
@@ -27,6 +28,7 @@ export const collections = {
     schema: subjectSchema,
   }),
   paths: defineCollection({ loader: yaml('paths'), schema: pathSchema }),
+  skills: defineCollection({ loader: yaml('skills'), schema: skillSchema }),
   sources: defineCollection({ loader: yaml('sources'), schema: sourceSchema }),
   problems: defineCollection({
     loader: yaml('problems'),

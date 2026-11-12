@@ -1,0 +1,155 @@
+title: Security, Performance & Reliability
+description: >-
+  How to build and operate systems that resist attack, perform predictably and
+  recover from failure, with evidence to show it.
+category: computer-science
+icon: shield-check
+tone: amber
+priority: very-high
+prerequisites:
+  - subject: operating-systems-runtime-internals
+    why: >-
+      Profiling, resource limits and diagnostics rely on processes, memory,
+      scheduling and runtimes.
+  - subject: computer-networking
+    why: >-
+      TLS, network boundaries and request latency underlie securing and
+      measuring services.
+related:
+  - subject: distributed-systems
+    why: >-
+      Failure models and resilience patterns are the basis of reliability
+      engineering.
+  - subject: software-engineering-architecture
+    why: >-
+      Quality attributes are architectural requirements, recorded and traded
+      off in decisions.
+  - subject: computer-architecture-execution
+    why: >-
+      The hardware cost model explains many performance findings and
+      side-channel risks.
+skills:
+  - skill: profiling-measurement
+    focus: >-
+      Profile, load test and measure latency distributions as the basis of
+      performance work.
+  - skill: debugging
+    focus: >-
+      Diagnose production incidents from logs, metrics and traces.
+  - skill: trade-off-analysis
+    focus: >-
+      Balance security controls, performance and reliability against cost and
+      delivery speed.
+  - skill: technical-communication
+    focus: >-
+      Write threat models, SLO documents and blameless incident reviews.
+  - skill: ai-assisted-verification
+    focus: >-
+      Check generated code for vulnerabilities, secret handling and performance
+      regressions with tests and tools.
+overview:
+  introduction: >-
+    Security, performance and reliability are qualities of a whole system, and
+    they share a discipline: model what can go wrong, measure what actually
+    happens, and design so that failures are contained and recoverable. This
+    subject covers threat modelling, authentication and authorization, applied
+    cryptography, secret management and defensive design; profiling, load
+    testing and capacity planning; and observability, SLOs, incident response
+    and continuous improvement.
+  whyItMatters: >-
+    These qualities are where engineering judgment is most visible. A breach,
+    an outage or a slow checkout has a direct cost, and none of them can be
+    fixed by adding a feature at the end. They also reward independent
+    verification: measurements, threat models and error budgets replace
+    opinion with evidence, which matters more as AI-assisted development
+    increases the amount of code to trust.
+  objectives:
+    - Model threats and trust boundaries, and choose controls in proportion to
+      risk.
+    - Design authentication, authorization and secret handling for
+      applications and APIs.
+    - Use cryptographic primitives correctly and recognize common misuse.
+    - Profile applications, analyse latency distributions and plan capacity
+      from measurements.
+    - Instrument systems with logs, metrics and traces to explain production
+      behaviour.
+    - Define SLIs and SLOs, use error budgets, and run blameless incident
+      analysis.
+  mechanisms:
+    - Threat modelling with data flows and trust boundaries, for example with
+      STRIDE.
+    - Session and token authentication, OAuth 2.0 and OpenID Connect flows, and
+      authorization models such as RBAC and ABAC.
+    - Hashing, message authentication, symmetric and asymmetric encryption, key
+      exchange, and password hashing with deliberately slow functions.
+    - Vulnerability classes such as injection, broken access control, SSRF,
+      unsafe deserialization and supply-chain compromise.
+    - Sampling and tracing profilers, flame graphs, latency percentiles, and
+      coordinated omission in load tests.
+    - Little's law, how latency grows as utilization approaches saturation, and
+      capacity headroom.
+    - Structured logs, metrics, distributed trace context propagation, SLIs,
+      SLOs and burn-rate alerting.
+  applications:
+    - Running a threat model for a new feature or API before it is built.
+    - Storing and rotating secrets and credentials without placing them in code
+      or images.
+    - Finding a performance regression with profiles, and fixing the
+      bottleneck rather than the symptom.
+    - Load testing a service, and deriving capacity and autoscaling limits from
+      the results.
+    - Designing dashboards, alerts and SLOs that reflect what users experience.
+    - Running incident response, and writing reviews that lead to systemic
+      improvements.
+  experiments:
+    - Draw a data-flow diagram for a small application, mark its trust
+      boundaries, and list threats at each crossing.
+    - Exploit SQL injection in a deliberately vulnerable local application,
+      then fix it with parameterized queries.
+    - Store passwords with a slow hashing function, and measure how it changes
+      the cost of offline guessing.
+    - Profile a slow endpoint, read its flame graph, and confirm the fix with a
+      benchmark.
+    - Load test a service with an open workload model, plot latency percentiles
+      against throughput, and find where latency turns sharply upward.
+    - Add distributed tracing to two cooperating services, and follow one
+      request end to end.
+    - Define an SLO for a local service, inject failures, and watch the error
+      budget burn.
+  architecture:
+    - Security, performance and reliability are quality attributes that drive
+      architecture, not features to add later.
+    - Trust boundaries define where authentication, authorization, validation
+      and encryption must happen.
+    - Redundancy, isolation, graceful degradation and recovery objectives such
+      as RTO and RPO shape topology and cost.
+    - Observability has to be designed into interfaces and data flows so that
+      production behaviour can be explained.
+    - Error budgets turn reliability into an explicit trade-off with delivery
+      speed.
+  competencies:
+    - Produce a threat model and a prioritized list of mitigations for a
+      system.
+    - Design an authentication and authorization scheme and explain its failure
+      modes.
+    - Find and explain a performance bottleneck with profiling and load-test
+      evidence.
+    - Define SLIs and SLOs and design alerting for a service.
+    - Lead an incident analysis that identifies contributing factors and
+      durable improvements.
+  interview:
+    - System design interviews expect security, rate limiting, monitoring and
+      failure handling to be addressed without prompting.
+    - Backend and platform roles ask about authentication flows, token handling
+      and common vulnerabilities.
+    - Senior candidates are expected to describe performance investigations
+      and incidents with evidence, not anecdotes.
+  chapters:
+    - 'Security engineering: threat modelling and trust boundaries'
+    - 'Identity: authentication, authorization and secret management'
+    - Applied cryptography
+    - Secure application and API design, and vulnerability classes
+    - 'Performance engineering: profiling, latency, throughput and capacity'
+    - 'Observability: logs, metrics, traces and production diagnostics'
+    - 'Reliability engineering: SLOs, error budgets, failure recovery and
+      incident analysis'

@@ -1,0 +1,5 @@
+title: System design & architectural reasoning
+description: >-
+  Compose components into systems: define boundaries and data flow, size
+  capacity, anticipate failure modes and explain why a design fits its
+  requirements.

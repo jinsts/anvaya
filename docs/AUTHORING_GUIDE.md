@@ -9,6 +9,9 @@ step-by-step tasks use the [playbooks](playbooks/); for UI rules see
 ```text
 Category ─< Category (parent)          discovery: Explore
 Category ─< Subject ─< Path ─< Section ─< Lesson     study order: paths
+Path ─< Section ─> Subject                           a path may span subjects
+Subject >─< Subject (prerequisites, related)
+Subject >─< Skill >─< Lesson                         cross-cutting skills
 Lesson  >─< Problem ─> Source (problem bank, problem lists)
 Lesson  ─> Source (citations by URL prefix)
 ```
@@ -19,6 +22,7 @@ Lesson  ─> Source (citations by URL prefix)
 | Category | `src/content/categories/<id>.yaml`         | `src/lib/content-schemas.ts` |
 | Subject  | `src/content/subjects/<id>.yaml`           | `src/lib/content-schemas.ts` |
 | Path     | `src/content/paths/<id>.yaml`              | `src/lib/content-schemas.ts` |
+| Skill    | `src/content/skills/<id>.yaml`             | `src/lib/content-schemas.ts` |
 | Source   | `src/content/sources/<id>.yaml`            | `src/lib/content-schemas.ts` |
 | Problem  | `src/content/problems/<slug>.yaml`         | `src/lib/content-schemas.ts` |
 | Lab      | `labs/<subject>/<slug>/`                   | Vitest contracts             |
@@ -45,6 +49,7 @@ validates references across files on every build.
 | `learningObjectives` | yes      | 2–4 outcomes the learner can demonstrate                             |
 | `prerequisites`      | no       | Lesson IDs; cycles are rejected                                      |
 | `tags`               | no       | Kebab-case; reuse existing tags                                      |
+| `skills`             | no       | Skill IDs from `src/content/skills/` that the lesson practises       |
 | `status`             | yes      | `draft` until the owner promotes it                                  |
 | `drafter`            | yes      | `agent` or `owner`; shown as provenance on the page                  |
 | `reviewedAt`         | owner    | Required once `status` is `reviewed` or `published`                  |

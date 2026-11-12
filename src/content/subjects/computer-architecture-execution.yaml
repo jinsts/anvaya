@@ -1,0 +1,135 @@
+title: Computer Architecture & Execution
+description: >-
+  How a processor executes a program, and how data representation, memory and
+  I/O decide what that execution costs.
+category: computer-science
+icon: cpu
+tone: violet
+priority: high
+related:
+  - subject: operating-systems-runtime-internals
+    why: >-
+      Builds processes, virtual memory and scheduling on top of this hardware.
+  - subject: dsa
+    why: >-
+      Explains why data structure costs on real machines differ from their
+      asymptotic analysis.
+  - subject: security-performance-reliability
+    why: >-
+      Applies this cost model when profiling and tuning production systems.
+skills:
+  - skill: data-structures-algorithms
+    focus: >-
+      Relate data structure choices to cache lines and memory layout, such as
+      contiguous arrays against pointer-based structures.
+  - skill: complexity-analysis
+    focus: >-
+      Separate asymptotic cost from the constant factors set by caches,
+      branches and vector instructions.
+  - skill: profiling-measurement
+    focus: >-
+      Use hardware performance counters to explain a speed difference, not
+      just observe it.
+  - skill: debugging
+    focus: >-
+      Investigate crashes and corrupted values through memory layout,
+      alignment and data representation.
+  - skill: ai-assisted-verification
+    focus: >-
+      Check generated performance claims against compiler output and measured
+      counters.
+overview:
+  introduction: >-
+    Every abstraction you use eventually becomes instructions executing on a
+    processor that reads and writes memory. This subject follows a program from
+    source code to machine instructions, through the processor's pipeline and
+    caches, out to devices and back. It treats hardware as a cost model for
+    software rather than as electronics: what is cheap, what is expensive, and
+    why.
+  whyItMatters: >-
+    Performance surprises, numeric bugs and many concurrency defects come from
+    the layer below the language. Knowing how data is represented, how caches
+    and memory ordering behave and how the processor speculates lets you
+    predict a system's behaviour instead of discovering it in production. These
+    ideas change slowly, so they outlast every framework built on top of them.
+  objectives:
+    - Trace how source code becomes running machine instructions through
+      compilation, linking, loading and execution.
+    - Explain how integers, floating-point numbers, text and structures are
+      represented in memory, and where those representations fail.
+    - Describe the memory hierarchy from registers to storage and estimate the
+      cost of an access at each level.
+    - Explain how stack frames, the heap and calling conventions support
+      function calls and object lifetimes.
+    - Predict how pipelining, branch prediction, caches and memory layout affect
+      the speed of real code.
+  mechanisms:
+    - The fetch–decode–execute cycle, pipelining, superscalar and out-of-order
+      execution, and speculative execution.
+    - Registers, instruction set architectures such as x86-64 and ARM64, and
+      calling conventions.
+    - Two's complement integers, IEEE 754 floating point, endianness, alignment
+      and padding.
+    - Cache lines, associativity, write-back caches, hardware prefetching and
+      the TLB.
+    - Memory ordering, store buffers and cache coherence protocols such as MESI
+      on multicore processors.
+    - Interrupts, memory-mapped I/O and DMA, and how devices signal completion
+      to the processor.
+  applications:
+    - Choosing data layouts, such as arrays of structures or structures of
+      arrays, for cache-friendly processing.
+    - Diagnosing false sharing between threads that write to the same cache
+      line.
+    - Avoiding floating-point errors in money, time and aggregation code.
+    - Reading compiler output and understanding what optimization levels change.
+    - Interpreting benchmark results that depend on branch prediction, caches or
+      processor frequency scaling.
+  experiments:
+    - Compile a small C or Rust function at several optimization levels and
+      compare the generated assembly.
+    - Traverse a large matrix by rows and by columns, and relate the difference
+      to the cache line size.
+    - Make two threads increment adjacent counters, then pad the counters onto
+      separate cache lines and compare throughput.
+    - Sum the values above a threshold in a sorted and an unsorted array,
+      compare timings, and check whether the compiler removed the branch.
+    - Use `perf stat` to count cycles, instructions, cache misses and branch
+      misses for the experiments above.
+    - Print the bytes of integers and floating-point values to observe
+      endianness and the IEEE 754 encoding.
+  architecture:
+    - Latency across the memory hierarchy sets the budget for caching, batching
+      and data placement decisions.
+    - Designs such as ring buffers and columnar storage formats work because
+      they suit caches and prefetchers.
+    - Memory ordering explains why lock-free designs need atomics and barriers,
+      and why they are hard to get right.
+    - Hardware trends, such as more cores, wider vector units and faster SSDs,
+      shift where a system's bottlenecks appear.
+    - Speculative-execution side channels such as Spectre show how processor
+      behaviour becomes a security boundary concern.
+  competencies:
+    - Read a short assembly listing and explain what the compiled code does.
+    - Estimate whether a workload is bound by computation, memory bandwidth,
+      memory latency or I/O.
+    - Explain a measured performance difference in terms of caches, branches or
+      memory layout.
+    - Recognize representation bugs such as overflow, precision loss,
+      endianness and misalignment.
+  interview:
+    - Supplies the reasoning behind performance answers in coding interviews,
+      such as why arrays often outperform linked lists in practice.
+    - Common deep dives include the stack and the heap, what happens when a
+      program runs, cache behaviour and integer overflow.
+    - Grounds latency estimates in system design interviews with realistic
+      costs for memory, SSD and network access.
+  chapters:
+    - 'From source to running process: compilation, linking, loading and the
+      instruction cycle'
+    - 'Data representation: integers, floating point, text and memory layout'
+    - 'The memory hierarchy: registers, caches, RAM and storage'
+    - 'Inside the processor: pipelines, branch prediction, speculation and
+      multicore coherence'
+    - 'Devices and I/O: interrupts, DMA and the hardware–software boundary'
+    - 'Performance on real hardware: measuring and applying the cost model'

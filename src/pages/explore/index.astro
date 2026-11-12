@@ -8,7 +8,7 @@ import { getCatalog } from '../../lib/catalog';
 import {
   categoryAncestors,
   categoryUrl,
-  pathLessonIds,
+  pathSubjects,
 } from '../../lib/path-model';
 const {
   categories,
@@ -18,7 +18,6 @@ const {
   paths,
   problemsByLesson,
 } = await getCatalog();
-const availablePaths = paths.filter((path) => pathLessonIds(path).length > 0);
 const populated = categories.filter((category) =>
   subjects.some((subject) =>
     categoryAncestors(subject.category, categories).some(
@@ -100,7 +99,7 @@ const populated = categories.filter((category) =>
               categories={trail.map((category) => category.id).join(' ')}
               lessons={subjectLessons.length}
               paths={
-                availablePaths.filter((path) => path.subject === subject.id)
+                paths.filter((path) => pathSubjects(path).includes(subject.id))
                   .length
               }
               problems={

@@ -37,6 +37,13 @@ import Timer from '@lucide/astro/icons/timer';
 import Trash from '@lucide/astro/icons/trash';
 import TriangleAlert from '@lucide/astro/icons/triangle-alert';
 import Upload from '@lucide/astro/icons/upload';
+import Blocks from '@lucide/astro/icons/blocks';
+import Cpu from '@lucide/astro/icons/cpu';
+import Database from '@lucide/astro/icons/database';
+import Globe from '@lucide/astro/icons/globe';
+import ShieldCheck from '@lucide/astro/icons/shield-check';
+import Terminal from '@lucide/astro/icons/terminal';
+import Waypoints from '@lucide/astro/icons/waypoints';
 import type { IconName } from '../../lib/icons';
 
 interface Props {
@@ -83,6 +90,13 @@ const icons = {
   trash: Trash,
   'triangle-alert': TriangleAlert,
   upload: Upload,
+  blocks: Blocks,
+  cpu: Cpu,
+  database: Database,
+  globe: Globe,
+  'shield-check': ShieldCheck,
+  terminal: Terminal,
+  waypoints: Waypoints,
 } satisfies Record<IconName, unknown>;
 const { name, size = 18, class: className } = Astro.props;
 const Component = icons[name];

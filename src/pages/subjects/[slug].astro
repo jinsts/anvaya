@@ -1,15 +1,19 @@
 ---
-import { plural } from '../../lib/format';
+import { capitalize, plural } from '../../lib/format';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import Breadcrumbs from '../../components/ui/Breadcrumbs.astro';
 import Icon from '../../components/ui/Icon.astro';
 import PathCard from '../../components/catalog/PathCard.astro';
 import LessonRow from '../../components/catalog/LessonRow.astro';
+import SubjectOverview from '../../components/catalog/SubjectOverview.astro';
 import { getCatalog } from '../../lib/catalog';
 import {
   categoryAncestors,
   categoryUrl,
   pathLessonIds,
+  pathSections,
+  pathSubjects,
+  sectionSubject,
 } from '../../lib/path-model';
 export async function getStaticPaths() {
   const { availableSubjects } = await getCatalog();
@@ -29,8 +33,18 @@ const {
 } = await getCatalog();
 const subject = subjectById.get(subjectId)!;
 const trail = categoryAncestors(subject.category, categories);
-const subjectPaths = paths.filter(
-  (path) => path.subject === subject.id && pathLessonIds(path).length > 0,
+const subjectPaths = paths.filter((path) =>
+  pathSubjects(path).includes(subject.id),
+);
+// Path sections that teach this subject form its topic outline.
+const outline = subjectPaths.flatMap((path) =>
+  pathSections(path)
+    .filter((section) => sectionSubject(path, section) === subject.id)
+    .map((section) => ({ path, section })),
+);
+const plannedTopics = outline.reduce(
+  (count, { section }) => count + (section.planned?.length ?? 0),
+  0,
 );
 const subjectLessons = lessons.filter(
   (lesson) => lesson.data.subject === subject.id,
@@ -79,9 +93,23 @@ const minutes = subjectLessons.reduce(
             <Icon name="book-open" size={16} />
             {plural(subjectLessons.length, 'lesson')}
           </li>
-          <li>
-            <Icon name="clock" size={16} /> {minutes} min
-          </li>
+          {minutes > 0 && (
+            <li>
+              <Icon name="clock" size={16} /> {minutes} min
+            </li>
+          )}
+          {plannedTopics > 0 && (
+            <li>
+              <Icon name="circle-dashed" size={16} />
+              {plural(plannedTopics, 'planned topic')}
+            </li>
+          )}
+          {subject.priority && (
+            <li>
+              <Icon name="signal" size={16} />
+              {capitalize(subject.priority.replace('-', ' '))} priority
+            </li>
+          )}
           {problemCount > 0 && (
             <li>
               <Icon name="target" size={16} />{' '}
@@ -101,7 +129,7 @@ const minutes = subjectLessons.reduce(
           {subjectPaths.map((path) => (
             <PathCard
               path={path}
-              subject={subject}
+              subject={path.subject ? subjectById.get(path.subject) : undefined}
               lessons={pathLessonIds(path).map((id) => lessonById.get(id)!)}
             />
           ))}
@@ -114,17 +142,27 @@ const minutes = subjectLessons.reduce(
       )}
     </section>
 
-    <section aria-labelledby="subject-lessons-title">
-      <div class="section-head">
-        <h2 id="subject-lessons-title">All lessons</h2>
-        <p class="muted">{plural(subjectLessons.length, 'lesson')}</p>
-      </div>
-      <ol class="card lesson-list">
-        {subjectLessons.map((lesson) => (
-          <LessonRow lesson={lesson} />
-        ))}
-      </ol>
-    </section>
+    <SubjectOverview subject={subject} outline={outline} />
+
+    {(subjectLessons.length > 0 || !subject.overview) && (
+      <section aria-labelledby="subject-lessons-title">
+        <div class="section-head">
+          <h2 id="subject-lessons-title">All lessons</h2>
+          <p class="muted">{plural(subjectLessons.length, 'lesson')}</p>
+        </div>
+        {subjectLessons.length ? (
+          <ol class="card lesson-list">
+            {subjectLessons.map((lesson) => (
+              <LessonRow lesson={lesson} />
+            ))}
+          </ol>
+        ) : (
+          <p class="card empty-state">
+            No lessons yet. Its learning paths list the planned topics.
+          </p>
+        )}
+      </section>
+    )}
 
     {problemCount > 0 && (
       <section

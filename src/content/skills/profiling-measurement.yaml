@@ -1,0 +1,5 @@
+title: Profiling & measurement
+description: >-
+  Measure before optimizing: design benchmarks that isolate one variable, read
+  profiles and latency distributions, and avoid conclusions drawn from averages
+  or warm-up noise.

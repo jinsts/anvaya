@@ -1,0 +1,147 @@
+title: Distributed Systems
+description: >-
+  How independent machines cooperate despite unreliable networks, partial
+  failures and the absence of a shared clock.
+category: computer-science
+icon: waypoints
+tone: violet
+priority: very-high
+prerequisites:
+  - subject: computer-networking
+    why: >-
+      Message loss, latency, timeouts and connection behaviour are the raw
+      material of distributed failures.
+  - subject: databases-storage-systems
+    why: >-
+      Transactions, logs, replication and partitioning in one database are the
+      starting point for distributed data.
+related:
+  - subject: software-engineering-architecture
+    why: >-
+      Service boundaries and contracts decide where distribution, and its
+      costs, appear.
+  - subject: security-performance-reliability
+    why: >-
+      Reliability engineering and observability apply these ideas to systems in
+      production.
+skills:
+  - skill: system-design
+    focus: >-
+      Design replicated, partitioned and message-driven systems with explicit
+      guarantees.
+  - skill: trade-off-analysis
+    focus: >-
+      Weigh consistency, availability, latency and complexity separately for
+      each feature.
+  - skill: implementation
+    focus: >-
+      Implement retries, idempotency, logical clocks and simple replication
+      protocols correctly.
+  - skill: debugging
+    focus: >-
+      Reconstruct distributed failures from timelines, logs and traces across
+      components.
+  - skill: interview-preparation
+    focus: >-
+      Rehearse system design interviews that turn on consistency and failure
+      handling.
+overview:
+  introduction: >-
+    As soon as a system spans more than one process, messages can be lost,
+    delayed, duplicated or reordered, and parts of the system fail while others
+    keep running. This subject builds the vocabulary and mechanisms for working
+    under those conditions: failure models, time and ordering, consistency
+    models, replication, consensus and leader election, messaging and delivery
+    guarantees, retries and idempotency, distributed transactions and sagas, and
+    the techniques that make large systems resilient.
+  whyItMatters: >-
+    Nearly every modern system is distributed: services, databases, queues and
+    caches communicating over networks. Many of its hardest bugs come from
+    assumptions that only hold on one machine, such as that a call either
+    succeeded or failed, that clocks agree, or that a message arrives exactly
+    once. Understanding these limits lets you design for them deliberately and
+    evaluate the guarantees that infrastructure products actually provide.
+  objectives:
+    - Explain failure models and partial failure, and why a timeout cannot tell
+      a slow node from a failed one.
+    - Reason about time, causality and ordering with logical and hybrid clocks.
+    - Compare consistency models, and explain the CAP and PACELC trade-offs
+      precisely.
+    - Explain how replication, consensus and leader election work, and where
+      they fail.
+    - Design messaging with appropriate delivery guarantees, ordering, retries
+      and idempotency.
+    - Choose between distributed transactions, sagas and other approaches to
+      consistency across services.
+  mechanisms:
+    - Synchronous and asynchronous system models, crash and Byzantine faults,
+      and failure detection.
+    - Lamport clocks, vector clocks, hybrid logical clocks and the limits of
+      physical clock synchronization.
+    - Linearizability and sequential, causal and eventual consistency; quorums
+      and read repair.
+    - Raft and Paxos, with terms, replicated logs, elections and safety under
+      network partitions.
+    - At-most-once and at-least-once delivery, deduplication, idempotency keys,
+      and what "exactly once" claims really mean.
+    - Two-phase commit, sagas with compensating actions, and the transactional
+      outbox.
+    - Exponential backoff with jitter, circuit breakers, bulkheads, rate
+      limiting and load shedding.
+  applications:
+    - Making API operations safe to retry with idempotency keys.
+    - Choosing delivery and ordering guarantees for a message queue or event
+      stream.
+    - Implementing workflows across services with sagas and the outbox pattern.
+    - Using a coordination service for leader election, locks or configuration,
+      and guarding against stale leaders with fencing tokens.
+    - Designing for graceful degradation when dependencies are slow or
+      unavailable.
+  experiments:
+    - Simulate message loss, duplication and reordering between two processes,
+      and observe which invariants break.
+    - Implement Lamport and vector clocks for a few processes, and compare the
+      orderings they produce.
+    - Build a replicated key-value store with quorum reads and writes, then
+      partition the network and observe its consistency.
+    - Implement leader election with a lease, and show how a paused leader
+      causes conflicting writes without fencing tokens.
+    - Add retries without idempotency to a payment-like operation, reproduce
+      duplicate effects, then fix them.
+    - Model a saga across three services, and test compensation when a later
+      step fails.
+  architecture:
+    - Service boundaries are consistency boundaries; data that must change
+      atomically usually belongs together.
+    - Event-driven architectures trade coupling in time for complexity in
+      ordering, duplication and observability.
+    - Resilience patterns decide how failure spreads; without them, one slow
+      dependency can exhaust a whole system.
+    - Consistency requirements should be stated per feature, not chosen once
+      for the whole system.
+    - Scalability comes from partitioning work and state, and coordination is
+      what limits it.
+  competencies:
+    - Explain the guarantees and failure modes of a replication or consensus
+      protocol.
+    - Design a workflow across services that tolerates retries, duplicates and
+      partial failure.
+    - Choose and justify consistency, delivery and ordering guarantees for a
+      feature.
+    - Evaluate a distributed design for single points of failure and cascading
+      failure.
+  interview:
+    - System design interviews centre on replication, partitioning,
+      consistency, queues and failure handling.
+    - Staff-level discussions probe consensus, idempotency, exactly-once claims
+      and distributed transactions.
+    - Explaining CAP and consistency trade-offs precisely, rather than as
+      slogans, distinguishes strong candidates.
+  chapters:
+    - 'Fundamentals: system models, partial failure and communication'
+    - Time, ordering and causality
+    - Consistency, availability and replication
+    - Consensus, leader election and coordination
+    - Messaging, delivery guarantees and idempotency
+    - Distributed transactions and sagas
+    - Fault tolerance, resilience and scalability

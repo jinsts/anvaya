@@ -5,8 +5,8 @@ import PathCard from '../../components/catalog/PathCard.astro';
 import Icon from '../../components/ui/Icon.astro';
 import { getCatalog } from '../../lib/catalog';
 import { pathLessonIds } from '../../lib/path-model';
+// Every valid path has lessons or planned topics (ADR 0007), so all are listed.
 const { paths, lessonById, subjectById } = await getCatalog();
-const activePaths = paths.filter((path) => pathLessonIds(path).length > 0);
 ---
 
 <BaseLayout title="Learning paths">
@@ -15,12 +15,12 @@ const activePaths = paths.filter((path) => pathLessonIds(path).length > 0);
     description="Follow a thoughtful sequence. Build each mental model before adding the next layer."
     icon="route"
   />
-  {activePaths.length ? (
+  {paths.length ? (
     <div class="card-grid">
-      {activePaths.map((path) => (
+      {paths.map((path) => (
         <PathCard
           path={path}
-          subject={subjectById.get(path.subject)!}
+          subject={path.subject ? subjectById.get(path.subject) : undefined}
           lessons={pathLessonIds(path).map((id) => lessonById.get(id)!)}
         />
       ))}

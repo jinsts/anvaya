@@ -83,3 +83,22 @@ Both lessons remain drafts (`drafter: agent`). No new lesson was written; the
 DSA path lists four planned topics taken from the bootstrap hierarchy (§3.1)
 and the earlier recommendation of two pointers. No push, deployment, runtime
 service, license or remote change.
+
+## Curriculum scaffolding: Engineering Fundamentals — 2026-11-12
+
+Owner request, decided in [ADR 0007](docs/adr/0007-curriculum-scaffolding.md).
+
+- [x] Cross-subject paths, subject overviews and a skills collection in the
+      content model, with cross-file validation.
+- [x] One path (`engineering-fundamentals`), seven subjects with overviews and
+      ten cross-cutting skills. The owner's topic outlines are the `planned`
+      lists (88 topics); there are no lessons.
+- [x] Subject and path pages render the overview, outline, skills and
+      prerequisite links. Playbook, authoring guide and README updated.
+- [ ] Browser tests and visual review of the new pages: not run in the
+      authoring environment (Chromium could not start). See
+      [VERIFICATION.md](docs/VERIFICATION.md).
+- [ ] Owner review of the subject overviews, which are agent drafts.
+
+No lesson was written, no competency is recorded as achieved, and no push,
+deployment or license choice is part of this entry.

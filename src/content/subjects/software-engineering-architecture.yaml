@@ -1,0 +1,132 @@
+title: Software Engineering & Architecture
+description: >-
+  How to structure software so that it stays correct, understandable and
+  changeable as requirements, teams and scale grow.
+category: computer-science
+icon: blocks
+tone: rose
+priority: very-high
+related:
+  - subject: distributed-systems
+    why: >-
+      Service boundaries become network boundaries, with partial failure and
+      consistency costs.
+  - subject: databases-storage-systems
+    why: >-
+      Data ownership and schema evolution constrain module and service
+      boundaries.
+  - subject: security-performance-reliability
+    why: >-
+      Security, performance and reliability are quality attributes that
+      architecture must satisfy.
+skills:
+  - skill: implementation
+    focus: >-
+      Write code whose structure makes the intended design and its invariants
+      obvious.
+  - skill: trade-off-analysis
+    focus: >-
+      Compare designs by their cost of change, complexity and risk.
+  - skill: system-design
+    focus: >-
+      Define component boundaries, responsibilities and contracts for a system.
+  - skill: technical-communication
+    focus: >-
+      Explain designs in decision records, design documents and reviews.
+  - skill: ai-assisted-verification
+    focus: >-
+      Review generated code for cohesion, coupling, contracts and test coverage
+      before accepting it.
+overview:
+  introduction: >-
+    Code that works today must still be understood and changed for years. This
+    subject covers the principles and practices that make that possible:
+    modularity, cohesion and coupling, abstraction and interface design,
+    programming paradigms, design patterns and their costs, API contracts,
+    testing strategy, refactoring and architectural styles. It treats
+    architecture as a set of decisions and trade-offs to record and revisit,
+    not as a set of diagrams.
+  whyItMatters: >-
+    Most of the cost of software is the cost of changing it. Poor boundaries
+    turn small features into risky edits across the codebase; good boundaries
+    let teams work and deploy independently. As AI tools generate more code,
+    judging structure, contracts and testability becomes a larger share of an
+    engineer's work, and it is a defining skill of senior and staff engineers.
+  objectives:
+    - Evaluate modules by cohesion, coupling and the stability of their
+      dependencies.
+    - Design abstractions and interfaces that hide the decisions most likely to
+      change.
+    - Apply object-oriented and functional techniques, and choose between them
+      for a problem.
+    - Use design patterns where their benefits outweigh their indirection.
+    - Design APIs and contracts that can evolve without breaking clients.
+    - Plan testing, refactoring and architectural decisions, and record them
+      with their trade-offs.
+  mechanisms:
+    - Information hiding and dependency direction, and why stable abstractions
+      should not depend on volatile details.
+    - Polymorphism, composition, immutability and pure functions as tools for
+      controlling the impact of change.
+    - How design patterns trade indirection for flexibility, and when the trade
+      is not worth making.
+    - Contract design with preconditions, invariants, error models, versioning
+      and backward compatibility.
+    - Test boundaries, test doubles, and how design determines testability.
+    - How layered, hexagonal, modular-monolith, microservice and event-driven
+      styles allocate responsibilities and dependencies.
+  applications:
+    - Splitting a growing codebase into modules with clear ownership and
+      dependency rules.
+    - Designing a public API or library interface and planning its versioning.
+    - Choosing between a modular monolith and separate services for a team and
+      product.
+    - Building a testing strategy that balances unit, integration, contract and
+      end-to-end tests.
+    - Refactoring legacy code safely behind characterization tests.
+    - Recording significant decisions as architecture decision records.
+  experiments:
+    - Take a small, tightly coupled program, count the files a typical change
+      touches, then refactor it and count again.
+    - Implement the same feature in an object-oriented and a functional style,
+      and compare their testability and extensibility.
+    - Introduce a breaking change to an API, then redesign it to stay backward
+      compatible and verify it with contract tests.
+    - Write characterization tests for unfamiliar code before refactoring it.
+    - Write an architecture decision record for a real choice in this
+      repository, and revisit it after the implementation.
+    - Map the dependency graph of an existing project, and find cycles and
+      unstable dependencies.
+  architecture:
+    - This subject is the core of architecture practice; boundaries, contracts
+      and decisions are its working material.
+    - Component and service boundaries should follow cohesion of change and
+      data ownership, not technical layers alone.
+    - Architecture decision records keep context available after the people
+      who made a decision have moved on.
+    - Technical debt is a trade-off to manage deliberately by naming it,
+      estimating its cost and scheduling its repayment.
+    - Evolutionary architecture uses automated checks to protect important
+      qualities as a system changes.
+  competencies:
+    - Critique a design by its cohesion, coupling, abstractions and
+      testability.
+    - Design an API or module interface and explain how it can evolve.
+    - Select a design pattern or architectural style and state what it costs.
+    - Plan and carry out a safe refactoring.
+    - Write a decision record that states context, options and consequences.
+  interview:
+    - Object-oriented and low-level design interviews test modelling,
+      interfaces and the use of patterns.
+    - Senior and staff interviews ask candidates to discuss trade-offs, past
+      architectural decisions and technical debt.
+    - Clean, testable structure in a coding interview signals engineering
+      maturity beyond a working solution.
+  chapters:
+    - 'Design principles: modularity, cohesion, coupling and information hiding'
+    - Abstractions, interfaces and programming paradigms
+    - Design patterns and their trade-offs
+    - API and contract design
+    - Testing strategy and testability
+    - Refactoring, technical debt and software evolution
+    - Architectural styles, boundaries and decision records

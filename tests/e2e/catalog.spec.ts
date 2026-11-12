@@ -4,11 +4,15 @@ import AxeBuilder from '@axe-core/playwright';
 const arrays = '/learn/dsa/arrays/';
 const pathId = 'dsa-foundations';
 const subjectTitle = 'Data Structures & Algorithms';
+// DSA plus the seven Engineering Fundamentals subjects, all in Computer Science.
+const subjectCount = 8;
 
 async function expectCategory(page: Page, title: string) {
   await expect(page.locator('#browse-title')).toHaveText(title);
-  await expect(page.locator('#subject-count')).toHaveText('1 subject');
-  await expect(page.locator('.subject-card')).toBeVisible();
+  await expect(page.locator('#subject-count')).toHaveText(
+    `${subjectCount} subjects`,
+  );
+  await expect(page.locator('.subject-card').first()).toBeVisible();
 }
 
 test('browse categories, open a subject, and begin its learning path', async ({
@@ -45,7 +49,7 @@ test('browse categories, open a subject, and begin its learning path', async ({
       .getByRole('navigation', { name: 'Category breadcrumb' })
       .getByText('Computer Science', { exact: true }),
   ).toHaveAttribute('aria-current', 'page');
-  await page.locator('.subject-card').click();
+  await page.locator('.subject-card[href="/subjects/dsa/"]').click();
   await expect(page).toHaveURL('/subjects/dsa/');
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(
     subjectTitle,
@@ -243,6 +247,8 @@ test('catalog and subject pages fit both themes and pass accessibility scans', a
   for (const [name, url] of [
     ['explore', '/explore/?category=computer-science'],
     ['subject', '/subjects/dsa/'],
+    ['overview', '/subjects/computer-architecture-execution/'],
+    ['spanning-path', '/paths/engineering-fundamentals/'],
   ]) {
     await page.goto(url!);
     for (const theme of ['light', 'dark']) {
