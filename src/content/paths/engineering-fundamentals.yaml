@@ -33,8 +33,9 @@ sections:
   - id: computer-architecture-execution
     title: Computer Architecture & Execution
     subject: computer-architecture-execution
+    lessons:
+      - computer-architecture-execution/how-computers-execute-programs
     planned:
-      - How computers execute programs
       - CPU architecture, registers, and instructions
       - Compilation and execution fundamentals
       - Binary representation and data representation
