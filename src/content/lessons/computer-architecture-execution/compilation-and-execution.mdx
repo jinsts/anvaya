@@ -122,10 +122,14 @@ position 0. Its first word contains a reference to helper. The second module has
 one word and defines helper at its own local position 0. Lay the modules out in
 that order at load base 100:
 
+<div className="table-scroll" tabIndex={0} role="region" aria-label="Object modules and relocated addresses">
+
 | Module           | Position in combined image | Absolute addresses | Defined symbol |
 | ---------------- | -------------------------- | ------------------ | -------------- |
 | First, two words | 0 and 1                    | 100 and 101        | entry → 100    |
 | Second, one word | 2                          | 102                | helper → 102   |
+
+</div>
 
 Resolving helper selects the definition from the second module. Relocating the
 reference replaces the first word with 102. Other words, 99 and 7, remain data in
