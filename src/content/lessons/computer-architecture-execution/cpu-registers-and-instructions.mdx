@@ -1,0 +1,283 @@
+---
+title: 'CPU instructions: Connect bits, operands, and registers'
+shortTitle: Registers and instructions
+summary: Decode a small instruction format and distinguish instruction-set guarantees, register use, and processor implementation.
+subject: computer-architecture-execution
+path: engineering-fundamentals
+difficulty: foundation
+estimatedMinutes: 35
+learningObjectives:
+  - Separate an instruction set architecture from a microarchitecture and a calling convention
+  - Decode operation, register, and immediate fields in a fixed-width teaching format
+  - Explain how operands move between registers and memory and why register pressure matters
+prerequisites: [computer-architecture-execution/how-computers-execute-programs]
+tags: [instructions, registers, binary, memory]
+skills: [implementation, debugging, technical-communication]
+status: draft
+drafter: agent
+interviewQuestions:
+  - prompt: What is the difference between an instruction set architecture and a microarchitecture?
+    answer: >-
+      An instruction set architecture defines the software-visible machine,
+      including instructions, architectural registers and their effects. A
+      microarchitecture implements that contract with pipelines, execution units,
+      caches and other circuitry. Two implementations of the same ISA can run
+      compatible machine code while differing greatly in speed and power use.
+      Compatibility still depends on required extensions, operating system
+      interfaces and the executable's other platform assumptions.
+  - prompt: Why does a source variable not necessarily have a permanent register?
+    answer: >-
+      A compiler allocates a limited set of architectural registers to values
+      needed at a particular point in the program. It can reuse a register after
+      a value is no longer needed, remove a value entirely, or keep it in memory.
+      Too many simultaneously needed values can require spills and later reloads.
+      Debugging optimized code therefore requires instruction-level evidence
+      rather than assuming a fixed variable-to-register mapping.
+  - prompt: What distinguishes an immediate operand, a register operand, and a memory operand?
+    answer: >-
+      An immediate is a constant encoded in the instruction, with a range limited
+      by that encoding. A register operand names a processor register containing
+      a value. A memory operand identifies data through an address, often
+      calculated from registers and an offset. Supported combinations depend on
+      the ISA, and an address in a register is distinct from the value stored at
+      that address.
+  - prompt: Why is knowing the processor ISA insufficient to call an arbitrary native function correctly?
+    answer: >-
+      A calling convention specifies where arguments and results go and which
+      registers a caller or callee must preserve. A broader application binary
+      interface also defines details such as data layout and binary interfaces.
+      Code that uses valid instructions can still corrupt a caller's state if
+      it violates those agreements. The applicable ABI depends on the target
+      platform, not only on the processor family.
+    followUps:
+      - Why might an x86-64 function use different argument registers on different operating systems?
+sources:
+  - label: 'MIT Computation Structures — Instruction set architectures'
+    url: https://computationstructures.org/notes/isas/notes.html
+  - label: 'Dive into Systems — x86-64 assembly basics and registers'
+    url: https://diveintosystems.org/book/C7-x86_64/basics.html
+  - label: 'Dive into Systems — Common x86-64 instructions'
+    url: https://diveintosystems.org/book/C7-x86_64/common.html
+  - label: 'Dive into Systems — ISA and microarchitecture'
+    url: https://diveintosystems.org/book/C5-Arch/index.html
+---
+
+import example from '../../../../labs/computer-architecture-execution/cpu-registers-and-instructions/example.ts?raw';
+
+## An instruction is a contract encoded in bits
+
+In [program execution](/learn/computer-architecture-execution/how-computers-execute-programs/),
+we traced operations with names such as set and add. Hardware does not receive
+those words as prose. An **instruction set architecture**, or ISA, gives bit
+patterns defined effects on the machine's visible state.
+
+Think of an instruction as a form with fields: which action, which destination,
+which inputs. Both sender and receiver must agree on the form. The analogy stops
+at flexibility: hardware accepts the formats it implements; a convenient new
+mnemonic does not create a new machine operation.
+
+The ISA defines the software-visible contract. A **microarchitecture** is one
+implementation of it. Different implementations can have different pipelines,
+cache sizes and execution resources while supporting the same instructions.
+Conversely, a processor may implement optional extensions that another processor
+in the same family lacks. An executable's target requirements therefore matter.
+
+## Read operands before reading mnemonics
+
+An **opcode** identifies an operation. Its **operands** identify the values or
+locations used by the operation. Three common operand forms are:
+
+| Form      | Meaning                               | Important distinction                                             |
+| --------- | ------------------------------------- | ----------------------------------------------------------------- |
+| Immediate | A constant carried in the instruction | Its range depends on the available encoding bits                  |
+| Register  | A named architectural register        | The name identifies storage, not a source-language variable       |
+| Memory    | Data accessed through an address      | The address and the contents at that address are different values |
+
+A **load** transfers a value from memory into a register; a **store** transfers a
+value from a register into memory. Arithmetic may then operate on registers.
+Supported combinations differ by ISA: a load/store ISA separates memory access
+from most arithmetic, while other instruction sets allow some arithmetic
+instructions to read memory operands directly. Neither label alone establishes
+performance.
+
+**Predict:** if a register contains address 1000, does adding one to the register
+necessarily change the value stored at address 1000? No. It changes the register's
+bit pattern. A separate operation that writes through the address would change
+memory. Confusing these two jobs is a common source of pointer mistakes.
+
+## Decode a small format completely
+
+Our illustrative format is exactly 16 bits wide. It supports two opcodes: 1 means
+set a register to an immediate; 2 means add an immediate to a register. It is a
+teaching format, with no relationship to real x86-64 or ARM64 machine encodings.
+
+| Bits  | Field              | Width  | Valid values in this format         |
+| ----- | ------------------ | ------ | ----------------------------------- |
+| 15–12 | Opcode             | 4 bits | 1 or 2; other patterns are reserved |
+| 11–8  | Register index     | 4 bits | 0 through 15                        |
+| 7–0   | Unsigned immediate | 8 bits | 0 through 255                       |
+
+For word `0x2311`, the highest hexadecimal digit is opcode 2. The next digit
+selects register 3. The last two digits represent `0x11`, which is decimal 17.
+The decoded meaning is “add immediate 17 to register 3.” This lab decodes that
+meaning but deliberately does not execute the addition or define its overflow
+behavior.
+
+Four bits can distinguish 16 registers because there are 16 possible patterns.
+Eight bits can carry 256 unsigned values. The top four bits also have 16
+patterns, but our format assigns meanings to only two. An encoding having enough
+space for a pattern does not make that pattern a valid instruction.
+
+<CodeExample
+  title="Encode and decode a teaching instruction"
+  code={example}
+  verified
+  output={'word: 0x2311\nopcode: 2\nregister: 3\nimmediate: 17'}
+/>
+
+The masks extract each field without including adjacent bits. Validation before
+encoding matters: register index 16 would require a fifth bit and could overlap
+the opcode field. Silently masking it down to zero would change the requested
+operation instead of reporting the invalid input.
+
+The tests round-trip all 8192 valid instructions: two opcodes, 16 registers, and
+256 immediates. They also check invalid field ranges and reserved opcodes.
+Round-tripping protects the invariant that decoding an encoded valid operation
+recovers exactly its three fields.
+
+## Registers are scarce names for active values
+
+Architectural registers are directly named by instructions. General-purpose
+registers can hold arithmetic values or addresses. Special registers track
+control or other machine state, although the exact categories and access rules
+vary by ISA. A register does not inherently know that its bits came from a
+variable named price or pointer.
+
+A compiler assigns values to registers based on where each value is needed. Two
+values whose useful lifetimes do not overlap can reuse the same register. If too
+many values need registers together, the compiler may **spill** some into memory
+and load them later. Such accesses can increase work, but the outcome depends on
+the complete generated code and memory behavior.
+
+<Callout title="Count instructions with their effects">
+  One source expression may become several machine instructions, or disappear
+  after optimization. One machine instruction may also require several internal
+  operations. A shorter instruction sequence is evidence to investigate, not a
+  guarantee of a faster program.
+</Callout>
+
+## A calling convention connects separate functions
+
+The ISA alone does not say which register a language's first argument must use.
+A **calling convention** makes that agreement: how arguments and results travel,
+which registers survive a call, and how stack state is maintained. A broader
+**application binary interface**, or ABI, covers additional binary agreements
+such as data layout and object-file interfaces.
+
+A caller must save any value it still needs if the convention allows the callee
+to overwrite its register. A callee must restore registers that the convention
+requires it to preserve. Both can use perfectly legal instructions and still
+break the program by disagreeing on this contract. Check the target platform
+before applying an example calling convention from another operating system.
+
+## Costs and limits of this decoder
+
+Encoding or decoding one fixed 16-bit word uses a bounded number of operations,
+so it takes O(1) time and O(1) auxiliary space in the lab's word-operation model.
+That statement describes these TypeScript helpers. It does not measure a real
+processor's decode latency or prove anything about a complete compiler.
+
+Real formats must trade off register selection, immediate range, instruction
+length and room for more operations. A larger immediate may require another
+instruction or a different encoding. Variable-length encodings can improve code
+density but add decoding considerations. Choose a concrete target before
+reasoning about those trade-offs quantitatively.
+
+## Practise changing one field at a time
+
+<LabCard
+  title="01 / Separate hexadecimal digits from decimal values"
+  command="pnpm exec vitest run labs/computer-architecture-execution/cpu-registers-and-instructions/"
+>
+  Predict the fields in words 0x1000, 0x1fff, and 0x200a. Add tests before
+  decoding them. Explain why the last immediate is ten rather than the letter a.
+</LabCard>
+
+<details>
+  <summary>Hint after an attempt</summary>
+
+The first word means opcode 1, register 0, immediate 0. The second means opcode
+1, register 15, immediate 255. The third means opcode 2, register 0, immediate 10. Hexadecimal is a notation for the bit pattern, not a separate stored type.
+
+</details>
+
+<LabCard
+  title="02 / Increase the number of register names"
+  command="pnpm exec vitest run labs/computer-architecture-execution/cpu-registers-and-instructions/"
+>
+  Design a separate 16-bit format that supports 32 registers while retaining a
+  four-bit opcode. Work out the remaining immediate width and range, then add a
+  separate encoder and decoder with tests at both boundaries.
+</LabCard>
+
+<details>
+  <summary>Hint after an attempt</summary>
+
+Thirty-two register names need five bits. After four opcode bits and five
+register bits, seven bits remain. An unsigned seven-bit immediate ranges from
+0 through 127. Change masks and shifts together and preserve a round-trip test.
+
+</details>
+
+<LabCard
+  title="03 / Defend against an invalid register"
+  command="pnpm exec vitest run labs/computer-architecture-execution/cpu-registers-and-instructions/"
+>
+  Add a test for register 16 and immediate 256, then explain what would happen
+  if validation were removed. Keep the reference implementation unchanged and
+  demonstrate why throwing preserves the caller's intent better than truncation.
+</LabCard>
+
+<details>
+  <summary>Hint after an attempt</summary>
+
+These values do not fit their assigned fields. A shifted fifth register bit or
+ninth immediate bit can occupy a neighboring field. Truncating would silently
+select another register or value, so neither outcome represents the request.
+
+</details>
+
+## Check your reasoning
+
+<ConceptCheck
+  id="instruction-field-budget"
+  question="A fixed 16-bit format reserves four opcode bits and increases the register field from four to five bits. What happens to its immediate field?"
+  options={[
+    {
+      label: 'It shrinks to seven bits if no other field changes.',
+      correct: true,
+      explanation:
+        'The total is fixed: 16 − 4 − 5 = 7. The unsigned immediate range becomes 0 through 127.',
+    },
+    {
+      label:
+        'It still has eight bits because registers are faster than memory.',
+      explanation:
+        'Storage speed does not create encoding bits. Keeping eight immediate bits would require another format change or a longer instruction.',
+    },
+    {
+      label: 'It grows because the processor can now name more registers.',
+      explanation:
+        'More register choices consume more bits in this fixed-size format, leaving fewer bits for other fields.',
+    },
+  ]}
+/>
+
+## Two-minute recap
+
+- The ISA defines visible behavior; the microarchitecture implements it.
+- An opcode chooses an operation; operand fields choose inputs or destinations.
+- An immediate value, a register value, and memory addressed by that value are distinct.
+- Fixed-width fields have a finite budget, and invalid values must not spill into neighbors.
+- Compilers reuse registers and may spill values; variables have no permanent register identity.
+- Correct function calls require the platform's calling convention as well as valid instructions.

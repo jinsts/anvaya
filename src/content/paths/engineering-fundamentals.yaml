@@ -35,8 +35,8 @@ sections:
     subject: computer-architecture-execution
     lessons:
       - computer-architecture-execution/how-computers-execute-programs
+      - computer-architecture-execution/cpu-registers-and-instructions
     planned:
-      - CPU architecture, registers, and instructions
       - Compilation and execution fundamentals
       - Binary representation and data representation
       - Memory hierarchy, caches, RAM, and storage
