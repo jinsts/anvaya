@@ -1,0 +1,7 @@
+name: Linux kernel documentation
+kind: documentation
+by: Linux kernel contributors
+url: https://docs.kernel.org/
+description: >-
+  Official kernel documentation specifies driver interfaces, DMA ownership,
+  address mappings, and the memory-ordering rules software must respect.
