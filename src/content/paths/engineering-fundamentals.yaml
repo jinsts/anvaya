@@ -40,8 +40,8 @@ sections:
       - computer-architecture-execution/binary-and-data-representation
       - computer-architecture-execution/memory-hierarchy-and-caches
       - computer-architecture-execution/stack-and-heap
+      - computer-architecture-execution/hardware-software-interaction
     planned:
-      - Hardware and software interaction
       - I/O mechanisms
       - Performance implications of computer architecture
   - id: operating-systems-runtime-internals

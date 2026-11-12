@@ -1,0 +1,297 @@
+---
+title: 'Hardware and software: Cross the boundary deliberately'
+shortTitle: Hardware and software
+summary: Trace how privilege, address translation, drivers, and synchronization let ordinary programs use shared hardware safely.
+subject: computer-architecture-execution
+path: engineering-fundamentals
+difficulty: intermediate
+estimatedMinutes: 55
+learningObjectives:
+  - Distinguish a procedure call, a system call, a synchronous exception, and an interrupt
+  - Trace entry into the kernel and the saved state required to resume a program
+  - Explain why an application pointer is not automatically a device address
+  - Separate cache coherence from atomicity and ordering across memory locations
+prerequisites:
+  - computer-architecture-execution/cpu-registers-and-instructions
+  - computer-architecture-execution/memory-hierarchy-and-caches
+  - computer-architecture-execution/stack-and-heap
+tags: [memory, execution, hardware, synchronization]
+skills: [debugging, technical-communication, trade-off-analysis]
+status: draft
+drafter: agent
+interviewQuestions:
+  - prompt: Why can an application call a library function but not simply jump into arbitrary kernel code?
+    answer: >-
+      An ordinary procedure call transfers control without granting privilege.
+      A system call uses a hardware-defined entry mechanism that changes privilege
+      and transfers control to a kernel-selected entry point. The kernel checks
+      the request and its arguments rather than trusting the caller. Returning
+      requires restoring an authorized user context, not merely jumping to an
+      address supplied by the application.
+    followUps:
+      - Does entering the kernel necessarily switch to a different process?
+  - prompt: How do a system call, a page fault, and a timer interrupt differ?
+    answer: >-
+      A system call is a deliberate synchronous request from the executing program.
+      A page fault is a synchronous exception associated with a memory access and
+      may be recoverable or fatal. A timer interrupt is an asynchronous event
+      relative to the program's instruction stream. All can enter privileged
+      handlers, but the saved return location and the action before resuming
+      depend on the event and architecture.
+  - prompt: Why can a driver not always hand an application's numeric pointer directly to a device?
+    answer: >-
+      The pointer normally names a virtual address in a process's address space.
+      A device may use a different address translation domain, and the memory
+      must remain valid for the transfer's lifetime. The operating system and
+      driver establish suitable mappings and permissions, sometimes through an
+      IOMMU. Cache synchronization and ownership rules may also be required.
+  - prompt: If the CPU caches are coherent, why can two increments still lose an update?
+    answer: >-
+      Coherence coordinates copies and writes for a memory location, but an
+      ordinary increment can consist of a load, arithmetic, and a store. Two
+      threads can both load the old value before either stores its result.
+      An atomic read-modify-write operation or a lock protects the combined
+      update. Ordering a protocol across several locations also requires the
+      guarantees of the language's synchronization model.
+sources:
+  - label: 'OSTEP, chapter 6 — Limited direct execution and protected kernel entry'
+    url: https://pages.cs.wisc.edu/~remzi/OSTEP/cpu-mechanisms.pdf
+  - label: 'OSTEP, chapter 15 — Address translation and protection'
+    url: https://pages.cs.wisc.edu/~remzi/OSTEP/vm-mechanism.pdf
+  - label: 'OSTEP, chapter 36 — Device interfaces, drivers, and memory-mapped I/O'
+    url: https://pages.cs.wisc.edu/~remzi/OSTEP/file-devices.pdf
+  - label: 'Dive into Systems, section 11.6 — Multicore cache coherence'
+    url: https://diveintosystems.org/book/C11-MemHierarchy/coherency.html
+  - label: 'Linux kernel DMA guide — CPU addresses, device addresses, and IOMMU mappings'
+    url: https://docs.kernel.org/core-api/dma-api-howto.html
+  - label: 'Linux kernel memory barriers — Ordering, coherence, and device access'
+    url: https://docs.kernel.org/core-api/wrappers/memory-barriers.html
+  - label: 'MDN — Atomics and JavaScript shared-memory operations'
+    url: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Atomics
+---
+
+import example from '../../../../labs/computer-architecture-execution/hardware-software-interaction/example.ts?raw';
+
+## A function call cannot grant permission
+
+Suppose an image editor saves a photograph. Its arithmetic instructions execute
+directly on the CPU, but it cannot overwrite an arbitrary storage device block.
+Other processes and the operating system share that hardware. The system needs a
+controlled way to request a write while preserving isolation.
+
+Think of an office service desk: anyone may submit a request, while only staff
+can operate the locked equipment. The analogy stops at enforcement. A CPU's
+privilege checks are hardware rules, not a convention that cooperative programs
+may ignore.
+
+**User mode** restricts operations available to applications. **Kernel mode**
+permits the operating system to manage protected resources. Exact privilege
+levels and instruction names depend on the architecture. A normal function call
+changes control flow within the current privilege context; it does not make the
+callee privileged.
+
+An **application binary interface**, or ABI, defines binary agreements such as
+argument registers, return values, stack alignment, and executable conventions.
+A syscall ABI additionally defines how a request number and arguments reach the
+kernel. Knowing a calling convention does not itself authorize a request.
+
+## Three reasons to enter a handler
+
+An **exception** is an event associated with executing an instruction. An
+**interrupt** arrives from a source such as a timer or device rather than being
+caused by the program's current instruction. Terminology varies by ISA; here,
+“synchronous” means tied to the instruction stream.
+
+| Event           | Trigger                                                                | Typical action before resuming                                  |
+| --------------- | ---------------------------------------------------------------------- | --------------------------------------------------------------- |
+| System call     | A deliberate request instruction                                       | Validate arguments and perform or reject the service            |
+| Page fault      | An access cannot complete under the current translation or permissions | Resolve a valid missing mapping, or report a protection failure |
+| Timer interrupt | A timer signals independently of the program                           | Account for time and possibly schedule another thread           |
+
+A page fault does not always mean a program bug or a storage read. The operating
+system might provide a newly allocated page, establish a mapping, or terminate
+an invalid access. The faulting operation can be retried only when the handler
+has made that safe and the architecture supports the required restart behavior.
+
+For a system call, a useful conceptual sequence is:
+
+1. A library wrapper arranges the request number and arguments according to the ABI.
+2. The entry instruction transfers control through the protected entry mechanism.
+3. Entry code saves the needed user context and establishes a safe kernel context.
+4. The kernel checks permissions, lengths, and user memory before using the request.
+5. Return code restores the authorized context and resumes user execution.
+
+Hardware and entry code divide the saving work differently across systems.
+Entering the kernel also does not necessarily switch processes: the same thread
+may run kernel code and return directly. A blocking request can instead let the
+scheduler run another thread.
+
+## Test the return location
+
+The lab models a CPU using **instruction indices**, not byte addresses. A syscall
+at index 12 consumes that instruction and saves 13. A restartable fault at 12
+saves 12. An interrupt arrives between instructions, so its current index already
+names the next instruction to execute.
+
+<CodeExample
+  title="Protected entry and return in an instruction-index model"
+  code={example}
+  verified
+  output={'syscall resumes at 13\nfault retries 12\ninterrupt resumes at 12'}
+/>
+
+The invariant is that kernel entry preserves a user resume location, and only a
+kernel state with that location can return. Inputs stay unchanged. Each
+transition performs a bounded number of checks and field copies: O(1) time and
+space under the fixed-size state model.
+
+<Callout title="An explicit simplification">
+  This TypeScript model is not an emulator. Real instructions have
+  architecture-specific lengths, entry rules, register effects, exception
+  classes, and nested handlers. Some exceptions cannot resume. The model
+  deliberately accepts only entry from user mode and a restartable kind of
+  fault; the tests establish those rules alone.
+</Callout>
+
+## Addresses and device registers have different contracts
+
+An application's pointer usually names a **virtual address**. The processor's
+memory-management unit translates authorized accesses to physical memory using
+configuration managed by the operating system. Two processes can use the same
+virtual number for different physical pages. A valid pointer in one process is
+therefore not a universal address.
+
+**Memory-mapped I/O**, or MMIO, exposes device control or status registers in an
+address range. Reading such a register can acknowledge an event; writing it can
+start work. It follows the device's access widths, ordering, and mapping rules.
+Treating it as an ordinary cached array can be incorrect.
+
+A **driver** translates an operating-system request into a device protocol. It
+may set up buffers, write registers, submit a queue entry, and process completion.
+Device-accessible memory may need a separate mapping, possibly through an IOMMU,
+which translates device requests and can restrict their access. An application's
+pointer does not establish that mapping or keep a buffer alive.
+
+The next lesson follows [I/O submission and completion](/learn/computer-architecture-execution/io-mechanisms/).
+The boundary matters even when an API hides every register: a call that returned
+success may only have copied data into an operating-system buffer.
+
+## Coherent does not mean synchronized
+
+**Cache coherence** coordinates cached copies of the same memory location.
+Protocols such as MESI describe states including modified, exclusive, shared,
+and invalid. Coherence does not turn a sequence of instructions into one atomic
+operation, nor does it by itself establish the ordering of a protocol spanning
+several locations.
+
+For example, imagine two threads both load counter value 7, each computes 8, and
+each stores 8. A coherent memory system can carry out that sequence faithfully:
+one increment is still lost. This is a reasoning trace, not runnable concurrent
+code. The language's concurrency rules determine whether ordinary concurrent
+accesses are allowed; the trace is not a promise that arbitrary racy source
+code will compile to these steps.
+
+**Memory consistency** specifies which observations of reads and writes are
+allowed. Store buffers and other optimizations can make cross-location ordering
+less intuitive than source order suggests. Use the language's locks and atomic
+operations to express synchronization; their implementation supplies the
+necessary compiler and hardware constraints.
+
+For JavaScript shared-memory programming, use the specified `Atomics` operations
+on supported shared typed-array views when atomic operations are required.
+This lesson's lab uses no shared memory and tests no concurrency protocol.
+
+## Practise the boundary
+
+<LabCard
+  title="01 / Predict three resumptions"
+  command="pnpm exec vitest run labs/computer-architecture-execution/hardware-software-interaction/"
+>
+  Add a test starting at instruction index 0. Predict the user index after a
+  syscall, an interrupt, and a restartable fault before running the test.
+  Explain why the handler's own index does not become the return location.
+</LabCard>
+
+<details>
+  <summary>Hint after an attempt</summary>
+
+The syscall resumes at 1; the other two cases use 0 under this model's
+instruction-boundary convention. The handler index controls execution inside
+the kernel, while the saved context identifies the interrupted user execution.
+
+</details>
+
+<LabCard
+  title="02 / Guard the saved context"
+  command="pnpm exec vitest run labs/computer-architecture-execution/hardware-software-interaction/"
+>
+  Add tests that attempt nested entry and a return without a saved context.
+  Check that rejected operations leave their input unchanged. Describe what
+  extra state a model supporting nested handlers would need.
+</LabCard>
+
+<details>
+  <summary>Hint after an attempt</summary>
+
+Both operations must throw under the present contract. Supporting nesting needs
+separate saved contexts, commonly organized as a stack, so a second entry cannot
+overwrite the first return location. Real kernels also need rules for masking,
+priorities, and which contexts may be interrupted.
+
+</details>
+
+<LabCard
+  title="03 / Audit a device handoff"
+  command="pnpm exec vitest run labs/computer-architecture-execution/hardware-software-interaction/"
+>
+  Write a short review of a fictional driver that submits a temporary
+  application pointer, returns immediately, and lets the application reuse that
+  memory. Identify the address-domain and lifetime assumptions, then propose the
+  state information the next lab should retain until completion.
+</LabCard>
+
+<details>
+  <summary>Hint after an attempt</summary>
+
+A numeric pointer alone proves neither device visibility nor lifetime. Track an
+authorized mapping, buffer ownership, transfer bounds, and completion status.
+The driver must preserve the memory and reclaim it only under the platform's
+completion and synchronization contract.
+
+</details>
+
+## Check your reasoning
+
+<ConceptCheck
+  id="coherence-and-atomicity"
+  question="Two threads each perform a non-atomic load, increment, and store on one counter. What does cache coherence guarantee?"
+  options={[
+    {
+      label: 'Both increments form one indivisible transaction.',
+      explanation:
+        'Coherence does not combine a load, arithmetic, and a store into an atomic read-modify-write operation.',
+    },
+    {
+      label:
+        'Cached copies participate in a coherent per-location view, but the update sequence can still lose an increment.',
+      correct: true,
+      explanation:
+        'Atomicity of the whole update requires an appropriate atomic operation or lock; language data-race rules still apply.',
+    },
+    {
+      label:
+        'All accesses to every memory location occur in source order on every core.',
+      explanation:
+        'Ordering across locations is a memory-consistency and synchronization question, not the same guarantee as coherence.',
+    },
+  ]}
+/>
+
+## Two-minute recap
+
+- Ordinary calls preserve privilege; system calls enter through controlled mechanisms.
+- Syscalls, synchronous exceptions, and interrupts differ in cause and resumption rules.
+- A kernel entry need not change which process is running.
+- Virtual pointers, device addresses, and MMIO registers have distinct contracts.
+- Coherence does not make a multi-instruction update atomic or establish every ordering.
+- Drivers and synchronization primitives make hardware requirements explicit for software.
