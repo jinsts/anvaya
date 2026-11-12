@@ -1,0 +1,10 @@
+title: Add Binary
+url: https://leetcode.com/problems/add-binary/
+difficulty: easy
+lessons: [computer-architecture-execution/binary-and-data-representation]
+topics: [binary, representation]
+lists: []
+hints:
+  - Start at the least significant end, where a carry cannot depend on any unprocessed position.
+  - At each position, combine up to two input digits and the incoming carry. Separate the result digit from the carry to the next position, including a final carry after both inputs end.
+  - For input lengths m and n, collect result digits and join them once to obtain O(max(m, n)) time and output space. Converting the whole strings to a fixed-width numeric type can lose information.

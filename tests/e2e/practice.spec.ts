@@ -61,24 +61,24 @@ test('practice filters, statuses persist, and a mock interview records its outco
 }) => {
   await page.goto('/practice/?lesson=dsa/arrays');
   const count = page.locator('[data-problem-count]');
-  await expect(count).toHaveText('5 of 12 problems · 0 solved');
+  await expect(count).toHaveText('5 of 15 problems · 0 solved');
   const filters = page.getByRole('form', { name: 'Filter problems' });
   await filters.getByRole('button', { name: 'Reset' }).click();
-  await expect(count).toHaveText('12 of 12 problems · 0 solved');
+  await expect(count).toHaveText('15 of 15 problems · 0 solved');
   await filters
     .getByRole('combobox', { name: 'Difficulty' })
     .selectOption('medium');
-  await expect(count).toHaveText('4 of 12 problems · 0 solved');
+  await expect(count).toHaveText('4 of 15 problems · 0 solved');
   await expect(page).toHaveURL('/practice/?difficulty=medium');
   await page
     .getByRole('combobox', { name: 'Status for Group Anagrams' })
     .selectOption('solved');
-  await expect(count).toHaveText('4 of 12 problems · 1 solved');
+  await expect(count).toHaveText('4 of 15 problems · 1 solved');
   await page.reload();
   await expect(
     page.getByRole('combobox', { name: 'Status for Group Anagrams' }),
   ).toHaveValue('solved');
-  await expect(count).toHaveText('4 of 12 problems · 1 solved');
+  await expect(count).toHaveText('4 of 15 problems · 1 solved');
 
   await page.getByRole('button', { name: 'Start mock interview' }).click();
   const session = page.locator('[data-mock-session]');

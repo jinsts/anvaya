@@ -1,0 +1,10 @@
+title: Reverse Bits
+url: https://leetcode.com/problems/reverse-bits/
+difficulty: easy
+lessons: [computer-architecture-execution/binary-and-data-representation]
+topics: [binary, bit-manipulation]
+lists: [blind-75, neetcode-150]
+hints:
+  - Reversing bit positions is different from reversing byte order. Keep the full width, including leading zeros.
+  - Move the input's lowest remaining bit into a result that grows toward higher positions. Repeat for all 32 positions, even if the remaining input becomes zero.
+  - A scan of w positions takes O(w) time and O(1) extra space under fixed-width word operations. In JavaScript, account for signed bitwise intermediates and the problem's required result representation.
