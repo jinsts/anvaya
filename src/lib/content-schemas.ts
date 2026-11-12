@@ -28,12 +28,47 @@ export const categorySchema = z.object({
   parent: slug.optional(),
 });
 
+// A cross-cutting engineering skill, such as debugging, practised in several subjects.
+export const skillSchema = z.object({
+  title: z.string().min(2),
+  description: z.string().min(10),
+});
+
+const points = z.array(z.string().min(10)).min(1);
+const subjectLink = z.object({ subject: slug, why: z.string().min(10) });
+
+// What a subject covers and why, written before its lessons exist. Its topic
+// outline is the `planned` list of the path sections that name the subject.
+const overviewSchema = z.object({
+  introduction: z.string().min(40),
+  whyItMatters: z.string().min(40),
+  objectives: points,
+  mechanisms: points,
+  applications: points,
+  experiments: points,
+  architecture: points,
+  competencies: points,
+  interview: points,
+  chapters: points,
+});
+
+export const priorities = ['low', 'medium', 'high', 'very-high'] as const;
+
 export const subjectSchema = z.object({
   title: z.string().min(2),
   description: z.string().min(10),
   category: slug,
   icon: z.enum(iconNames).default('book-open'),
   tone: z.enum(tones).default('blue'),
+  priority: z.enum(priorities).optional(),
+  // Subjects to study first, and subjects that connect to this one.
+  prerequisites: z.array(subjectLink).default([]),
+  related: z.array(subjectLink).default([]),
+  // How this subject exercises each cross-cutting skill.
+  skills: z
+    .array(z.object({ skill: slug, focus: z.string().min(10) }))
+    .default([]),
+  overview: overviewSchema.optional(),
 });
 
 // `planned` holds owner-approved topic titles that do not have a lesson yet.
@@ -41,6 +76,8 @@ const planned = z.array(z.string().min(3)).default([]);
 const sectionSchema = z.object({
   id: slug,
   title: z.string().min(2),
+  // A path that spans subjects names the subject of each section.
+  subject: slug.optional(),
   lessons: z.array(lessonId).default([]),
   planned,
 });
@@ -48,8 +85,16 @@ const sectionSchema = z.object({
 export const pathSchema = z
   .object({
     title: z.string().min(2),
+    shortTitle: z.string().min(2).max(40).optional(),
     description: z.string().min(10),
-    subject: slug,
+    // Omit for a path whose sections each name a subject.
+    subject: slug.optional(),
+    audience: z.string().min(10).optional(),
+    objectives: z
+      .array(
+        z.object({ title: z.string().min(3), description: z.string().min(10) }),
+      )
+      .optional(),
     order: z.number().int().default(100),
     lessons: z.array(lessonId).optional(),
     planned: z.array(z.string().min(3)).optional(),
@@ -65,6 +110,11 @@ export const pathSchema = z
       context.addIssue({
         code: 'custom',
         message: 'Put planned topics inside the relevant section.',
+      });
+    if (!path.subject && !path.sections?.every((section) => section.subject))
+      context.addIssue({
+        code: 'custom',
+        message: 'Name the path subject, or a subject on every section.',
       });
   });
 

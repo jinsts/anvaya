@@ -1,0 +1,59 @@
+---
+import Icon from '../ui/Icon.astro';
+import LessonRow from './LessonRow.astro';
+import type { Lesson } from '../../lib/catalog';
+interface Props {
+  lessons: Lesson[];
+  planned?: string[];
+  pathId: string;
+  /** Every lesson ID in the path, in order, for row numbers. */
+  order: string[];
+}
+const { lessons, planned = [], pathId, order } = Astro.props;
+---
+
+<ol class="card syllabus-list">
+  {lessons.map((lesson) => (
+    <LessonRow
+      lesson={lesson}
+      number={order.indexOf(lesson.id) + 1}
+      pathId={pathId}
+    />
+  ))}
+  {planned.map((topic) => (
+    <li class="planned-row">
+      <span class="planned-marker" aria-hidden="true">
+        <Icon name="circle-dashed" size={18} />
+      </span>
+      <span class="planned-title">{topic}</span>
+      <span class="badge">Planned</span>
+    </li>
+  ))}
+</ol>
+<style>
+  .syllabus-list {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    list-style: none;
+  }
+  .planned-row {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--space-4);
+    padding: var(--space-4) var(--space-5);
+    border-top: 1px solid var(--border);
+    background: var(--subtle);
+    color: var(--muted);
+  }
+  .syllabus-list > .planned-row:first-child {
+    border-top: 0;
+  }
+  .planned-marker {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+  }
+</style>

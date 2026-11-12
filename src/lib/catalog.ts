@@ -2,18 +2,20 @@ import { getCollection, type CollectionEntry } from 'astro:content';
 import {
   lessonUrl,
   pathLessonIds,
+  pathSubjects,
   validateCatalog,
   type Category,
   type LearningPath,
   type Problem,
+  type Skill,
   type Source,
-  type Subject,
 } from './path-model';
-import type { Tone } from './content-schemas';
-import type { IconName } from './icons';
 
 export type Lesson = CollectionEntry<'lessons'>;
-export type CatalogSubject = Subject & { icon: IconName; tone: Tone };
+// The schema's output type is assignable to `Subject`, and keeps required fields required.
+export type CatalogSubject = CollectionEntry<'subjects'>['data'] & {
+  id: string;
+};
 
 export const lessonLabel = (lesson: Lesson) =>
   lesson.data.shortTitle ?? lesson.data.title;
@@ -30,6 +32,7 @@ async function loadCatalog() {
     pathEntries,
     sourceEntries,
     problemEntries,
+    skillEntries,
   ] = await Promise.all([
     getCollection('lessons'),
     getCollection('categories'),
@@ -37,6 +40,7 @@ async function loadCatalog() {
     getCollection('paths'),
     getCollection('sources'),
     getCollection('problems'),
+    getCollection('skills'),
   ]);
   const categories: Category[] = categoryEntries.map(({ id, data }) => ({
     id,
@@ -64,11 +68,15 @@ async function loadCatalog() {
   const problems: Problem[] = problemEntries
     .map(({ id, data }) => ({ id, ...data }))
     .sort((a, b) => a.title.localeCompare(b.title));
+  const skills: Skill[] = skillEntries
+    .map(({ id, data }) => ({ id, ...data }))
+    .sort((a, b) => a.title.localeCompare(b.title));
   validateCatalog({
     lessons: lessonEntries,
     paths,
     subjects,
     categories,
+    skills,
     sources,
     problems,
   });
@@ -93,12 +101,12 @@ async function loadCatalog() {
       problemsByLesson.set(id, [...(problemsByLesson.get(id) ?? []), problem]);
   }
   const subjectById = new Map(subjects.map((subject) => [subject.id, subject]));
+  // Shown once there is something to study or an approved plan (ADR 0007).
   const availableSubjects = subjects.filter(
     (subject) =>
+      subject.overview ||
       lessons.some((lesson) => lesson.data.subject === subject.id) ||
-      paths.some(
-        (path) => path.subject === subject.id && pathLessonIds(path).length > 0,
-      ),
+      paths.some((path) => pathSubjects(path).includes(subject.id)),
   );
   return {
     lessons,
@@ -109,6 +117,8 @@ async function loadCatalog() {
     subjects,
     subjectById,
     availableSubjects,
+    skills,
+    skillById: new Map(skills.map((skill) => [skill.id, skill])),
     sources,
     problems,
     problemsByLesson,

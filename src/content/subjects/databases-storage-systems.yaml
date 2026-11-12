@@ -1,0 +1,136 @@
+title: Databases & Storage Systems
+description: >-
+  How databases store, index, query and protect data, and how to choose and
+  operate the right storage for a workload.
+category: computer-science
+icon: database
+tone: green
+priority: very-high
+prerequisites:
+  - subject: operating-systems-runtime-internals
+    why: >-
+      Durability and speed depend on the page cache, `fsync`, memory and I/O
+      scheduling.
+  - subject: dsa
+    why: >-
+      Trees, hash tables and sorting are the building blocks of indexes and
+      query execution.
+related:
+  - subject: distributed-systems
+    why: >-
+      Extends replication and partitioning to consensus, distributed
+      transactions and consistency models.
+  - subject: software-engineering-architecture
+    why: >-
+      Data modelling and ownership shape service boundaries and contracts.
+skills:
+  - skill: data-structures-algorithms
+    focus: >-
+      Apply B+ trees, LSM trees, hash indexes and Bloom filters to storage
+      problems.
+  - skill: complexity-analysis
+    focus: >-
+      Count I/O operations and reason about read, write and space
+      amplification, not only comparisons.
+  - skill: trade-off-analysis
+    focus: >-
+      Weigh consistency, latency, durability and operational cost when choosing
+      storage.
+  - skill: debugging
+    focus: >-
+      Trace anomalies and slow queries to isolation levels, locks and query
+      plans.
+  - skill: system-design
+    focus: >-
+      Design data models, indexes, replication and partitioning for a system's
+      access patterns.
+overview:
+  introduction: >-
+    A database is a set of trade-offs packaged behind a query interface. This
+    subject opens the package: how storage engines lay out data on disk, how
+    B+ trees and LSM trees serve reads and writes, how the query planner chooses
+    an execution plan, and how transactions, isolation levels, MVCC and
+    write-ahead logging keep data correct under concurrency and crashes. It
+    then scales out to replication, partitioning and the design space beyond
+    relational systems.
+  whyItMatters: >-
+    Data outlives the code that writes it, and many application bottlenecks end
+    at the database. Engineers who understand indexes, plans and isolation can
+    fix slow queries, prevent anomalies such as lost updates, and choose
+    storage for its guarantees rather than its popularity. Storage choices are
+    also among the hardest decisions to reverse.
+  objectives:
+    - Explain how a storage engine organizes pages, records and logs on disk.
+    - Design relational schemas and indexes for a known access pattern.
+    - Compare B+ trees and LSM trees by read, write and space amplification.
+    - Read a query plan and explain why the optimizer chose it.
+    - Explain transactions, isolation levels, locking and MVCC, and the
+      anomalies that each isolation level allows.
+    - Explain how write-ahead logging, replication and partitioning provide
+      durability and scale.
+  mechanisms:
+    - Slotted pages, the buffer pool, and the cost of random against sequential
+      I/O.
+    - B+ tree search, splits and range scans; LSM memtables, sorted string
+      tables, compaction and Bloom filters.
+    - Cost-based query optimization, table statistics, join algorithms and index
+      selection.
+    - Two-phase locking, MVCC snapshots, and anomalies such as dirty reads,
+      non-repeatable reads, phantoms, lost updates and write skew.
+    - Write-ahead logging, checkpoints and crash recovery.
+    - Leader–follower replication, replication lag, and hash and range
+      partitioning.
+  applications:
+    - Diagnosing slow queries with `EXPLAIN` and fixing them with indexes or
+      query changes.
+    - Choosing an isolation level and locking strategy that prevent the
+      anomalies a feature cannot tolerate.
+    - Selecting relational, document, key-value, wide-column or search storage
+      for a workload.
+    - Planning schema migrations and backfills that do not lock production
+      tables.
+    - Adding caches without serving stale or inconsistent data by surprise.
+  experiments:
+    - Load a table with a million rows, and compare plans and timings with and
+      without an index using `EXPLAIN ANALYZE`.
+    - Run two concurrent transactions at different isolation levels, and
+      reproduce a lost update and write skew.
+    - Build a toy key-value store from an append-only log and an in-memory
+      index, then add compaction.
+    - Stop a database process abruptly during writes, and observe recovery from
+      the write-ahead log.
+    - Set up a primary and a replica, measure replication lag under load, and
+      try to read your own writes from each.
+    - Compare write throughput and space use of a B+ tree engine and an LSM
+      engine on the same workload.
+  architecture:
+    - Data ownership and boundaries between services follow from transactional
+      consistency requirements.
+    - Read-heavy and write-heavy systems favour different engines, indexes,
+      caches and replication topologies.
+    - Patterns such as CQRS, event sourcing and change data capture are built
+      from logs, replicas and derived views.
+    - Schema and data evolution need the same care as API evolution.
+    - Caching layers trade consistency and invalidation complexity for latency.
+  competencies:
+    - Design a schema and indexes for a feature, and justify them from the
+      expected queries.
+    - Explain a query plan and improve a slow query.
+    - Identify the isolation anomaly behind a concurrency bug and prevent it.
+    - Choose a storage system for a workload and defend the choice by its
+      guarantees and costs.
+  interview:
+    - System design interviews probe database choice, indexing, sharding,
+      replication and caching.
+    - Common deep dives cover how an index works, what ACID means in practice,
+      MVCC and isolation levels.
+    - Schema design and SQL questions appear in backend and data-focused
+      interviews.
+  chapters:
+    - 'Inside a database: architecture, storage engines and pages'
+    - Relational modelling and indexing
+    - 'Index structures: B-trees, B+ trees and LSM trees'
+    - Query planning and optimization
+    - 'Transactions: ACID, isolation, locking and MVCC'
+    - 'Durability and recovery: write-ahead logging'
+    - 'Scaling out: replication, partitioning, NoSQL architectures and caching'

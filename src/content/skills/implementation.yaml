@@ -1,0 +1,4 @@
+title: Coding & implementation
+description: >-
+  Turn a mechanism into small, correct, tested code: model the invariant,
+  handle edge cases and failure paths, and keep the result readable.

@@ -1,0 +1,148 @@
+title: Computer Science & Software Engineering Fundamentals
+shortTitle: Engineering Fundamentals
+description: >-
+  A foundational engineering curriculum: how computers, operating systems,
+  networks, databases and distributed systems work inside, and how to design,
+  measure and secure the software built on them.
+audience: >-
+  Experienced software engineers, senior and staff/principal engineers, and
+  software architects.
+order: 2
+objectives:
+  - title: Engineering fundamentals
+    description: >-
+      Understand how computing systems work internally, beyond programming
+      languages, frameworks and tools.
+  - title: Engineering and architectural mastery
+    description: >-
+      Develop the skills to design, implement, debug, optimize and evaluate
+      complex software systems.
+  - title: Long-term technical relevance
+    description: >-
+      Build technology-independent knowledge and engineering judgment that stay
+      valuable as AI-assisted development becomes common.
+  - title: Career and interview readiness
+    description: >-
+      Strengthen coding, technical reasoning, system design and architectural
+      communication for demanding engineering roles, as a result of depth
+      rather than a substitute for it.
+# One section per subject, in an order that respects subject prerequisites.
+# The planned topics are the owner's initial scope (requested 2026-11-12);
+# each becomes one or more lessons. Overviews live in src/content/subjects/.
+sections:
+  - id: computer-architecture-execution
+    title: Computer Architecture & Execution
+    subject: computer-architecture-execution
+    planned:
+      - How computers execute programs
+      - CPU architecture, registers, and instructions
+      - Compilation and execution fundamentals
+      - Binary representation and data representation
+      - Memory hierarchy, caches, RAM, and storage
+      - Stack and heap fundamentals
+      - Hardware and software interaction
+      - I/O mechanisms
+      - Performance implications of computer architecture
+  - id: operating-systems-runtime-internals
+    title: Operating Systems & Runtime Internals
+    subject: operating-systems-runtime-internals
+    planned:
+      - Operating system architecture
+      - Kernel and user space
+      - Processes, threads, and scheduling
+      - System calls and I/O
+      - Virtual memory and memory management
+      - Concurrency and synchronization
+      - Race conditions, deadlocks, and resource contention
+      - Filesystems and resource management
+      - Linux fundamentals and diagnostics
+      - Language runtime internals
+      - Node.js, V8, and the event loop
+      - JVM internals, garbage collection, and threading
+  - id: computer-networking
+    title: Computer Networking
+    subject: computer-networking
+    planned:
+      - Network architecture and communication models
+      - Ethernet and local networking
+      - IP addressing and subnetting
+      - Routing, NAT, and firewalls
+      - TCP and UDP internals
+      - Sockets and network programming
+      - DNS resolution
+      - HTTP/1.1, HTTP/2, and HTTP/3
+      - TLS and secure communication
+      - Reverse proxies, gateways, and load balancing
+      - Connection management and network performance
+      - Network troubleshooting and packet analysis
+  - id: databases-storage-systems
+    title: Databases & Storage Systems
+    subject: databases-storage-systems
+    planned:
+      - Database architecture and storage engines
+      - Relational data modeling
+      - Indexing and data structures
+      - B-trees, B+ trees, and LSM trees
+      - Query planning and optimization
+      - Transactions and ACID properties
+      - Isolation levels, locking, and MVCC
+      - Concurrency control
+      - Write-ahead logging and recovery
+      - Replication and partitioning
+      - Relational vs NoSQL architecture
+      - Caching and storage performance
+  - id: software-engineering-architecture
+    title: Software Engineering & Architecture
+    subject: software-engineering-architecture
+    planned:
+      - Software design principles
+      - Modularity, cohesion, and coupling
+      - Abstractions and interfaces
+      - Programming paradigms
+      - Object-oriented and functional design fundamentals
+      - Design patterns and their trade-offs
+      - API and contract design
+      - Component and service boundaries
+      - Code quality and maintainability
+      - Testing strategies and testability
+      - Refactoring and software evolution
+      - Architectural styles and patterns
+      - Architecture decision records
+      - Technical debt and engineering trade-offs
+  - id: distributed-systems
+    title: Distributed Systems
+    subject: distributed-systems
+    planned:
+      - Distributed computing fundamentals
+      - Communication between distributed components
+      - Network failures and partial failures
+      - Consistency and availability
+      - Replication and partitioning
+      - Consensus and leader election
+      - Distributed coordination
+      - Messaging and event-driven systems
+      - Delivery guarantees and message ordering
+      - Retries, timeouts, and idempotency
+      - Distributed transactions and sagas
+      - Fault tolerance and resilience
+      - Distributed state management
+      - Scalability and architectural trade-offs
+  - id: security-performance-reliability
+    title: Security, Performance & Reliability
+    subject: security-performance-reliability
+    planned:
+      - Security engineering fundamentals
+      - Threat modeling and trust boundaries
+      - Authentication and authorization
+      - Cryptography fundamentals and practical applications
+      - Secrets and credential management
+      - Secure application and API design
+      - Vulnerability classes and defensive engineering
+      - Application profiling and performance analysis
+      - Latency, throughput, and resource utilization
+      - Load testing and capacity planning
+      - Logging, metrics, and distributed tracing
+      - Observability and production diagnostics
+      - Reliability engineering and failure recovery
+      - SLI, SLO, and error budgets
+      - Incident analysis and continuous improvement

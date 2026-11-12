@@ -195,3 +195,30 @@ not run remotely. No screenshot baselines were added; they wait for owner
 approval of the design. Labs remain TypeScript-only, and choosing another
 interview language is an owner decision. No push, deployment or remote change
 was made.
+
+## Curriculum scaffolding — 2026-11-12
+
+Scope: [ADR 0007](adr/0007-curriculum-scaffolding.md). No dependency was added;
+seven Lucide icons already in `@lucide/astro` were registered.
+
+| Check               | Result                                                                                                                    |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm check`        | 0 errors, warnings or hints (80 files, plus tools/tests)                                                                  |
+| `pnpm format:check` | Passed                                                                                                                    |
+| `pnpm lint`         | ESLint, design-token and placeholder checks passed                                                                        |
+| `pnpm test`         | 66 tests in 8 files (3 new: subject links and cycles, cross-subject sections and ordering, skill references)              |
+| `pnpm build`        | 19 static pages (was 11); links, anchors, headings, image alternatives and recaps validated; Pagefind indexed 13 pages    |
+| `git diff --check`  | Passed                                                                                                                    |
+| `pnpm test:e2e`     | **Not run to completion.** All 36 tests failed at browser launch: `libnspr4.so` is missing, so Chromium cannot start here |
+
+The built HTML was inspected with Cheerio: Explore lists 8 subjects, the paths
+page lists 2 paths, the new path shows 7 sections and 88 planned topics, each new
+subject page renders all twelve overview parts, and the DSA subject page is
+unchanged.
+
+Not verified: browser behaviour, visual layout in both themes and at phone
+width, and axe scans of the new pages. `tests/e2e/catalog.spec.ts` was edited
+(the subject count is now 8, and the DSA card is selected by link) and gained
+scans for one new subject page and the new path. Those edits have not run. Run
+`pnpm exec playwright install --with-deps chromium && pnpm verify` where the
+browser can start before relying on them.

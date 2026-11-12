@@ -26,7 +26,32 @@ tone: violet # blue | violet | teal | amber | rose | green
 ```
 
 Lessons live in `src/content/lessons/<subject>/`. A subject appears once it has
-a lesson. Choose a tone that differs from neighboring subjects.
+a lesson, an overview, or a path section. Choose a tone that differs from
+neighboring subjects.
+
+A subject that is planned before it has lessons may add `priority` (`low`,
+`medium`, `high`, `very-high`), links to other subjects, how it exercises
+cross-cutting skills, and an `overview`:
+
+```yaml
+priority: very-high
+prerequisites: # subjects to study first; cycles are rejected
+  - subject: computer-networking
+    why: Message loss and latency are the raw material of distributed failures.
+related:
+  - subject: software-engineering-architecture
+    why: Service boundaries decide where distribution appears.
+skills: # IDs from src/content/skills/
+  - skill: debugging
+    focus: Reconstruct failures from timelines, logs and traces.
+overview: # introduction, whyItMatters, objectives, mechanisms, applications,
+  # experiments, architecture, competencies, interview, chapters
+```
+
+Write overview text that is specific to the subject. The topic outline is not
+repeated in the overview: it is the `planned` list of the path sections that
+teach the subject. Competencies are expectations; never record that one was
+achieved. See `computer-architecture-execution.yaml` for a complete example.
 
 ## Path: `src/content/paths/<id>.yaml`
 
@@ -45,6 +70,10 @@ sections:
       - Load balancing
 ```
 
+- A path that spans subjects omits `subject`, and each section names its own
+  (`subject: distributed-systems`). Order sections so a subject follows its
+  prerequisites. Optional `shortTitle`, `audience` and `objectives` describe it.
+  See `engineering-fundamentals.yaml`.
 - A short path may use a flat `lessons` list (with an optional `planned` list)
   instead of `sections`.
 - A lesson can appear in several paths. Its `path` frontmatter names its
@@ -52,6 +81,28 @@ sections:
 - `planned` lists owner-approved topic titles that have no lesson yet. They
   show as "Planned" rows and are the curriculum agents may draft. Agents may
   propose planned topics in a separate change; the owner approves by merging.
+
+## Skill: `src/content/skills/<id>.yaml`
+
+```yaml
+title: Debugging & root-cause analysis
+description: Form hypotheses from symptoms and trace a failure to its mechanism.
+```
+
+A cross-cutting skill is defined once. Subjects say how they exercise it
+(`skills` above) and lessons may list its ID in `skills`. Do not create a skill
+that is really a subject, and do not repeat a skill's text in subjects.
+
+## Start a subject's detailed curriculum
+
+1. Pick a topic from a section's `planned` list, or one the owner requests.
+2. Follow [add-lesson.md](add-lesson.md): scaffold with
+   `pnpm new:lesson <subject>/<slug> --path <path-id>`.
+3. Move the topic from the section's `planned` list to its `lessons` list.
+4. Add the lesson's `skills` and `prerequisites`, then run `pnpm verify`.
+
+One lesson per change. Overview text may need a small edit once a lesson
+teaches part of it; keep it accurate.
 
 ## Verify
 

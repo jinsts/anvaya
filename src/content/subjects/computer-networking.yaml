@@ -1,0 +1,136 @@
+title: Computer Networking
+description: >-
+  How data crosses networks, from frames and packets to TCP, HTTP and TLS, and
+  how to reason about connections in production.
+category: computer-science
+icon: globe
+tone: amber
+priority: very-high
+prerequisites:
+  - subject: operating-systems-runtime-internals
+    why: >-
+      Sockets are file descriptors; blocking, readiness and kernel buffers
+      explain how programs use the network.
+related:
+  - subject: distributed-systems
+    why: >-
+      Builds coordination and replication protocols on top of unreliable
+      networks.
+  - subject: security-performance-reliability
+    why: >-
+      Extends TLS, trust boundaries and network latency into security and
+      performance engineering.
+skills:
+  - skill: debugging
+    focus: >-
+      Locate network failures with packet captures, connection state and
+      timing breakdowns.
+  - skill: profiling-measurement
+    focus: >-
+      Break request latency into DNS, connection, TLS, server and transfer
+      time.
+  - skill: implementation
+    focus: >-
+      Write socket clients and servers that handle partial reads, timeouts and
+      closed connections.
+  - skill: system-design
+    focus: >-
+      Place load balancers, proxies and CDNs, and choose protocols for a
+      system's traffic.
+  - skill: technical-communication
+    focus: >-
+      Explain a request's path through the network with clear sequence
+      diagrams.
+overview:
+  introduction: >-
+    Distributed software assumes that bytes sent will arrive. This subject
+    examines how that assumption is earned and where it breaks: addressing and
+    routing, TCP reliability and congestion control, UDP and QUIC, name
+    resolution, the evolution of HTTP, TLS, and the proxies and load balancers
+    between clients and servers. It ends with the tools that show the network
+    directly: packet captures and connection state.
+  whyItMatters: >-
+    Latency, timeouts, connection resets, certificate errors and slowdowns
+    behind load balancers are everyday problems for backend engineers. Each has
+    a mechanism, such as a handshake, a buffer, a window, a cache or an idle
+    timeout, that explains it. Knowing those mechanisms turns network problems
+    from guesswork into diagnosis, and informs protocol, timeout and topology
+    decisions.
+  objectives:
+    - Explain how a request travels through the layers of the network stack and
+      between networks.
+    - Work with IP addressing, subnets, routing, NAT and firewall rules.
+    - Explain TCP connection setup, reliability, flow control and congestion
+      control, and when UDP fits better.
+    - Compare HTTP/1.1, HTTP/2 and HTTP/3, and explain how TLS secures a
+      connection.
+    - Diagnose connectivity, latency and connection management problems from
+      packet-level evidence.
+  mechanisms:
+    - Encapsulation in Ethernet frames, IP packets and TCP or UDP segments; MTU
+      and fragmentation.
+    - Address resolution with ARP and IPv6 neighbour discovery, routing tables
+      with longest-prefix match, and NAT connection tracking.
+    - The TCP state machine, the three-way handshake, sequence numbers,
+      retransmission, flow-control windows and congestion control.
+    - DNS resolution through recursive resolvers, caching and TTLs.
+    - HTTP/2 stream multiplexing over one TCP connection, and HTTP/3 over QUIC,
+      which avoids transport-level head-of-line blocking.
+    - The TLS 1.3 handshake, certificate chain validation and session
+      resumption.
+    - Layer 4 and layer 7 load balancing, connection pooling, keep-alive and
+      idle timeouts.
+  applications:
+    - Setting client timeouts, retries and connection pool sizes that match
+      server and proxy behaviour.
+    - Explaining latency as round trips for DNS, TCP and TLS before the first
+      byte arrives.
+    - Designing network boundaries with subnets, security groups and firewalls.
+    - Configuring reverse proxies, gateways and load balancers for health
+      checks and graceful draining.
+    - Troubleshooting certificate, DNS and connectivity failures.
+  experiments:
+    - Capture one HTTPS request with `tcpdump` or Wireshark and identify its
+      DNS, TCP and TLS phases.
+    - Write a small TCP echo server and client with sockets, and watch their
+      connection states with `ss`.
+    - Send UDP datagrams over a link made lossy with `tc netem`, and measure
+      loss and reordering.
+    - Fetch the same resource over HTTP/1.1 and HTTP/2 with `curl`, and compare
+      connections and timing.
+    - Resolve a name step by step with `dig +trace` and observe caching and
+      TTLs.
+    - Put a reverse proxy in front of a service, then reproduce and explain a
+      keep-alive and idle-timeout mismatch.
+  architecture:
+    - Every remote call adds latency and a failure mode, so network cost shapes
+      service granularity and API design.
+    - Load balancing strategy, connection reuse and timeouts determine how a
+      system behaves under load and partial failure.
+    - Trust boundaries and network segmentation are part of a security
+      architecture, not an afterthought.
+    - Protocol choice among HTTP/1.1, HTTP/2, gRPC, WebSockets and QUIC affects
+      streaming, multiplexing and infrastructure compatibility.
+    - Edge components such as CDNs, gateways and service meshes move
+      responsibilities out of application code.
+  competencies:
+    - Describe in detail what happens when a browser requests an HTTPS URL.
+    - Read a packet capture and explain a connection's handshake, data
+      transfer and teardown.
+    - Calculate subnets and reason about routing and NAT paths.
+    - Diagnose a timeout or reset by locating the component and mechanism
+      responsible.
+  interview:
+    - The classic question of what happens when you enter a URL in a browser
+      is answered in depth by this subject.
+    - System design interviews expect fluent discussion of load balancers,
+      CDNs, DNS, protocols and connection management.
+    - TCP against UDP, HTTP versions and TLS are frequent follow-up questions.
+  chapters:
+    - 'Network architecture: layers, encapsulation and local networks'
+    - 'IP networking: addressing, subnetting, routing, NAT and firewalls'
+    - 'Transport: TCP and UDP internals, and socket programming'
+    - 'Naming and the web: DNS, HTTP/1.1, HTTP/2 and HTTP/3'
+    - Secure communication with TLS
+    - Proxies, load balancing and connection performance
+    - Network troubleshooting and packet analysis

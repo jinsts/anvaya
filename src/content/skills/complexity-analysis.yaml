@@ -1,0 +1,5 @@
+title: Algorithmic complexity & efficiency
+description: >-
+  State time and space costs with their assumptions, then connect them to the
+  constant factors, memory access patterns and input sizes that decide real
+  performance.

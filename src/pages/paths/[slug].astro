@@ -3,11 +3,13 @@ import { plural } from '../../lib/format';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import Breadcrumbs from '../../components/ui/Breadcrumbs.astro';
 import Icon from '../../components/ui/Icon.astro';
-import LessonRow from '../../components/catalog/LessonRow.astro';
+import SyllabusList from '../../components/catalog/SyllabusList.astro';
 import { getCatalog, lessonUrlIn } from '../../lib/catalog';
 import {
+  pathLabel,
   pathLessonIds,
   pathSections,
+  pathSubjects,
   plannedCount,
   subjectUrl,
 } from '../../lib/path-model';
@@ -16,8 +18,10 @@ export async function getStaticPaths() {
   return paths.map((path) => ({ params: { slug: path.id }, props: { path } }));
 }
 const { path } = Astro.props;
-const { lessonById, subjectById } = await getCatalog();
-const subject = subjectById.get(path.subject)!;
+const { lessonById, subjectById, skills } = await getCatalog();
+// A path that spans subjects has no single subject and uses the accent tone.
+const subject = path.subject ? subjectById.get(path.subject) : undefined;
+const subjects = pathSubjects(path).map((id) => subjectById.get(id)!);
 const ids = pathLessonIds(path);
 const ordered = ids.map((id) => lessonById.get(id)!);
 const sections = pathSections(path);
@@ -27,38 +31,62 @@ const minutes = ordered.reduce(
   (sum, lesson) => sum + lesson.data.estimatedMinutes,
   0,
 );
+const skillRows = skills
+  .map((skill) => ({
+    skill,
+    subjects: subjects.filter((entry) =>
+      entry.skills.some(({ skill: id }) => id === skill.id),
+    ),
+  }))
+  .filter((row) => row.subjects.length > 0);
 ---
 
-<BaseLayout title={path.title} activePath={path}>
+<BaseLayout title={path.title} description={path.description} activePath={path}>
   <div
     data-progress-scope
     data-pagefind-body
     data-pagefind-filter="type:Learning path"
-    data-pagefind-meta={`subject:${subject.title}`}
+    data-pagefind-meta={subject ? `subject:${subject.title}` : undefined}
   >
     <Breadcrumbs
-      items={[
-        { label: 'Explore', href: '/explore/' },
-        { label: subject.title, href: subjectUrl(subject.id) },
-        { label: 'Learning path' },
-      ]}
+      items={
+        subject
+          ? [
+              { label: 'Explore', href: '/explore/' },
+              { label: subject.title, href: subjectUrl(subject.id) },
+              { label: 'Learning path' },
+            ]
+          : [
+              { label: 'Learning paths', href: '/paths/' },
+              { label: pathLabel(path) },
+            ]
+      }
     />
-    <header class="path-hero" data-tone={subject.tone}>
+    <header class="path-hero" data-tone={subject?.tone ?? 'blue'}>
       <span class="icon-tile large">
-        <Icon name={subject.icon} size={28} />
+        <Icon name={subject?.icon ?? 'route'} size={28} />
       </span>
       <div class="path-hero-text">
-        <p class="eyebrow">Learning path · {subject.title}</p>
+        <p class="eyebrow">
+          Learning path · {subject?.title ?? plural(subjects.length, 'subject')}
+        </p>
         <h1>{path.title}</h1>
         <p class="lede">{path.description}</p>
+        {path.audience && (
+          <p class="path-audience">
+            <strong>Audience:</strong> {path.audience}
+          </p>
+        )}
         <ul class="path-facts" data-pagefind-ignore>
           <li>
             <Icon name="book-open" size={16} />
             {plural(ordered.length, 'lesson')}
           </li>
-          <li>
-            <Icon name="clock" size={16} /> {minutes} min
-          </li>
+          {minutes > 0 && (
+            <li>
+              <Icon name="clock" size={16} /> {minutes} min
+            </li>
+          )}
           <li>
             <Icon name="layers" size={16} />
             {plural(sections.length, 'section')}
@@ -69,8 +97,8 @@ const minutes = ordered.reduce(
             </li>
           )}
         </ul>
-        <div class="path-actions" data-pagefind-ignore>
-          {first && (
+        {first && (
+          <div class="path-actions" data-pagefind-ignore>
             <a
               class="button button-primary"
               href={lessonUrlIn(first, path.id)}
@@ -79,58 +107,113 @@ const minutes = ordered.reduce(
               <span data-progress-resume-label>Begin the path</span>
               <Icon name="arrow-right" size={16} />
             </a>
-          )}
-          <div class="hero-progress js-only">
-            <div
-              class="progress"
-              role="progressbar"
-              aria-label={`Progress in ${path.title}`}
-              aria-valuemin="0"
-              aria-valuemax={ordered.length}
-              aria-valuenow="0"
-              data-progress-bar
-            ></div>
-            <span data-progress-text>0 of {ordered.length} complete</span>
+            <div class="hero-progress js-only">
+              <div
+                class="progress"
+                role="progressbar"
+                aria-label={`Progress in ${path.title}`}
+                aria-valuemin="0"
+                aria-valuemax={ordered.length}
+                aria-valuenow="0"
+                data-progress-bar
+              ></div>
+              <span data-progress-text>0 of {ordered.length} complete</span>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </header>
-    {sections.map((section, sectionIndex) => (
-      <section class="syllabus" aria-labelledby={`section-${section.id}`}>
+    {path.objectives && (
+      <section aria-labelledby="path-objectives-title">
         <div class="section-head">
-          <h2 id={`section-${section.id}`}>
-            <span class="section-index" aria-hidden="true">
-              {String(sectionIndex + 1).padStart(2, '0')}
-            </span>
-            {section.title}
-          </h2>
-          <p class="muted">
-            {plural(section.lessons.length, 'lesson')}
-            {section.planned?.length
-              ? ` · ${section.planned.length} planned`
-              : ''}
-          </p>
+          <h2 id="path-objectives-title">Objectives</h2>
         </div>
-        <ol class="card syllabus-list">
-          {section.lessons.map((id) => (
-            <LessonRow
-              lesson={lessonById.get(id)!}
-              number={ids.indexOf(id) + 1}
-              pathId={path.id}
-            />
-          ))}
-          {section.planned?.map((topic) => (
-            <li class="planned-row">
-              <span class="planned-marker" aria-hidden="true">
-                <Icon name="circle-dashed" size={18} />
-              </span>
-              <span class="planned-title">{topic}</span>
-              <span class="badge">Planned</span>
+        <ol class="card-grid objective-list">
+          {path.objectives.map((objective) => (
+            <li class="card objective">
+              <h3>{objective.title}</h3>
+              <p class="muted">{objective.description}</p>
             </li>
           ))}
         </ol>
       </section>
-    ))}
+    )}
+    {sections.map((section, sectionIndex) => {
+      const covers = section.subject
+        ? subjectById.get(section.subject)
+        : undefined;
+      return (
+        <section class="syllabus" aria-labelledby={`section-${section.id}`}>
+          <div class="section-head">
+            <h2 id={`section-${section.id}`}>
+              <span class="section-index" aria-hidden="true">
+                {String(sectionIndex + 1).padStart(2, '0')}
+              </span>
+              {section.title}
+            </h2>
+            <p class="muted">
+              {plural(section.lessons.length, 'lesson')}
+              {section.planned?.length
+                ? ` · ${section.planned.length} planned`
+                : ''}
+            </p>
+          </div>
+          {covers && (
+            <p class="section-subject" data-tone={covers.tone}>
+              <span class="icon-tile">
+                <Icon name={covers.icon} size={16} />
+              </span>
+              <span>{covers.description}</span>
+              <a href={subjectUrl(covers.id)}>
+                Subject overview
+                <span class="sr-only">: {covers.title}</span>
+                <Icon name="arrow-right" size={15} />
+              </a>
+            </p>
+          )}
+          <SyllabusList
+            lessons={section.lessons.map((id) => lessonById.get(id)!)}
+            planned={section.planned}
+            pathId={path.id}
+            order={ids}
+          />
+        </section>
+      );
+    })}
+    {skillRows.length > 0 && (
+      <section aria-labelledby="path-skills-title">
+        <div class="section-head">
+          <h2 id="path-skills-title">Cross-cutting skills</h2>
+          <p class="muted">
+            Practised inside subjects, not taught on their own
+          </p>
+        </div>
+        <ul class="card skill-list">
+          {skillRows.map(({ skill, subjects: practisedIn }) => (
+            <li>
+              <h3>{skill.title}</h3>
+              <p>{skill.description}</p>
+              <ul
+                class="skill-subjects"
+                aria-label={`Subjects that practise ${skill.title}`}
+              >
+                {practisedIn.map((entry) => (
+                  <li>
+                    <a
+                      class="badge"
+                      data-tone={entry.tone}
+                      href={`${subjectUrl(entry.id)}#skills`}
+                    >
+                      {entry.title}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </li>
+          ))}
+        </ul>
+      </section>
+    )}
     <a class="all-paths" href="/paths/">
       <Icon name="arrow-left" size={15} /> All learning paths
     </a>
@@ -211,30 +294,83 @@ const minutes = ordered.reduce(
     font-size: var(--text-sm);
     font-weight: 500;
   }
-  .syllabus-list {
+  .path-audience {
+    max-width: 62ch;
+    margin: 0;
+    color: var(--muted);
+    font-size: var(--text-sm);
+  }
+  .path-audience strong {
+    color: var(--text);
+  }
+  .objective-list,
+  .skill-list,
+  .skill-subjects {
     margin: 0;
     padding: 0;
-    overflow: hidden;
     list-style: none;
   }
-  .planned-row {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr) auto;
+  .objective h3 {
+    margin-bottom: var(--space-2);
+    font-size: var(--text-lg);
+  }
+  .objective p {
+    margin: 0;
+    font-size: var(--text-sm);
+  }
+  .section-subject {
+    display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    gap: var(--space-4);
-    padding: var(--space-4) var(--space-5);
-    border-top: 1px solid var(--border);
-    background: var(--subtle);
+    gap: var(--space-2) var(--space-3);
+    margin: calc(-1 * var(--space-2)) 0 var(--space-4);
     color: var(--muted);
+    font-size: var(--text-sm);
   }
-  .syllabus-list > .planned-row:first-child {
-    border-top: 0;
+  .section-subject .icon-tile {
+    width: 28px;
+    height: 28px;
+    border-radius: var(--radius-sm);
   }
-  .planned-marker {
-    display: grid;
-    place-items: center;
-    width: 36px;
-    height: 36px;
+  .section-subject span:not(.icon-tile) {
+    flex: 1;
+    min-width: 200px;
+  }
+  .section-subject a {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    font-weight: 600;
+  }
+  .skill-list {
+    padding: 0;
+    overflow: hidden;
+  }
+  .skill-list > li {
+    padding: var(--space-4) var(--space-5);
+  }
+  .skill-list > li + li {
+    border-top: 1px solid var(--border);
+  }
+  .skill-list h3 {
+    margin-bottom: var(--space-1);
+    font-size: var(--text-base);
+  }
+  .skill-list p {
+    margin: 0 0 var(--space-3);
+    color: var(--muted);
+    font-size: var(--text-sm);
+  }
+  .skill-subjects {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+  .skill-subjects a {
+    text-decoration: none;
+  }
+  .skill-subjects a:hover {
+    text-decoration: underline;
   }
   .all-paths {
     display: inline-flex;

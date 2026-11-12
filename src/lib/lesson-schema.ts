@@ -21,6 +21,8 @@ export const lessonSchema = z
     learningObjectives: z.array(z.string().min(5)).min(1),
     prerequisites: z.array(z.string()).default([]),
     tags: z.array(slug).default([]),
+    // Cross-cutting skill IDs from src/content/skills/ that the lesson practises.
+    skills: z.array(slug).default([]),
     status: z.enum(['draft', 'reviewed', 'published']).default('draft'),
     // Who wrote the current draft. Only the owner promotes status.
     drafter: z.enum(['agent', 'owner']),

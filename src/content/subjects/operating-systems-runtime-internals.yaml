@@ -1,0 +1,150 @@
+title: Operating Systems & Runtime Internals
+description: >-
+  How the kernel and language runtimes share processors, memory and I/O among
+  programs, and what that means for the code you write.
+category: computer-science
+icon: terminal
+tone: teal
+priority: very-high
+prerequisites:
+  - subject: computer-architecture-execution
+    why: >-
+      Supplies the model of instructions, interrupts, the memory hierarchy and
+      multicore coherence that the kernel manages.
+related:
+  - subject: computer-networking
+    why: >-
+      Sockets, readiness notification and kernel buffers connect process I/O to
+      the network stack.
+  - subject: databases-storage-systems
+    why: >-
+      Storage engines rely on the page cache, `fsync` and I/O scheduling for
+      durability and speed.
+  - subject: security-performance-reliability
+    why: >-
+      Profiling, resource limits and production diagnostics build directly on
+      this subject.
+skills:
+  - skill: debugging
+    focus: >-
+      Diagnose hangs, leaks and contention with `strace`, `/proc`, thread dumps
+      and heap dumps.
+  - skill: profiling-measurement
+    focus: >-
+      Profile CPU time, allocation and garbage collection, and separate time
+      spent running from time spent waiting.
+  - skill: implementation
+    focus: >-
+      Write correct concurrent code with explicit invariants for shared state.
+  - skill: trade-off-analysis
+    focus: >-
+      Compare concurrency models and garbage collectors by latency, throughput
+      and memory use.
+  - skill: interview-preparation
+    focus: >-
+      Rehearse concurrency and runtime deep-dive questions from the mechanisms
+      rather than from memorized answers.
+overview:
+  introduction: >-
+    An operating system turns one machine into many isolated, concurrent
+    programs. This subject studies how the kernel does it, through processes,
+    threads, scheduling, virtual memory, system calls and filesystems, and then
+    moves up into the language runtimes that add their own scheduling, memory
+    management and concurrency models. Linux is the reference system; Node.js
+    and the JVM are the runtime case studies.
+  whyItMatters: >-
+    Many production incidents that are not logic errors happen at this layer:
+    exhausted thread pools, memory that is never returned, leaked file
+    descriptors, an event loop blocked by one synchronous call, or long
+    garbage-collection pauses. Engineers who understand the kernel and the
+    runtime can read the evidence these failures leave, and can design services
+    that cooperate with the scheduler and memory manager instead of fighting
+    them.
+  objectives:
+    - Explain the boundary between user space and the kernel, and what a system
+      call costs.
+    - Describe how processes and threads are created, scheduled and switched,
+      and how they share or isolate state.
+    - Explain virtual memory, paging and the page cache, and how they determine
+      a process's real memory use.
+    - Reason about race conditions, deadlocks and contention, and choose
+      appropriate synchronization.
+    - Explain how the Node.js event loop and the JVM's threads and garbage
+      collectors run application code.
+    - Diagnose a misbehaving process on Linux with standard tools.
+  mechanisms:
+    - Privilege levels, system call entry and exit, and the vDSO for cheap calls
+      such as reading the clock.
+    - The process lifecycle (`fork`, `exec`, `wait`), threads, context switches
+      and the fairness model of the Linux scheduler.
+    - Virtual address spaces, page tables, page faults, copy-on-write, the page
+      cache and memory overcommit.
+    - Mutexes, condition variables, semaphores and atomics, and the futex
+      mechanism beneath Linux locks.
+    - File descriptors, blocking and non-blocking I/O, readiness notification
+      with `epoll`, and completion-based I/O with `io_uring`.
+    - The V8 heap and garbage collector, the phases and thread pool of libuv's
+      event loop, and the microtask queues of Node.js.
+    - JVM class loading, JIT compilation, the thread model, memory areas, and
+      generational and concurrent garbage collectors.
+  applications:
+    - Sizing thread pools and connection pools from a workload's mix of
+      computation and blocking I/O.
+    - Explaining resident memory, container memory limits and out-of-memory
+      kills.
+    - Finding the synchronous call or long task that blocks a Node.js event
+      loop.
+    - Choosing and tuning a JVM garbage collector for latency or throughput.
+    - Tracking down file descriptor leaks, lock contention and runaway
+      processes.
+    - Understanding how containers use namespaces and cgroups to isolate and
+      limit processes.
+  experiments:
+    - Trace a simple program with `strace -c` and count the system calls that
+      one file read needs.
+    - Create a child process and a thread from the same program, and compare
+      what they share through `/proc`.
+    - Increment a shared counter from several threads without synchronization,
+      observe lost updates, then fix it with a mutex and with an atomic.
+    - Construct a deadlock between two locks, inspect it in a thread dump, and
+      remove it with a lock ordering.
+    - Block the Node.js event loop with a CPU-heavy function and measure the
+      delay it adds to timers and requests.
+    - Allocate heavily in a JVM program, enable garbage-collection logging, and
+      compare pause behaviour under two collectors.
+    - Memory-map a large file and watch page faults and the page cache with
+      `vmstat` and `/proc/meminfo`.
+  architecture:
+    - Concurrency models, such as a thread per request, event loops, virtual
+      threads and actors, follow from scheduling and blocking costs.
+    - Process and container boundaries define failure isolation, resource
+      limits and the unit of deployment.
+    - Back-pressure, bounded queues and pool sizing are architectural responses
+      to finite threads, memory and descriptors.
+    - Runtime choice shapes service design through garbage-collection tail
+      latency, JIT warm-up and memory per instance.
+    - Durability guarantees depend on what `fsync` and the page cache actually
+      promise.
+  competencies:
+    - Explain step by step what happens when a process reads a file or accepts
+      a connection.
+    - Identify a race condition or deadlock in code and correct it.
+    - Use `top`, `vmstat`, `/proc`, `strace` and thread or heap dumps to locate a
+      resource problem.
+    - Predict how a Node.js or JVM service behaves under computation-bound and
+      I/O-bound load.
+  interview:
+    - Concurrency questions about race conditions, deadlocks, thread safety and
+      producer–consumer designs are common in coding interviews.
+    - Deep dives often ask how the event loop works, what a context switch
+      costs or how garbage collection affects latency.
+    - System design estimates improve when they account for threads, memory per
+      connection and blocking I/O.
+  chapters:
+    - 'The kernel boundary: processes, threads, system calls and scheduling'
+    - 'Memory: virtual memory, paging, the page cache and allocation'
+    - 'Concurrency: synchronization primitives, races, deadlocks and contention'
+    - Files, I/O and resource management on Linux
+    - 'Linux diagnostics: observing processes, memory and I/O'
+    - 'Language runtimes: V8 and the Node.js event loop; the JVM, its threads
+      and garbage collectors'

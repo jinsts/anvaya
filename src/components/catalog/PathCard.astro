@@ -1,7 +1,12 @@
 ---
 import { plural } from '../../lib/format';
 import Icon from '../ui/Icon.astro';
-import { pathUrl, plannedCount, type LearningPath } from '../../lib/path-model';
+import {
+  pathSubjects,
+  pathUrl,
+  plannedCount,
+  type LearningPath,
+} from '../../lib/path-model';
 import {
   lessonLabel,
   lessonUrlIn,
@@ -10,7 +15,8 @@ import {
 } from '../../lib/catalog';
 interface Props {
   path: LearningPath;
-  subject: CatalogSubject;
+  /** The path's subject; omit for a path that spans subjects. */
+  subject?: CatalogSubject | undefined;
   lessons: Lesson[];
 }
 const { path, subject, lessons } = Astro.props;
@@ -22,12 +28,18 @@ const planned = plannedCount(path);
 const first = lessons[0];
 ---
 
-<article class="card path-card" data-tone={subject.tone} data-progress-scope>
+<article
+  class="card path-card"
+  data-tone={subject?.tone ?? 'blue'}
+  data-progress-scope
+>
   <div class="path-top">
     <span class="icon-tile">
-      <Icon name={subject.icon} size={20} />
+      <Icon name={subject?.icon ?? 'route'} size={20} />
     </span>
-    <span class="eyebrow">{subject.title}</span>
+    <span class="eyebrow">
+      {subject?.title ?? plural(pathSubjects(path).length, 'subject')}
+    </span>
   </div>
   <h3>
     <a class="stretched-link" href={pathUrl(path.id)}>
@@ -40,9 +52,11 @@ const first = lessons[0];
       <Icon name="book-open" size={14} />
       {plural(lessons.length, 'lesson')}
     </span>
-    <span>
-      <Icon name="clock" size={14} /> {minutes} min
-    </span>
+    {minutes > 0 && (
+      <span>
+        <Icon name="clock" size={14} /> {minutes} min
+      </span>
+    )}
     {planned > 0 && (
       <span>
         <Icon name="circle-dashed" size={14} /> {planned} planned

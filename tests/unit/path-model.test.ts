@@ -3,9 +3,12 @@ import {
   categoryAncestors,
   lessonUrl,
   neighbors,
+  pathLabel,
   pathLessonIds,
   pathSections,
+  pathSubjects,
   plannedCount,
+  sectionSubject,
   sourceForUrl,
   subjectsInCategory,
   validateCatalog,
@@ -393,4 +396,124 @@ it('rejects category cycles, missing parents, invalid IDs and duplicate taxonomy
   expect(() =>
     validateTaxonomy([{ ...categories[0]!, id: '../invalid' }], []),
   ).toThrow('Invalid category ID');
+});
+
+it('validates subject links: unknown, self, duplicate and cyclic prerequisites', () => {
+  const linked = (patch: Partial<Subject>): Subject[] => [
+    { ...subjects[0]!, ...patch },
+    subjects[1]!,
+  ];
+  const link = (subject: string) => ({ subject, why: 'Needed first' });
+  expect(() =>
+    validateTaxonomy(categories, linked({ prerequisites: [link('french')] })),
+  ).not.toThrow();
+  expect(() =>
+    validateTaxonomy(categories, linked({ related: [link('missing')] })),
+  ).toThrow('Invalid subject link');
+  expect(() =>
+    validateTaxonomy(categories, linked({ related: [link('dsa')] })),
+  ).toThrow('Invalid subject link');
+  expect(() =>
+    validateTaxonomy(
+      categories,
+      linked({ prerequisites: [link('french')], related: [link('french')] }),
+    ),
+  ).toThrow('Duplicate subject link');
+  expect(() =>
+    validateTaxonomy(categories, [
+      { ...subjects[0]!, prerequisites: [link('french')] },
+      { ...subjects[1]!, prerequisites: [link('dsa')] },
+    ]),
+  ).toThrow('Subject prerequisite cycle');
+});
+
+it('supports a path of sections that each name a subject, in prerequisite order', () => {
+  const ordered: Subject[] = [
+    subjects[1]!,
+    {
+      ...subjects[0]!,
+      prerequisites: [{ subject: 'french', why: 'Needed first' }],
+    },
+  ];
+  const section = (id: string, subject?: string) => ({
+    id,
+    title: id,
+    ...(subject ? { subject } : {}),
+    lessons: [],
+    planned: ['A planned topic'],
+  });
+  const base = { title: 'Test', description: 'Test path' };
+  const spanning = (...ids: string[]): LearningPath =>
+    ({
+      id: 'spanning',
+      title: 'Spanning',
+      shortTitle: 'Span',
+      description: 'Spans subjects',
+      sections: ids.map((id) => section(id, id)),
+    }) as LearningPath;
+  const run = (paths: LearningPath[], known = ordered) =>
+    validateCatalog({ lessons: [], paths, subjects: known, categories });
+
+  const forward = spanning('french', 'dsa');
+  expect(() => run([forward])).not.toThrow();
+  expect(pathSubjects(forward)).toEqual(['french', 'dsa']);
+  expect(sectionSubject(forward, forward.sections![0]!)).toBe('french');
+  expect(pathLabel(forward)).toBe('Span');
+  expect(pathLabel({ ...path, shortTitle: undefined })).toBe('Test');
+  expect(() => run([spanning('dsa', 'french')])).toThrow(
+    'before its prerequisite',
+  );
+  expect(() => run([spanning('french', 'missing')])).toThrow(
+    'Missing section subject',
+  );
+  expect(() =>
+    run([{ id: 'no-subject', ...base, sections: [section('anything')] }]),
+  ).toThrow('needs a subject');
+  // A path-level subject still applies to sections that name none.
+  expect(
+    pathSubjects({
+      id: 'plain',
+      ...base,
+      subject: 'dsa',
+      sections: [section('plain')],
+    }),
+  ).toEqual(['dsa']);
+});
+
+it('requires known, unrepeated skill references on subjects and lessons', () => {
+  const skills = [
+    { id: 'debugging', title: 'Debugging', description: 'Find root causes' },
+  ];
+  const focus = 'Practised through traces';
+  const validate = (
+    subjectSkills: { skill: string; focus: string }[],
+    lessonSkills?: string[],
+    known = skills,
+  ) =>
+    validateCatalog({
+      lessons: [
+        { ...lessons[0]!, data: { ...lessons[0]!.data, skills: lessonSkills } },
+        lessons[1]!,
+      ],
+      paths: [path],
+      subjects: [{ ...subjects[0]!, skills: subjectSkills }, subjects[1]!],
+      categories,
+      skills: known,
+    });
+  expect(() =>
+    validate([{ skill: 'debugging', focus }], ['debugging']),
+  ).not.toThrow();
+  expect(() => validate([{ skill: 'unknown', focus }])).toThrow(
+    'Unknown skill',
+  );
+  expect(() => validate([], ['unknown'])).toThrow('Unknown skill');
+  expect(() =>
+    validate([
+      { skill: 'debugging', focus },
+      { skill: 'debugging', focus },
+    ]),
+  ).toThrow('Duplicate skill');
+  expect(() => validate([], undefined, [...skills, ...skills])).toThrow(
+    'Duplicate skill ID',
+  );
 });

@@ -88,8 +88,8 @@ Scaffolds contain `TODO` markers that `pnpm lint` rejects until replaced.
 ## Where things live
 
 - `src/content/lessons/`: canonical MDX lessons, one folder per subject.
-- `src/content/{categories,subjects,paths}/`: discovery and study order, one YAML
-  file per entity.
+- `src/content/{categories,subjects,paths,skills}/`: discovery, study order and
+  cross-cutting skills, one YAML file per entity.
 - `src/content/sources/`: trusted sources; citations must match a registered prefix.
 - `src/content/problems/`: interview problem references with original hints.
 - `src/lib/`: schemas, catalog validation, array and practice logic.

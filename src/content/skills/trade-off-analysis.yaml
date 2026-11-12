@@ -1,0 +1,5 @@
+title: Engineering trade-off analysis
+description: >-
+  Make the costs of a choice explicit, such as latency against throughput,
+  consistency against availability or simplicity against flexibility, and
+  decide with stated assumptions.
