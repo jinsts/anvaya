@@ -122,12 +122,11 @@ where the PC will point afterward.
 | 2                    | Branch to 1 if accumulator is nonzero | Otherwise continue at 3    |
 | 3                    | Halt                                  | Stop with PC retained at 3 |
 
-After the first addition the accumulator is 1, so the branch returns to position
-
-1. After the second it is 0, so the branch continues to position 3. The branch
-   executes twice, even though it appears once in the program. **Static instruction
-   count** counts instructions in the program; **dynamic instruction count** counts
-   the instructions actually executed.
+After the first addition the accumulator is 1, so the branch returns to instruction
+position one. After the second it is 0, so the branch continues to position 3.
+The branch executes twice, even though it appears once in the program.
+**Static instruction count** counts instructions in the program; **dynamic
+instruction count** counts the instructions actually executed.
 
 <CodeExample
   title="A bounded instruction trace in TypeScript"
