@@ -109,10 +109,14 @@ patterns.
 
 A fixed-width modular adder retains the low w result bits. For eight bits:
 
+<div className="table-scroll" tabIndex={0} role="region" aria-label="Unsigned carry and signed overflow examples">
+
 | Inputs interpreted as unsigned | Retained byte | Unsigned carry | Signed interpretation                          |
 | ------------------------------ | ------------- | -------------- | ---------------------------------------------- |
 | 127 + 1                        | `10000000`    | No             | 127 + 1 cannot fit; retained result means -128 |
 | 255 + 1                        | `00000000`    | Yes            | -1 + 1 = 0 fits                                |
+
+</div>
 
 **Carry** reports a result beyond the unsigned range. **Signed overflow** reports
 a signed mathematical result beyond the signed range. Neither condition implies
@@ -190,8 +194,9 @@ and depending on host rules; encode protocol fields deliberately.
 ## Text has several different lengths
 
 Unicode assigns **code points** to characters and other text elements. UTF-8
-encodes a code point into one to four bytes; UTF-16 uses one or two 16-bit code
-units for Unicode scalar values. JavaScript strings expose UTF-16 code units.
+encodes each **Unicode scalar value** (a code point outside the reserved surrogate
+range) into one to four bytes. UTF-16 uses one or two 16-bit code units for the
+same values. JavaScript strings expose UTF-16 code units.
 For example, the supplementary code point in `🙂` uses two code units and four
 UTF-8 bytes.
 
