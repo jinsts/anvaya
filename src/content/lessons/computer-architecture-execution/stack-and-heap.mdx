@@ -302,8 +302,16 @@ This is why a source function does not imply a fixed-sized physical frame.
 
 **Unfamiliar trace:** a caller retains handle H to an allocation; the callee's
 frame disappears; a later access through H succeeds; then H is released. Which
-event invalidates another alias of H? Release ends the allocation's lifetime,
-not the earlier return. Moving the local handle cannot copy or extend its target.
+event invalidates another alias of H?
+
+<details>
+<summary>Check after answering</summary>
+
+The release. It ends the allocation's lifetime for every alias; the earlier
+return removed only the callee's frame and its local copy of the handle.
+Copying or moving a handle cannot copy or extend its target.
+
+</details>
 
 ## Check your reasoning
 
