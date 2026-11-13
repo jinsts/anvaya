@@ -43,6 +43,15 @@ sections:
       - computer-architecture-execution/hardware-software-interaction
       - computer-architecture-execution/io-mechanisms
       - computer-architecture-execution/architecture-and-performance
+    # Proposed 2026-11-13 by an agent review; the owner approves by merging.
+    # Scope is the hardware layer the overview promises but no lesson owns:
+    # coherence (MESI-style ownership), store buffers and memory ordering,
+    # fences, atomic read-modify-write instructions, false sharing, and the
+    # costs of hardware threads and NUMA. Locks, condition variables and
+    # deadlock stay with the OS section's concurrency topics. Intended
+    # position: after io-mechanisms, before architecture-and-performance.
+    planned:
+      - Multicore coherence, memory ordering, and atomics
   - id: operating-systems-runtime-internals
     title: Operating Systems & Runtime Internals
     subject: operating-systems-runtime-internals
