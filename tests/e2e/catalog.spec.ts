@@ -241,6 +241,54 @@ test('header discovery and mobile navigation work with the keyboard', async ({
   }
 });
 
+test('a subject with several chapters is grouped on path, subject and lesson pages', async ({
+  page,
+}) => {
+  const subject = 'Computer Architecture & Execution';
+  const chapter = 'The memory hierarchy';
+  await page.goto('/paths/engineering-fundamentals/');
+  // One subject heading, with its chapters beneath it.
+  await expect(
+    page.getByRole('heading', { level: 2, name: subject }),
+  ).toHaveCount(1);
+  const chapters = page
+    .locator('#subject-computer-architecture-execution')
+    .locator('xpath=ancestor::section[1]')
+    .getByRole('heading', { level: 3 });
+  await expect(chapters).toHaveCount(6);
+  await expect(chapters.nth(2)).toHaveText(
+    new RegExp(`^Chapter 3 ${chapter}$`),
+  );
+
+  // The subject outline links each chapter to its anchor on the path page.
+  await page.goto('/subjects/computer-architecture-execution/');
+  await expect(page.locator('#future-chapters')).toHaveCount(0);
+  await page
+    .getByRole('heading', { level: 3, name: `Chapter 3 ${chapter}` })
+    .getByRole('link')
+    .click();
+  await expect(page).toHaveURL(
+    '/paths/engineering-fundamentals/#section-architecture-memory-hierarchy',
+  );
+
+  // The study sidebar labels the subject once above its chapters (text checks
+  // also hold while the mobile sidebar is collapsed).
+  await page.goto(
+    '/learn/computer-architecture-execution/memory-hierarchy-and-caches/',
+  );
+  const sidebar = page.locator(
+    '[data-path-sidebar="engineering-fundamentals"]',
+  );
+  await expect(sidebar.locator('.path-subject')).toHaveText(subject);
+  await expect(sidebar.locator('.path-section summary')).toHaveText([
+    'Machine state and data representation',
+    'From source to running process',
+    chapter,
+    'Devices and the hardware–software boundary',
+    'Performance on real hardware',
+  ]);
+});
+
 test('catalog and subject pages fit both themes and pass accessibility scans', async ({
   page,
 }, info) => {

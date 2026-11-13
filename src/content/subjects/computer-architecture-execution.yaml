@@ -124,12 +124,4 @@ overview:
       program runs, cache behaviour and integer overflow.
     - Grounds latency estimates in system design interviews with realistic
       costs for memory, SSD and network access.
-  chapters:
-    - 'From source to running process: compilation, linking, loading and the
-      instruction cycle'
-    - 'Data representation: integers, floating point, text and memory layout'
-    - 'The memory hierarchy: registers, caches, RAM and storage'
-    - 'Inside the processor: pipelines, branch prediction, speculation and
-      multicore coherence'
-    - 'Devices and I/O: interrupts, DMA and the hardware–software boundary'
-    - 'Performance on real hardware: measuring and applying the cost model'
+  # Chapters are the path sections that teach this subject (ADR 0008).

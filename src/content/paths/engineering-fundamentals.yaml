@@ -26,32 +26,76 @@ objectives:
       Strengthen coding, technical reasoning, system design and architectural
       communication for demanding engineering roles, as a result of depth
       rather than a substitute for it.
-# One section per subject, in an order that respects subject prerequisites.
-# The planned topics are the owner's initial scope (requested 2026-11-12);
-# each becomes one or more lessons. Overviews live in src/content/subjects/.
+# Sections are chapters (ADR 0008). A subject starts as one section and is
+# divided into adjacent chapter sections once its curriculum is structured.
+# Subjects follow prerequisite order. The planned topics are the owner's initial
+# scope (requested 2026-11-12); each becomes one or more lessons, one teaching
+# unit per page. Overviews live in src/content/subjects/.
 sections:
-  - id: computer-architecture-execution
-    title: Computer Architecture & Execution
+  # Computer Architecture & Execution, restructured into six chapters on
+  # 2026-11-13 at the owner's request. Existing lessons keep their URLs. A
+  # planned page split from an existing lesson takes over that material when
+  # it is drafted; until then the existing lesson still teaches it. Planned
+  # rows display after a chapter's lessons; comments give intended positions.
+  - id: architecture-machine-state
+    title: Machine state and data representation
     subject: computer-architecture-execution
     lessons:
       - computer-architecture-execution/how-computers-execute-programs
       - computer-architecture-execution/binary-and-data-representation
+    # Split from binary-and-data-representation, which narrows to integers.
+    planned:
+      - Floating-point representation and rounding
+      - Text encodings and memory layout
+  - id: architecture-source-to-process
+    title: From source to running process
+    subject: computer-architecture-execution
+    lessons:
       - computer-architecture-execution/cpu-registers-and-instructions
       - computer-architecture-execution/compilation-and-execution
-      - computer-architecture-execution/memory-hierarchy-and-caches
       - computer-architecture-execution/stack-and-heap
+    # Intended position: after cpu-registers-and-instructions.
+    planned:
+      - 'Reading assembly: branches, loops, and calls'
+  - id: architecture-memory-hierarchy
+    title: The memory hierarchy
+    subject: computer-architecture-execution
+    lessons:
+      - computer-architecture-execution/memory-hierarchy-and-caches
+    # Cache organization splits from memory-hierarchy-and-caches, which keeps
+    # the hierarchy, locality and access costs. The storage page completes the
+    # approved topic "Memory hierarchy, caches, RAM, and storage".
+    planned:
+      - Cache organization and write policies
+      - DRAM, SSDs, and disks
+  - id: architecture-processor
+    title: Inside the processor
+    subject: computer-architecture-execution
+    # The first three split from architecture-and-performance. Multicore was
+    # proposed by an agent review on 2026-11-13: coherence (MESI-style
+    # ownership), store buffers and memory ordering, fences, atomic
+    # read-modify-write instructions, false sharing, and the costs of hardware
+    # threads and NUMA. It takes the coherence material from
+    # hardware-software-interaction. Locks, condition variables and deadlock
+    # stay with the OS subject's concurrency topics.
+    planned:
+      - Pipelining and hazards
+      - Branch prediction, speculation, and out-of-order execution
+      - SIMD and data-level parallelism
+      - Multicore coherence, memory ordering, and atomics
+  - id: architecture-devices
+    title: Devices and the hardware–software boundary
+    subject: computer-architecture-execution
+    lessons:
       - computer-architecture-execution/hardware-software-interaction
       - computer-architecture-execution/io-mechanisms
+  - id: architecture-performance
+    title: Performance on real hardware
+    subject: computer-architecture-execution
+    lessons:
       - computer-architecture-execution/architecture-and-performance
-    # Proposed 2026-11-13 by an agent review; the owner approves by merging.
-    # Scope is the hardware layer the overview promises but no lesson owns:
-    # coherence (MESI-style ownership), store buffers and memory ordering,
-    # fences, atomic read-modify-write instructions, false sharing, and the
-    # costs of hardware threads and NUMA. Locks, condition variables and
-    # deadlock stay with the OS section's concurrency topics. Intended
-    # position: after io-mechanisms, before architecture-and-performance.
     planned:
-      - Multicore coherence, memory ordering, and atomics
+      - Measuring performance with benchmarks and hardware counters
   - id: operating-systems-runtime-internals
     title: Operating Systems & Runtime Internals
     subject: operating-systems-runtime-internals
