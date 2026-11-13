@@ -135,10 +135,9 @@ patch with absolute addresses.
 The first module has two words, positions 0 and 1, and defines entry at its local
 position 0. Its first word contains a reference to helper. The second module has
 one word and defines helper at its own local position 0. Lay the modules out in
-that order at load base 100:
-
-The grouped figure assigns entry to 100 and helper to 102. The first module's
-reference is patched after all definitions have been collected.
+that order at load base 100. Entry then begins at 100 and helper at 102, as in
+the figure's linking step. The first module's reference is patched after all
+definitions have been collected.
 
 Resolving helper selects the definition from the second module. Relocating the
 reference replaces the first word with 102. Other words, 99 and 7, remain data in
