@@ -82,6 +82,33 @@ sections:
   show as "Planned" rows and are the curriculum agents may draft. Agents may
   propose planned topics in a separate change; the owner approves by merging.
 
+### Chapters
+
+Each section is a chapter ([ADR 0008](../adr/0008-subject-chapters-and-lesson-pages.md)).
+A single-subject path's sections are its chapters. In a path that spans
+subjects, a subject starts as one section; to divide it, replace that section
+with adjacent sections that each name the subject:
+
+```yaml
+sections:
+  - id: architecture-memory-hierarchy # unique within the path
+    title: The memory hierarchy # shown as the chapter title
+    subject: computer-architecture-execution
+    lessons:
+      - computer-architecture-execution/memory-hierarchy-and-caches
+    planned:
+      - Cache organization and write policies
+```
+
+- Keep a subject's chapters together; the build rejects separated chapters.
+- Remove the subject's `overview.chapters` sketch in the same change; the build
+  rejects both at once.
+- Existing lessons keep their IDs. Split a broad planned topic into one planned
+  page per teaching unit, and note in a YAML comment which existing lesson
+  hands over that material when the page is drafted.
+- Restructuring is a planning change of its own. Draft the new pages afterwards,
+  one lesson per change.
+
 ## Skill: `src/content/skills/<id>.yaml`
 
 ```yaml

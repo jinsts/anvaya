@@ -8,13 +8,18 @@ step-by-step tasks use the [playbooks](playbooks/); for UI rules see
 
 ```text
 Category ─< Category (parent)          discovery: Explore
-Category ─< Subject ─< Path ─< Section ─< Lesson     study order: paths
+Category ─< Subject ─< Path ─< Section (chapter) ─< Lesson (page)   study order
 Path ─< Section ─> Subject                           a path may span subjects
 Subject >─< Subject (prerequisites, related)
 Subject >─< Skill >─< Lesson                         cross-cutting skills
 Lesson  >─< Problem ─> Source (problem bank, problem lists)
 Lesson  ─> Source (citations by URL prefix)
 ```
+
+A path section is a chapter, and a lesson is one page holding one teaching unit
+([ADR 0008](adr/0008-subject-chapters-and-lesson-pages.md)). In a path that spans
+subjects, a subject's chapters are adjacent sections that name it; pages group
+them under the subject.
 
 | Entity   | File                                       | Schema                       |
 | -------- | ------------------------------------------ | ---------------------------- |
