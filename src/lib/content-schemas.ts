@@ -49,7 +49,9 @@ const overviewSchema = z.object({
   architecture: points,
   competencies: points,
   interview: points,
-  chapters: points,
+  // A provisional sketch. Remove it once path sections divide the subject into
+  // chapters (ADR 0008); the build rejects both at once.
+  chapters: points.optional(),
 });
 
 export const priorities = ['low', 'medium', 'high', 'very-high'] as const;

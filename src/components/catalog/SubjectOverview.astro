@@ -20,6 +20,15 @@ interface Props {
 }
 const { subject, outline } = Astro.props;
 const { overview } = subject;
+// A path's sections for this subject are its chapters (ADR 0008).
+const outlineByPath = [...new Set(outline.map((entry) => entry.path))].map(
+  (path) => ({
+    path,
+    sections: outline
+      .filter((entry) => entry.path === path)
+      .map((entry) => entry.section),
+  }),
+);
 const { lessonById, subjectById, skillById, availableSubjects } =
   await getCatalog();
 const shown = new Set(availableSubjects.map((entry) => entry.id));
@@ -90,25 +99,53 @@ const linked = (link: SubjectLink) => subjectById.get(link.subject)!;
       <h2 id="topic-outline">Topic outline</h2>
       <p class="muted">Initial scope; it grows as lessons are written</p>
     </div>
-    {outline.map(({ path, section }) => (
-      <div class="outline-group">
-        <p class="outline-source">
-          <Icon name="route" size={15} />
-          <span>
-            In <a href={pathUrl(path.id)}>{pathLabel(path)}</a>,{' '}
-            <a href={`${pathUrl(path.id)}#section-${section.id}`}>
-              {section.title}
-            </a>
-          </span>
-        </p>
-        <SyllabusList
-          lessons={section.lessons.map((id) => lessonById.get(id)!)}
-          planned={section.planned}
-          pathId={path.id}
-          order={pathLessonIds(path)}
-        />
-      </div>
-    ))}
+    {outlineByPath.map(({ path, sections }) =>
+      sections.length === 1 ? (
+        <div class="outline-group">
+          <p class="outline-source">
+            <Icon name="route" size={15} />
+            <span>
+              In <a href={pathUrl(path.id)}>{pathLabel(path)}</a>,{' '}
+              <a href={`${pathUrl(path.id)}#section-${sections[0]!.id}`}>
+                {sections[0]!.title}
+              </a>
+            </span>
+          </p>
+          <SyllabusList
+            lessons={sections[0]!.lessons.map((id) => lessonById.get(id)!)}
+            planned={sections[0]!.planned}
+            pathId={path.id}
+            order={pathLessonIds(path)}
+          />
+        </div>
+      ) : (
+        <div class="outline-group">
+          <p class="outline-source">
+            <Icon name="route" size={15} />
+            <span>
+              In <a href={pathUrl(path.id)}>{pathLabel(path)}</a>, in{' '}
+              {sections.length} chapters
+            </span>
+          </p>
+          {sections.map((section, index) => (
+            <div class="outline-chapter">
+              <h3>
+                <a href={`${pathUrl(path.id)}#section-${section.id}`}>
+                  <span class="chapter-index">Chapter {index + 1}</span>{' '}
+                  {section.title}
+                </a>
+              </h3>
+              <SyllabusList
+                lessons={section.lessons.map((id) => lessonById.get(id)!)}
+                planned={section.planned}
+                pathId={path.id}
+                order={pathLessonIds(path)}
+              />
+            </div>
+          ))}
+        </div>
+      ),
+    )}
   </section>
 )}
 {panels.length > 0 && (
@@ -173,7 +210,7 @@ const linked = (link: SubjectLink) => subjectById.get(link.subject)!;
     </div>
   </section>
 )}
-{overview && (
+{overview?.chapters && (
   <section aria-labelledby="future-chapters">
     <div class="section-head">
       <h2 id="future-chapters">Chapter groups</h2>
@@ -217,6 +254,30 @@ const linked = (link: SubjectLink) => subjectById.get(link.subject)!;
     margin: 0 0 var(--space-3);
     color: var(--muted);
     font-size: var(--text-sm);
+  }
+  .outline-chapter + .outline-chapter {
+    margin-top: var(--space-5);
+  }
+  .outline-chapter h3 {
+    margin: 0 0 var(--space-2);
+    font-size: var(--text-base);
+  }
+  .outline-chapter h3 a {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--space-1) var(--space-3);
+    color: var(--text);
+    text-decoration: none;
+  }
+  .outline-chapter h3 a:hover {
+    color: var(--accent);
+  }
+  .chapter-index {
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    font-weight: 500;
   }
   .overview-grid {
     display: grid;

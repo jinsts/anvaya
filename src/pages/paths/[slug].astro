@@ -11,8 +11,11 @@ import {
   pathSections,
   pathSubjects,
   plannedCount,
+  subjectGroups,
   subjectUrl,
+  type PathSection,
 } from '../../lib/path-model';
+import type { CatalogSubject } from '../../lib/catalog';
 export async function getStaticPaths() {
   const { paths } = await getCatalog();
   return paths.map((path) => ({ params: { slug: path.id }, props: { path } }));
@@ -26,6 +29,34 @@ const ids = pathLessonIds(path);
 const ordered = ids.map((id) => lessonById.get(id)!);
 const sections = pathSections(path);
 const planned = plannedCount(path);
+// Each section is a chapter. A path that spans subjects shows a subject with
+// several chapters under one subject heading (ADR 0008).
+type Block =
+  | { kind: 'section'; section: PathSection; covers?: CatalogSubject }
+  | { kind: 'subject'; covers: CatalogSubject; chapters: PathSection[] };
+const blocks: Block[] = path.subject
+  ? sections.map((section) => ({
+      kind: 'section',
+      section,
+      covers: section.subject ? subjectById.get(section.subject) : undefined,
+    }))
+  : subjectGroups(path).flatMap((group): Block[] => {
+      const covers = subjectById.get(group.subject!)!;
+      return group.sections.length > 1
+        ? [{ kind: 'subject', covers, chapters: group.sections }]
+        : [{ kind: 'section', section: group.sections[0]!, covers }];
+    });
+const counts = (chapters: PathSection[]) => {
+  const lessons = chapters.reduce((sum, s) => sum + s.lessons.length, 0);
+  const plannedTopics = chapters.reduce(
+    (sum, s) => sum + (s.planned?.length ?? 0),
+    0,
+  );
+  return (
+    plural(lessons, 'lesson') +
+    (plannedTopics ? ` · ${plannedTopics} planned` : '')
+  );
+};
 const first = ordered[0];
 const minutes = ordered.reduce(
   (sum, lesson) => sum + lesson.data.estimatedMinutes,
@@ -89,7 +120,7 @@ const skillRows = skills
           )}
           <li>
             <Icon name="layers" size={16} />
-            {plural(sections.length, 'section')}
+            {plural(sections.length, 'chapter')}
           </li>
           {planned > 0 && (
             <li>
@@ -138,24 +169,25 @@ const skillRows = skills
         </ol>
       </section>
     )}
-    {sections.map((section, sectionIndex) => {
-      const covers = section.subject
-        ? subjectById.get(section.subject)
-        : undefined;
+    {blocks.map((block, blockIndex) => {
+      const covers = block.covers;
+      const headingId =
+        block.kind === 'section'
+          ? `section-${block.section.id}`
+          : `subject-${block.covers.id}`;
       return (
-        <section class="syllabus" aria-labelledby={`section-${section.id}`}>
+        <section class="syllabus" aria-labelledby={headingId}>
           <div class="section-head">
-            <h2 id={`section-${section.id}`}>
+            <h2 id={headingId}>
               <span class="section-index" aria-hidden="true">
-                {String(sectionIndex + 1).padStart(2, '0')}
+                {String(blockIndex + 1).padStart(2, '0')}
               </span>
-              {section.title}
+              {block.kind === 'section' ? block.section.title : covers!.title}
             </h2>
             <p class="muted">
-              {plural(section.lessons.length, 'lesson')}
-              {section.planned?.length
-                ? ` · ${section.planned.length} planned`
-                : ''}
+              {block.kind === 'section'
+                ? counts([block.section])
+                : `${plural(block.chapters.length, 'chapter')} · ${counts(block.chapters)}`}
             </p>
           </div>
           {covers && (
@@ -171,12 +203,37 @@ const skillRows = skills
               </a>
             </p>
           )}
-          <SyllabusList
-            lessons={section.lessons.map((id) => lessonById.get(id)!)}
-            planned={section.planned}
-            pathId={path.id}
-            order={ids}
-          />
+          {block.kind === 'section' ? (
+            <SyllabusList
+              lessons={block.section.lessons.map((id) => lessonById.get(id)!)}
+              planned={block.section.planned}
+              pathId={path.id}
+              order={ids}
+            />
+          ) : (
+            block.chapters.map((chapter, chapterIndex) => (
+              <section
+                class="chapter"
+                aria-labelledby={`section-${chapter.id}`}
+              >
+                <div class="chapter-head">
+                  <h3 id={`section-${chapter.id}`}>
+                    <span class="chapter-index">
+                      Chapter {chapterIndex + 1}
+                    </span>{' '}
+                    {chapter.title}
+                  </h3>
+                  <p class="muted">{counts([chapter])}</p>
+                </div>
+                <SyllabusList
+                  lessons={chapter.lessons.map((id) => lessonById.get(id)!)}
+                  planned={chapter.planned}
+                  pathId={path.id}
+                  order={ids}
+                />
+              </section>
+            ))
+          )}
         </section>
       );
     })}
@@ -341,6 +398,35 @@ const skillRows = skills
     align-items: center;
     gap: var(--space-1);
     font-weight: 600;
+  }
+  .chapter + .chapter {
+    margin-top: var(--space-6);
+  }
+  .chapter-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-1) var(--space-4);
+    margin-bottom: var(--space-3);
+  }
+  .chapter-head h3 {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--space-1) var(--space-3);
+    margin: 0;
+    font-size: var(--text-lg);
+  }
+  .chapter-index {
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    font-weight: 500;
+  }
+  .chapter-head p {
+    margin: 0;
+    font-size: var(--text-sm);
   }
   .skill-list {
     padding: 0;
