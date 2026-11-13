@@ -69,6 +69,14 @@ sources:
     url: https://developer.mozilla.org/en-US/docs/Glossary/Just_In_Time_Compilation
 ---
 
+import objectSymbols from '../../../../labs/computer-architecture-execution/compilation-and-execution/native/object-symbols.txt?raw';
+
+import nativeSource from '../../../../labs/computer-architecture-execution/compilation-and-execution/native/program.c?raw';
+import unoptimized from '../../../../labs/computer-architecture-execution/compilation-and-execution/native/bump-O0.txt?raw';
+import optimized from '../../../../labs/computer-architecture-execution/compilation-and-execution/native/bump-O2.txt?raw';
+
+import ArchitectureFlow from '../../../components/diagrams/ArchitectureFlow.astro';
+
 import example from '../../../../labs/computer-architecture-execution/compilation-and-execution/example.ts?raw';
 
 ## A build has several different jobs
@@ -91,24 +99,31 @@ The roles remain useful even when one command runs several tools.
 
 ## Identify the artifact at each boundary
 
-| Stage        | Main job                                                                     | Typical artifact or effect                     |
-| ------------ | ---------------------------------------------------------------------------- | ---------------------------------------------- |
-| Preprocess C | Expand includes and macros under the selected build definitions              | Preprocessed source                            |
-| Compile      | Check language rules and translate expressions and control flow for a target | Assembly or another lower-level representation |
-| Assemble     | Encode instructions and record definitions and unresolved references         | Relocatable object file                        |
-| Link         | Combine objects, resolve symbols, and apply supported relocations            | Executable or shared library                   |
-| Load         | Establish mappings, dependencies and initial process state                   | A process ready to begin execution             |
-
-A **symbol** is a name used for an addressable entity, such as a function or
-global object. An object file can define some symbols and reference others. A
-**relocation** records a place where a reference needs adjustment after layout
-or binding is known. An object therefore contains more than raw instruction
-bytes: it can include sections, symbols, relocations and debugging information.
-
-The compiler and assembler need a target ISA. The full target also includes
-platform requirements such as the ABI and object-file format. Machine code for
-one processor family is not automatically a usable executable on every operating
-system with that processor.
+<ArchitectureFlow
+  caption="Artifacts pass between tools; loading establishes execution state."
+  nodes={[
+    {
+      label: 'Source \u2192 compiler',
+      detail:
+        'Preprocessing expands includes/macros; compilation translates the language to target instructions.',
+    },
+    {
+      label: 'Assembly \u2192 assembler \u2192 object',
+      detail:
+        'An object contains encoded instructions, symbols and relocations. A reference can still name helper.',
+    },
+    {
+      label: 'Objects \u2192 linker \u2192 executable',
+      detail:
+        'At base 100, the two-word entry module precedes helper at 102. Relocation patches the reference to 102.',
+    },
+    {
+      label: 'Executable \u2192 loader/runtime',
+      detail:
+        'Mappings, dependencies and initial state are established before user code runs.',
+    },
+  ]}
+/>
 
 ## Resolve a reference after assigning positions
 
@@ -122,18 +137,15 @@ position 0. Its first word contains a reference to helper. The second module has
 one word and defines helper at its own local position 0. Lay the modules out in
 that order at load base 100:
 
-<div className="table-scroll" tabIndex={0} role="region" aria-label="Object modules and relocated addresses">
-
-| Module           | Position in combined image | Absolute addresses | Defined symbol |
-| ---------------- | -------------------------- | ------------------ | -------------- |
-| First, two words | 0 and 1                    | 100 and 101        | entry → 100    |
-| Second, one word | 2                          | 102                | helper → 102   |
-
-</div>
+The grouped figure assigns entry to 100 and helper to 102. The first module's
+reference is patched after all definitions have been collected.
 
 Resolving helper selects the definition from the second module. Relocating the
 reference replaces the first word with 102. Other words, 99 and 7, remain data in
 this model. They are not claimed to be valid native instructions.
+
+<details>
+<summary>Inspect the tested model and expected output</summary>
 
 <CodeExample
   title="Absolute-address symbol relocation in a teaching linker"
@@ -141,6 +153,8 @@ this model. They are not claimed to be valid native instructions.
   verified
   output={'image: [102, 99, 7]\nentry: 100\nhelper: 102'}
 />
+
+</details>
 
 The linker first collects all definitions and locations, then patches references.
 That ordering handles a forward reference to a module that has not yet been
@@ -154,10 +168,15 @@ so the absolute reference must change. Real systems can also use relative
 references, indirection tables and position-independent code; this model does
 not implement them or parse a real object format.
 
+<details>
+<summary>Model contract and implementation costs</summary>
+
 For W words, D definitions and R references, the model does O(W + D + R) work
 under the usual expected constant-cost map/set model for bounded-length symbol
 names. It retains O(W + D + R) data. Long symbol names add hashing and comparison
 costs, and these bounds do not describe production linker performance.
+
+</details>
 
 ## Loading is more than copying a file
 
@@ -199,11 +218,8 @@ used work, and change strategies as information becomes available. JIT
 compilation adds startup and compilation work in exchange for possible later
 savings. A language's name alone does not identify its execution strategy.
 
-<Callout title="Local examples model mechanisms">
-  This repository executes the TypeScript lab with its test runner. The lab
-  models symbol layout and relocation; it does not claim to run a native build,
-  inspect compiler output, or measure optimization speedups.
-</Callout>
+The optional linker model isolates symbol relocation. The native exercise below
+separately verifies an actual compiler and executable.
 
 ## Diagnose the boundary that failed
 
@@ -218,6 +234,58 @@ Keep the target, build options, input artifacts and dependency versions with any
 reproduction. A mismatch between a declaration and its implementation can cross
 several successful tool stages before producing invalid behavior. Success at a
 boundary proves only that stage's checks passed.
+
+## Reproduce a native build
+
+The same `bump` function connects this build to the CPU and stack lessons.
+The native lab compiles and runs assertions at both `-O0` and `-O2`, with
+`-fno-inline` retaining a callable function. The checked-in listings were
+produced on Linux x86-64 by GCC 15.2.0; other toolchains can generate different
+valid sequences. Run from the repository root with a compatible C compiler:
+
+**Command:** `ANVAYA_CC=cc node labs/computer-architecture-execution/compilation-and-execution/native/verify-native.mjs`
+
+The command uses a temporary build directory, runs both executables, and checks
+the locality experiment's checksums. Add `--record` only when intentionally
+refreshing the recorded assembly and measurement artifacts.
+
+<details>
+<summary>Inspect the tested C source and compiler artifacts</summary>
+
+<CodeExample
+  title="Shared native program: input 7, return and stored value 8"
+  code={nativeSource}
+  language="c"
+/>
+<CodeExample
+  title="GCC -O0: frame and temporary storage"
+  code={unoptimized}
+  language="text"
+/>
+<CodeExample
+  title="GCC -O2: register-based increment"
+  code={optimized}
+  language="text"
+/>
+
+<CodeExample
+  title="Undefined object symbol resolved by the C library during linking"
+  code={objectSymbols}
+  language="text"
+/>
+
+</details>
+
+`nm -u` marks `__assert_fail` as U (undefined) in the object. The final link supplies
+that implementation from the C library. The compiler-added stack protector also
+references `__stack_chk_fail`. An object can therefore assemble before
+all called functions have addresses. Compare how the unoptimized function uses frame-relative storage while the
+optimized one keeps the intermediate value in EAX. Both preserve the assertions.
+Neither assembly length nor optimization level alone proves elapsed-time speed.
+An object is produced by assembly and still carries symbols/relocations; linking
+resolves references, while loading creates mappings. To diagnose a new failure,
+ask which artifact exists: an object with an unresolved external name points to
+link inputs; a finished executable with a missing shared library points to loading.
 
 ## Practise layout and failure diagnosis
 
