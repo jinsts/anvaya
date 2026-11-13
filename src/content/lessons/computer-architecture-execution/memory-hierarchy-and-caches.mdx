@@ -176,9 +176,13 @@ result.
 
 Writes introduce additional policies. A **write-through** cache propagates writes
 to the next level; a **write-back** cache marks modified lines dirty and writes
-them back later. Write allocation determines whether a write miss fetches a
-line. Our read-only simulator models none of those choices, and says nothing
-about multicore coherence or file durability.
+them back later, so it can hold the only current copy until eviction or a
+coherence request. Write allocation determines whether a write miss fetches a
+line. A **prefetcher** predicts future addresses and fetches lines early;
+sequential access helps it, but wrong predictions consume bandwidth and
+capacity. Our read-only simulator models none of these mechanisms or multicore
+coherence. Writing a dirty line back toward RAM also does not make file data
+durable.
 
 ## Estimate one access before predicting the whole program
 
@@ -235,12 +239,6 @@ statement about hardware lookup taking a JavaScript map operation.
 
 ## Predict unfamiliar accesses
 
-A write-back cache can retain the only current dirty copy until eviction or a
-coherence request requires transfer; writing it toward RAM is not file durability.
-A prefetcher predicts future addresses and brings lines in early. Sequential
-access can help it, but wrong predictions consume bandwidth and capacity. The
-read-only teaching model includes neither mechanism.
-
 <LabCard title="Independent cache attempt" command="pnpm lab computer-architecture-execution/memory-hierarchy-and-caches">
 Implement `solve` in `starter.ts`: return hit/miss decisions for a cold two-slot,
 16-byte-line direct-mapped cache. Explain why 16,20,48,16 differs from 0,16,0,16.
@@ -250,11 +248,11 @@ of its first row and first column before predicting line reuse.
 <details>
 <summary>Check the reasoning after attempting</summary>
 
-The first stream gives miss, hit, miss, miss; the second gives miss, miss, hit,
-hit. The first row uses addresses 0,4,8,12; the first column uses 0,16,32,48.
-The row uses one line, while the column touches four. A TLB miss asks for an
-address translation; a data-cache miss asks for a data block; a page fault requires
-OS handling. None is a synonym for the others or automatically a disk read.
+The first stream gives miss, hit, miss, miss: addresses 16 and 48 are blocks 1
+and 3, which both map to slot 1, so 48 evicts the line that 16 needs. The second
+gives miss, miss, hit, hit because blocks 0 and 1 use different slots. The first
+row uses addresses 0,4,8,12; the first column uses 0,16,32,48. The row uses one
+line, while the column touches four.
 
 </details>
 
