@@ -65,6 +65,8 @@ interviewQuestions:
       replace the branch entirely. A timing improvement alone does not identify
       its cause, and a small synthetic input need not represent production.
 sources:
+  - label: MIT Computation Structures — Pipeline dependencies and hazards
+    url: https://computationstructures.org/lectures/pbeta/pbeta.html
   - label: 'MIT Computation Structures, lecture 21 — CPU time, instruction overlap, and parallel execution'
     url: https://computationstructures.org/lectures/parallel/parallel.html
   - label: 'Dive into Systems, section 14.4.1 — Speedup and Amdahl’s law'
@@ -74,6 +76,11 @@ sources:
   - label: 'Dive into Systems, chapter 15 — Instruction streams and SIMD'
     url: https://diveintosystems.org/book/C15-Parallel/index.html
 ---
+
+import localitySource from '../../../../labs/computer-architecture-execution/architecture-and-performance/locality.c?raw';
+import measurement from '../../../../labs/computer-architecture-execution/architecture-and-performance/measurement.json?raw';
+
+import AmdahlBars from '../../../components/diagrams/AmdahlBars.astro';
 
 import example from '../../../../labs/computer-architecture-execution/architecture-and-performance/example.ts?raw';
 
@@ -174,6 +181,8 @@ the counters for the target layout, but consumes space and can harm locality.
 
 ## Bound an optimization with Amdahl's law
 
+<AmdahlBars />
+
 Let `f` be the fraction of **baseline elapsed time** that remains unchanged, and
 let `s` be the speedup applied to the remaining fraction. For the same workload
 and no new overhead:
@@ -191,6 +200,9 @@ imbalance, cache effects, and communication can change the result. Scaling the
 input size with the core count asks a different question from this fixed-work
 comparison.
 
+<details>
+<summary>Inspect the tested model and expected output</summary>
+
 <CodeExample
   title="Check CPU-time estimates and fixed-work speedup"
   code={example}
@@ -199,6 +211,8 @@ comparison.
     'baseline: 1.000 s\ncandidate: 0.900 s\nspeedup: 1.111x\n25% serial, 4x parallel: 2.286x'
   }
 />
+
+</details>
 
 The lab tests these calculations and invalid inputs. It measures no processor
 timings, counters, or power. Both arithmetic helpers use O(1) operations and
@@ -222,6 +236,71 @@ behavior, or let optimization change the generated loop. A faster timing alone
 does not distinguish those explanations. Likewise, fewer cache misses can
 coexist with a slower program if extra instructions or synchronization outweigh
 the benefit. Report the observed outcome separately from the causal inference.
+
+## Work a pipeline schedule
+
+Assume an illustrative five-stage pipeline: F fetch, D decode, E execute,
+M memory, W write-back. With forwarding, a load's value becomes available after
+M; an immediately dependent add needs one bubble before E. These assumptions
+are not a cycle count for the native x86 example.
+
+<div className="table-scroll" tabIndex={0} role="region" aria-label="Illustrative dependency timeline">
+
+| Instruction                            | 1   | 2   | 3   | 4    | 5   | 6   | 7   |
+| -------------------------------------- | --- | --- | --- | ---- | --- | --- | --- |
+| Load R0                                | F   | D   | E   | M    | W   |     |     |
+| Add using R0                           |     | F   | D   | wait | E   | M   | W   |
+| Independent add without the dependency |     | F   | D   | E    | M   | W   |     |
+
+</div>
+
+The last row is an alternative second instruction, not a third instruction issued
+alongside it. Removing a dependency removes the shown bubble under this model.
+For a branch resolved at E with sequential prediction, a taken branch discards
+the two younger instructions in D/F and restarts fetch at the target next cycle.
+Prediction and resolution policy determine the penalty; a universal branch cost
+cannot be inferred from this diagram.
+
+## Observe one actual locality experiment
+
+The shared native verification command compiles `locality.c` at `-O2
+-fno-loop-interchange`. It sums the same 2048×2048 row-major uint32 matrix in row
+and column order, alternates which comes first, and checks identical checksums
+outside the timed region. Allocation and initialization are outside timing.
+Six observations per order are recorded, with no speed threshold in the tests.
+
+The recorded run used x86_64-linux-gnu-gcc-15 (Ubuntu 15.2.0-16ubuntu1) 15.2.0 on linux/x64, CPU
+Intel(R) Core(TM) Ultra 9 285H. Row times ranged from 0.000764 to 0.002028 seconds
+(median 0.000887); column times ranged from 0.003348
+to 0.004405 (median 0.003436). These are observations
+of this small local experiment, not expected results on another machine.
+
+<details>
+<summary>Inspect the tested workload and full recorded observations</summary>
+
+<CodeExample
+  title="Equivalent matrix sums with checked results"
+  code={localitySource}
+  language="c"
+/>
+<CodeExample
+  title="Recorded environment and all twelve observations"
+  code={measurement}
+  language="text"
+/>
+
+</details>
+
+The stride difference supports a locality hypothesis. Timing alone cannot
+separate cache misses, prefetching, TLB behavior, frequency changes and compiler
+effects. Hardware counters were not collected in this run. Where available,
+compare cycles, instructions, cache and TLB events with documented counter meanings;
+otherwise report the cause as a hypothesis. Repeat on a larger/smaller working
+set and retain a noisy or contrary result rather than choosing only the fastest run.
+
+**Transfer task:** propose a case where row and column times converge. A matrix
+that fits in cache or a compiler transformation can weaken the difference. Check
+correctness and generated work before concluding that locality stopped mattering.
 
 ## Practise making and testing a prediction
 
