@@ -4,13 +4,19 @@ import Icon from '../ui/Icon.astro';
 interface Props {
   code: string;
   output?: string;
-  language?: 'ts' | 'js' | 'bash';
+  language?: 'ts' | 'js' | 'bash' | 'c' | 'text';
   title: string;
   /** Set only when a test or command actually checks `output`. */
   verified?: boolean;
 }
 const { code, output, language = 'ts', title, verified = false } = Astro.props;
-const languageName = { ts: 'TypeScript', js: 'JavaScript', bash: 'Shell' };
+const languageName = {
+  ts: 'TypeScript',
+  js: 'JavaScript',
+  bash: 'Shell',
+  c: 'C',
+  text: 'Text',
+};
 ---
 
 <figure class="code-example">

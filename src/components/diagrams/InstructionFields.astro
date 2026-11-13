@@ -1,0 +1,59 @@
+---
+import DiagramFrame from '../learning/DiagramFrame.astro';
+---
+
+<DiagramFrame caption="Illustrative 16-bit 0x2311: operation 2, register 3, immediate 17. Field width limits the choices.">
+  <div
+    class="fields"
+    role="img"
+    aria-label="Four opcode bits 0010, four register bits 0011, eight immediate bits 00010001"
+  >
+    <div>
+      <span>4 bits · opcode</span>
+      <strong>0010</strong>
+      <span>add</span>
+    </div>
+    <div>
+      <span>4 bits · register</span>
+      <strong>0011</strong>
+      <span>R3</span>
+    </div>
+    <div>
+      <span>8 bits · immediate</span>
+      <strong>00010001</strong>
+      <span>17</span>
+    </div>
+  </div>
+  <p>
+    16 total bits − 4 opcode bits − 5 register bits = 7 immediate bits when
+    naming 32 registers.
+  </p>
+</DiagramFrame>
+<style>
+  .fields {
+    display: grid;
+    grid-template-columns: 1fr 1fr 2fr;
+    gap: var(--space-1);
+  }
+  .fields div {
+    display: grid;
+    gap: var(--space-3);
+    padding: var(--space-2);
+    border: 1px solid var(--border-strong);
+    background: var(--accent-soft);
+    border-radius: var(--radius);
+    text-align: center;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  span {
+    font-size: var(--text-xs);
+  }
+  strong {
+    font-family: var(--font-mono);
+    font-size: var(--text-base);
+  }
+  p {
+    line-height: var(--leading);
+  }
+</style>

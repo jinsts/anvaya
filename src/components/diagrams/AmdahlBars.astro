@@ -1,0 +1,65 @@
+---
+import DiagramFrame from '../learning/DiagramFrame.astro';
+---
+
+<DiagramFrame caption="For fixed work with no added overhead, improving 75% of baseline time fourfold gives 1 / 0.4375 ≈ 2.286× overall speedup.">
+  <p>
+    <strong>Baseline time: 1</strong>
+  </p>
+  <div
+    class="bar"
+    role="img"
+    aria-label="Baseline: serial 0.25 followed by improvable 0.75"
+  >
+    <span class="serial">0.25</span>
+    <span class="work">0.75</span>
+  </div>
+  <p>
+    <strong>Improved time: 0.4375</strong>
+  </p>
+  <div
+    class="bar"
+    role="img"
+    aria-label="Improved: serial 0.25 followed by improved 0.1875; the rest of baseline time is saved"
+  >
+    <span class="serial">0.25</span>
+    <span class="reduced">0.1875</span>
+  </div>
+  <p>
+    First segment: unchanged serial work. Second segment: work eligible for
+    improvement. The empty remainder is saved time, using the same scale.
+  </p>
+</DiagramFrame>
+<style>
+  .bar {
+    display: flex;
+    min-height: var(--space-12);
+    border: 1px solid var(--border-strong);
+    background: var(--subtle);
+    border-radius: var(--radius);
+  }
+  .bar span {
+    display: grid;
+    place-items: center;
+    min-width: 0;
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    color: var(--text);
+  }
+  .serial {
+    width: 25%;
+    background: var(--accent-soft);
+    border-right: 2px solid var(--border-strong);
+  }
+  .work {
+    width: 75%;
+    border: 1px dashed var(--border-strong);
+  }
+  .reduced {
+    width: 18.75%;
+    border: 1px dashed var(--border-strong);
+  }
+  p {
+    line-height: var(--leading);
+  }
+</style>

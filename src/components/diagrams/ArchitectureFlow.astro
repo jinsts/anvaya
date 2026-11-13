@@ -1,0 +1,56 @@
+---
+import DiagramFrame from '../learning/DiagramFrame.astro';
+interface Props {
+  caption: string;
+  nodes: { label: string; detail: string }[];
+}
+const { caption, nodes } = Astro.props;
+---
+
+<DiagramFrame caption={caption}>
+  <ol class="mechanism-flow" aria-label={caption}>
+    {nodes.map((node, index) => (
+      <li>
+        <span class="step">{index + 1}</span>
+        <strong>{node.label}</strong>
+        <p>{node.detail}</p>
+      </li>
+    ))}
+  </ol>
+</DiagramFrame>
+<style>
+  .mechanism-flow {
+    display: grid;
+    gap: var(--space-6);
+    padding: 0;
+    margin: 0;
+    list-style: none;
+  }
+  li {
+    position: relative;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    padding: var(--space-4);
+    background: var(--subtle);
+  }
+  li + li::before {
+    content: '↓';
+    position: absolute;
+    top: calc(-1 * var(--space-6));
+    left: var(--space-4);
+    color: var(--accent);
+  }
+  .step {
+    display: inline-grid;
+    place-items: center;
+    min-width: var(--space-6);
+    margin-right: var(--space-3);
+    color: var(--accent);
+    font-family: var(--font-mono);
+  }
+  p {
+    margin: var(--space-2) 0 0;
+    line-height: var(--leading);
+    overflow-wrap: anywhere;
+  }
+</style>
