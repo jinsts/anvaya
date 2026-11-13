@@ -72,6 +72,8 @@ sources:
     url: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Memory_management
 ---
 
+import ArchitectureFlow from '../../../components/diagrams/ArchitectureFlow.astro';
+
 import source from '../../../../labs/computer-architecture-execution/stack-and-heap/example.ts?raw';
 
 ## A returning function can leave a live result
@@ -129,15 +131,31 @@ structure used in a priority queue. A heap can span multiple mapped regions;
 there is no requirement that all live allocations occupy one contiguous physical
 area.
 
-Consider these explicit model events:
-
-| Event                                    | Active modeled stack bytes | Live modeled heap bytes |
-| ---------------------------------------- | -------------------------- | ----------------------- |
-| `main` enters with a 16-byte frame       | 16                         | 0                       |
-| `makeBuffer` enters with a 24-byte frame | 40                         | 0                       |
-| `makeBuffer` allocates a 128-byte buffer | 40                         | 128                     |
-| `makeBuffer` returns                     | 16                         | 128                     |
-| The owner releases the buffer            | 16                         | 0                       |
+<ArchitectureFlow
+  caption="Removing a call frame does not release an independently allocated result."
+  nodes={[
+    {
+      label: 'Before call: main frame',
+      detail:
+        'The caller retains its continuation and any caller-saved values needed after the call.',
+    },
+    {
+      label: 'During makeBuffer: main + callee frame',
+      detail:
+        'The callee preserves required state and creates a 128-byte allocation. Its local handle points to that allocation.',
+    },
+    {
+      label: 'After return: main frame + live buffer',
+      detail:
+        'The callee frame is gone; the returned handle still names the allocation. Physical frame layout depends on ABI and optimization.',
+    },
+    {
+      label: 'After release: main frame only',
+      detail:
+        'The owner releases the buffer after its last valid use. A stale handle does not extend lifetime.',
+    },
+  ]}
+/>
 
 The temporary reference in the callee and the buffer it names have separate
 lifetimes. Returning or copying a reference does not copy the whole target.
@@ -219,6 +237,9 @@ freed pointers, real process memory measurements or garbage-collection timing
 claims. The model rejects invalid sizes, an exceeded stack budget and releasing
 unknown allocations.
 
+<details>
+<summary>Inspect the tested model and expected output</summary>
+
 <CodeExample
   title="Independent frame and allocation lifetimes"
   code={source}
@@ -228,12 +249,19 @@ unknown allocations.
   }
 />
 
+</details>
+
+<details>
+<summary>Model contract and implementation costs</summary>
+
 Its accounting intentionally uses simple scans: `stackBytes` is O(d) for d active
 frames, and `heapBytes` is O(a) for a live allocations. Consequently `enter` scans
 the frames and `allocate` scans the allocations when checking totals. Under
 expected constant-cost map operations, `free` is expected O(1); the stored model
 state is O(d + a). These software costs do not describe native stack-pointer
 updates or a production allocator.
+
+</details>
 
 <LabCard
   title="Three lifetime investigations"
@@ -261,6 +289,21 @@ updates or a production allocator.
    Rejection should preserve unrelated live state.
 
 </details>
+
+## Follow the shared native call
+
+In the Linux x86-64 native example, the caller places the address of its unsigned
+value in RDI. A `call` saves the address of the next instruction on the stack and
+transfers control to `bump`; `ret` restores that continuation. The result arrives
+in EAX. Caller-saved registers may change; preserved registers must be restored
+if used. The checked `-O0` listing in the compilation lesson has an explicit
+frame; the `-O2` leaf needs no local frame storage beyond the call's return address.
+This is why a source function does not imply a fixed-sized physical frame.
+
+**Unfamiliar trace:** a caller retains handle H to an allocation; the callee's
+frame disappears; a later access through H succeeds; then H is released. Which
+event invalidates another alias of H? Release ends the allocation's lifetime,
+not the earlier return. Moving the local handle cannot copy or extend its target.
 
 ## Check your reasoning
 
