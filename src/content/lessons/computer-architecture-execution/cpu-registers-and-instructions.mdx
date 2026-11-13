@@ -215,9 +215,18 @@ zero-extension preserves unsigned 255 as `0x00ff`.
 
 **Transfer task:** start with memory value 41 and base 2000. Predict memory and
 EAX after each data instruction, then locate the first mistake in a trace that
-changes memory immediately after the addition. The correct final value is 42;
-the premature memory change is the error. See the compilation lesson to reproduce
-the actual artifact; the model decoder is not an x86 emulator.
+changes memory immediately after the addition. See the compilation lesson to
+reproduce the actual artifact; the model decoder is not an x86 emulator.
+
+<details>
+<summary>Check after predicting</summary>
+
+After the load, EAX is 41 and memory[2000..2003] still holds 41. After the add,
+EAX is 42 while memory is unchanged. Only the store writes 42 back. A trace that
+changes memory right after the addition makes its first mistake there: `addl`
+changes only the register.
+
+</details>
 
 ## Practise changing one field at a time
 
