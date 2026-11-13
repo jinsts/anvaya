@@ -314,3 +314,72 @@ TypeScript models, and native compilation experiments, hardware counters, and
 performance benchmarks were not run. Mobile checks use Chromium emulation;
 real-device and manual screen-reader testing are not claimed. No content was
 promoted, pushed, or deployed.
+
+## Architecture audit revisions — 2026-11-13
+
+Executed the [curriculum audit](reviews/computer-architecture-execution-audit.md)
+within the existing nine lessons. All remain `draft` with `drafter: agent`.
+Representation now precedes instruction decoding, with matching prerequisites.
+Nine primary mechanism figures cover execution, instruction fields, build
+artifacts, representation, caches, lifetimes, privilege, I/O ownership, and
+Amdahl time fractions. The performance lesson also works an explicit dependency
+and branch timeline. Figures use local HTML/CSS, tokens, labelled states and
+native text alternatives; they require no JavaScript or remote assets.
+
+Complete model listings are in native disclosures. Redundant trace tables,
+pipeline/ABI exposition and repeated exercises were removed; simulator
+bookkeeping is optional reference material. New work includes tested binary32
+inspection, rounding boundaries, Unicode counting, address/width explanations,
+coherence/visibility diagnosis, and real compiler artifacts.
+
+The shared native lab compiled and executed original C at `-O0` and `-O2`
+with `-fno-inline`, generated the displayed assembly, inspected undefined object
+symbols using GNU `nm`, and verified both returned and stored values. The recorded
+target is Linux x86-64/System V with GCC 15.2.0. Compiler packages were extracted
+into `/tmp/anvaya-cc`; no repository dependency was added. The local wrapper
+`/tmp/anvaya-cc/compiler` supplies that extracted toolchain's paths. On a matching
+system, `ANVAYA_CC=cc` selects the installed compiler instead.
+
+The locality experiment sums a 2048×2048 uint32 matrix in both traversal orders,
+alternates which goes first, records six observations per order and checks all
+checksums. Its actual observations, timestamp, compiler, flags and CPU are in
+`labs/computer-architecture-execution/architecture-and-performance/measurement.json`.
+No timing threshold is asserted. Hardware counters, CPU affinity and frequency
+were not controlled; the lesson separates observations from causal hypotheses.
+
+Three selected labs now have separate learner starters and shared contracts.
+Their unsolved attempt commands were run and each exited 1 with the intentional
+implementation error. The same contracts passed against reference implementations.
+These starter failures are expected and excluded from the ordinary quality gate.
+
+Successful verification used:
+
+```sh
+ANVAYA_CC=/tmp/anvaya-cc/compiler \
+  PLAYWRIGHT_PORT=4331 \
+  LD_LIBRARY_PATH=/tmp/anvaya-browser-deps/usr/lib/x86_64-linux-gnu \
+  pnpm verify
+```
+
+| Check               | Result                                                          |
+| ------------------- | --------------------------------------------------------------- |
+| Type checking       | Zero errors, warnings or hints                                  |
+| Formatting and lint | Passed, including token and placeholder checks                  |
+| Unit/lab tests      | 164 passed in 22 files, including native compilation/execution  |
+| Static build        | 29 pages; 22 search pages; link, anchor and recap checks passed |
+| Browser tests       | 56 passed across desktop and mobile Chromium                    |
+
+The twenty new browser cases cover all nine revised lessons in both themes,
+document overflow, mechanism figures, keyboard source disclosures and quiz
+feedback, plus reading and disclosures without JavaScript. Each lesson/theme
+receives an axe WCAG-tag scan. Native checks are explicitly skipped when
+`ANVAYA_CC` is absent; the successful run above enabled and executed them.
+
+Figure-level screenshots were inspected for instruction fields and Amdahl bars
+at desktop/mobile widths in light and dark themes. Labels remained readable and
+the diagrams fit their containers. Captures remain local under
+`/tmp/anvaya-revision-visuals/`; no visual baselines were accepted.
+
+Owner promotion and independent pedagogical review remain pending. Browser
+coverage uses Chromium emulation, not physical devices or manual screen-reader
+evaluation. No push, deployment, new runtime service, or content promotion occurred.

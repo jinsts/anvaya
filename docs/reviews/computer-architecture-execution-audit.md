@@ -290,3 +290,18 @@ checked. The visual audit inspected source and existing screenshots; it did not
 implement new illustrations or run a new 76-scan lesson audit. No new native
 compiler experiment, hardware-counter run, benchmark result, or learner-mastery
 claim is made. All lessons remain agent drafts.
+
+## Implementation follow-through — 2026-11-13
+
+The owner requested execution of this plan after the baseline audit. The nine
+existing lessons have now been revised in separate local commits: primary
+mechanism figures, optional full source, corrected prerequisite order, stronger
+worked mechanisms and diagnosis tasks, three learner attempt/contract paths,
+tested native compiler artifacts, and a recorded locality experiment. The
+original findings above describe commit `d40a5b7`, not the revised lesson state.
+
+The [revision verification record](../VERIFICATION.md) records the executed
+checks, actual measurement provenance, browser coverage, and remaining limits.
+The native-enabled quality gate passed 164 unit/lab tests and 56 browser tests.
+Content remains draft; owner promotion and independent pedagogical review are
+still required.
