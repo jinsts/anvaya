@@ -1,0 +1,83 @@
+{
+  "date": "2026-11-13T06:04:04.709Z",
+  "compiler": "x86_64-linux-gnu-gcc-15 (Ubuntu 15.2.0-16ubuntu1) 15.2.0",
+  "platform": "linux",
+  "arch": "x64",
+  "cpu": "Intel(R) Core(TM) Ultra 9 285H",
+  "flags": ["-O2", "-fno-loop-interchange"],
+  "size": 2048,
+  "records": [
+    {
+      "trial": 0,
+      "order": "rows",
+      "seconds": 0.00202769,
+      "checksum": "524280621"
+    },
+    {
+      "trial": 0,
+      "order": "columns",
+      "seconds": 0.004405219,
+      "checksum": "524280621"
+    },
+    {
+      "trial": 1,
+      "order": "columns",
+      "seconds": 0.003610596,
+      "checksum": "524280621"
+    },
+    {
+      "trial": 1,
+      "order": "rows",
+      "seconds": 0.000906192,
+      "checksum": "524280621"
+    },
+    {
+      "trial": 2,
+      "order": "rows",
+      "seconds": 0.00089998,
+      "checksum": "524280621"
+    },
+    {
+      "trial": 2,
+      "order": "columns",
+      "seconds": 0.0033478,
+      "checksum": "524280621"
+    },
+    {
+      "trial": 3,
+      "order": "columns",
+      "seconds": 0.003464411,
+      "checksum": "524280621"
+    },
+    {
+      "trial": 3,
+      "order": "rows",
+      "seconds": 0.000874637,
+      "checksum": "524280621"
+    },
+    {
+      "trial": 4,
+      "order": "rows",
+      "seconds": 0.000856866,
+      "checksum": "524280621"
+    },
+    {
+      "trial": 4,
+      "order": "columns",
+      "seconds": 0.003388235,
+      "checksum": "524280621"
+    },
+    {
+      "trial": 5,
+      "order": "columns",
+      "seconds": 0.003406666,
+      "checksum": "524280621"
+    },
+    {
+      "trial": 5,
+      "order": "rows",
+      "seconds": 0.000763597,
+      "checksum": "524280621"
+    }
+  ]
+}

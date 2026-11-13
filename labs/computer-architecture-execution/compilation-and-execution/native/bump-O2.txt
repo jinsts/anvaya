@@ -1,0 +1,11 @@
+bump:
+.LFB0:
+	.cfi_startproc
+	endbr64
+	movl	(%rdi), %eax
+	addl	$1, %eax
+	movl	%eax, (%rdi)
+	ret
+	.cfi_endproc
+.LFE0:
+	.size	bump, .-bump

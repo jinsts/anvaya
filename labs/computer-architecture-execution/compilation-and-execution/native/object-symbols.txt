@@ -1,0 +1,2 @@
+                 U __assert_fail
+                 U __stack_chk_fail
