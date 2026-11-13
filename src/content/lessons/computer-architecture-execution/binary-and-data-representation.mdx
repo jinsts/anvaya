@@ -136,12 +136,10 @@ whose high bit is set, subtract 256. Therefore `11111111` is 255 - 256 = -1.
 The signed range is asymmetric because zero occupies one of the nonnegative
 patterns.
 
-A fixed-width modular adder retains the low w result bits. For eight bits:
-
-The figure separates signed interpretation from the unsigned pattern.
-For 127 + 1, the retained byte is 128: signed overflow occurs without unsigned
-carry. For 255 + 1, the retained byte is zero: unsigned carry occurs while the
-signed interpretation −1 + 1 fits.
+A fixed-width modular adder retains the low w result bits. With eight bits,
+127 + 1 retains the byte 128: signed overflow occurs without unsigned carry.
+255 + 1 retains zero: unsigned carry occurs while the signed interpretation
+−1 + 1 fits.
 
 **Carry** reports a result beyond the unsigned range. **Signed overflow** reports
 a signed mathematical result beyond the signed range. Neither condition implies
