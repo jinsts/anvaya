@@ -298,9 +298,19 @@ compare cycles, instructions, cache and TLB events with documented counter meani
 otherwise report the cause as a hypothesis. Repeat on a larger/smaller working
 set and retain a noisy or contrary result rather than choosing only the fastest run.
 
-**Transfer task:** propose a case where row and column times converge. A matrix
-that fits in cache or a compiler transformation can weaken the difference. Check
-correctness and generated work before concluding that locality stopped mattering.
+**Transfer task:** propose a case where row and column times converge, and say
+what you would check before concluding that locality stopped mattering.
+
+<details>
+<summary>Check after proposing</summary>
+
+A matrix that fits in a fast cache level, or a compiler transformation such as
+loop interchange, can weaken the difference. Check correctness and the generated
+work first: if the compiler rewrote the column loop into row order, locality
+still matters, but the experiment no longer tests it. The recorded build passes
+`-fno-loop-interchange` to rule out that transformation.
+
+</details>
 
 ## Practise making and testing a prediction
 
