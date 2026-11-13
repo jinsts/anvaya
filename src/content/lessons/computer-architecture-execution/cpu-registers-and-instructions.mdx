@@ -10,7 +10,7 @@ learningObjectives:
   - Separate an instruction set architecture from a microarchitecture and a calling convention
   - Decode operation, register, and immediate fields in a fixed-width teaching format
   - Explain how operands move between registers and memory and why register pressure matters
-prerequisites: [computer-architecture-execution/how-computers-execute-programs]
+prerequisites: [computer-architecture-execution/binary-and-data-representation]
 tags: [instructions, registers, binary, memory]
 skills: [implementation, debugging, technical-communication]
 status: draft
@@ -62,6 +62,10 @@ sources:
     url: https://diveintosystems.org/book/C5-Arch/index.html
 ---
 
+import nativeAssembly from '../../../../labs/computer-architecture-execution/compilation-and-execution/native/bump-O2.txt?raw';
+
+import InstructionFields from '../../../components/diagrams/InstructionFields.astro';
+
 import example from '../../../../labs/computer-architecture-execution/cpu-registers-and-instructions/example.ts?raw';
 
 ## An instruction is a contract encoded in bits
@@ -107,26 +111,19 @@ memory. Confusing these two jobs is a common source of pointer mistakes.
 
 ## Decode a small format completely
 
+<InstructionFields />
+
 Our illustrative format is exactly 16 bits wide. It supports two opcodes: 1 means
 set a register to an immediate; 2 means add an immediate to a register. It is a
 teaching format, with no relationship to real x86-64 or ARM64 machine encodings.
 
-| Bits  | Field              | Width  | Valid values in this format         |
-| ----- | ------------------ | ------ | ----------------------------------- |
-| 15–12 | Opcode             | 4 bits | 1 or 2; other patterns are reserved |
-| 11–8  | Register index     | 4 bits | 0 through 15                        |
-| 7–0   | Unsigned immediate | 8 bits | 0 through 255                       |
+For the illustrative encoding, the figure assigns 4 opcode bits, 4 register bits
+and 8 immediate bits. Decode 0x2311 as add / register 3 / immediate 17. It does
+not execute the addition. Reserved opcodes and out-of-range fields must be rejected
+rather than truncated into a different request.
 
-For word `0x2311`, the highest hexadecimal digit is opcode 2. The next digit
-selects register 3. The last two digits represent `0x11`, which is decimal 17.
-The decoded meaning is “add immediate 17 to register 3.” This lab decodes that
-meaning but deliberately does not execute the addition or define its overflow
-behavior.
-
-Four bits can distinguish 16 registers because there are 16 possible patterns.
-Eight bits can carry 256 unsigned values. The top four bits also have 16
-patterns, but our format assigns meanings to only two. An encoding having enough
-space for a pattern does not make that pattern a valid instruction.
+<details>
+<summary>Inspect the tested model and expected output</summary>
 
 <CodeExample
   title="Encode and decode a teaching instruction"
@@ -134,6 +131,8 @@ space for a pattern does not make that pattern a valid instruction.
   verified
   output={'word: 0x2311\nopcode: 2\nregister: 3\nimmediate: 17'}
 />
+
+</details>
 
 The masks extract each field without including adjacent bits. Validation before
 encoding matters: register index 16 would require a fifth bit and could overlap
@@ -174,11 +173,7 @@ which registers survive a call, and how stack state is maintained. A broader
 **application binary interface**, or ABI, covers additional binary agreements
 such as data layout and object-file interfaces.
 
-A caller must save any value it still needs if the convention allows the callee
-to overwrite its register. A callee must restore registers that the convention
-requires it to preserve. Both can use perfectly legal instructions and still
-break the program by disagreeing on this contract. Check the target platform
-before applying an example calling convention from another operating system.
+The [stack lesson](/learn/computer-architecture-execution/stack-and-heap/) traces caller/callee preservation and return state using the shared native example.
 
 ## Costs and limits of this decoder
 
@@ -192,6 +187,37 @@ length and room for more operations. A larger immediate may require another
 instruction or a different encoding. Variable-length encodings can improve code
 density but add decoding considerations. Choose a concrete target before
 reasoning about those trade-offs quantitatively.
+
+## Read the real load, add and store
+
+The shared native lab compiles `bump` for Linux x86-64 using the System V ABI.
+Its tested input is an unsigned 32-bit value 7. The pointer arrives in the
+64-bit register RDI; the returned 32-bit value uses EAX. These names belong to
+this target, not the illustrative 16-bit format above.
+
+<CodeExample
+  title="GCC 15.2 -O2 -fno-inline: tested bump function"
+  code={nativeAssembly}
+  language="text"
+/>
+
+Read the three data instructions in order: `movl (%rdi), %eax` loads four bytes
+at the address in RDI; `addl $1, %eax` changes only the register; `movl %eax, (%rdi)`
+stores four bytes back. With RDI = 1000, memory[1000..1003] changes from 7 to 8
+only at the store. For an indexed operand, a base of 1000 plus index 3 scaled by
+4 addresses byte 1012. Loading the address and loading its contents are distinct.
+
+`ret` resumes the caller using the saved return address. The security landing
+instruction `endbr64` and assembler directives do not implement the increment.
+A 64-bit pointer, a 32-bit operand, and a variable-length x86 instruction are
+three different widths. Sign-extending byte `0xff` preserves −1 as `0xffff`;
+zero-extension preserves unsigned 255 as `0x00ff`.
+
+**Transfer task:** start with memory value 41 and base 2000. Predict memory and
+EAX after each data instruction, then locate the first mistake in a trace that
+changes memory immediately after the addition. The correct final value is 42;
+the premature memory change is the error. See the compilation lesson to reproduce
+the actual artifact; the model decoder is not an x86 emulator.
 
 ## Practise changing one field at a time
 
@@ -226,24 +252,6 @@ The first word means opcode 1, register 0, immediate 0. The second means opcode
 Thirty-two register names need five bits. After four opcode bits and five
 register bits, seven bits remain. An unsigned seven-bit immediate ranges from
 0 through 127. Change masks and shifts together and preserve a round-trip test.
-
-</details>
-
-<LabCard
-  title="03 / Defend against an invalid register"
-  command="pnpm exec vitest run labs/computer-architecture-execution/cpu-registers-and-instructions/"
->
-  Add a test for register 16 and immediate 256, then explain what would happen
-  if validation were removed. Keep the reference implementation unchanged and
-  demonstrate why throwing preserves the caller's intent better than truncation.
-</LabCard>
-
-<details>
-  <summary>Hint after an attempt</summary>
-
-These values do not fit their assigned fields. A shifted fifth register bit or
-ninth immediate bit can occupy a neighboring field. Truncating would silently
-select another register or value, so neither outcome represents the request.
 
 </details>
 
