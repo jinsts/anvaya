@@ -238,9 +238,18 @@ flag must pair with publication of the payload; ordinary loads/stores are not a
 substitute. This is a conceptual protocol, not tested concurrent C code.
 
 **Diagnosis:** a trace says both cores read counter 7 and later store 8. Is the
-first error necessarily stale caching? No: even a coherent order can lose an
-update when load/add/store is not an atomic read-modify-write. Identify which
-property is needed before proposing a cache flush.
+first error necessarily stale caching? Decide which property is missing before
+proposing a cache flush.
+
+<details>
+<summary>Check after diagnosing</summary>
+
+No. Even a coherent order can lose an update when the load, add and store are
+not one atomic read-modify-write. The missing property is atomicity of the whole
+update, which an atomic operation or a lock provides; flushing caches would not
+supply it.
+
+</details>
 
 ## Practise the boundary
 
@@ -263,13 +272,14 @@ the kernel, while the saved context identifies the interrupted user execution.
 </details>
 
 <LabCard
-  title="03 / Audit a device handoff"
+  title="02 / Audit a device handoff"
   command="pnpm exec vitest run labs/computer-architecture-execution/hardware-software-interaction/"
 >
   Write a short review of a fictional driver that submits a temporary
   application pointer, returns immediately, and lets the application reuse that
   memory. Identify the address-domain and lifetime assumptions, then propose the
-  state information the next lab should retain until completion.
+  state information the I/O lesson's request model should retain until
+  completion.
 </LabCard>
 
 <details>
