@@ -35,9 +35,9 @@ sections:
     subject: computer-architecture-execution
     lessons:
       - computer-architecture-execution/how-computers-execute-programs
+      - computer-architecture-execution/binary-and-data-representation
       - computer-architecture-execution/cpu-registers-and-instructions
       - computer-architecture-execution/compilation-and-execution
-      - computer-architecture-execution/binary-and-data-representation
       - computer-architecture-execution/memory-hierarchy-and-caches
       - computer-architecture-execution/stack-and-heap
       - computer-architecture-execution/hardware-software-interaction

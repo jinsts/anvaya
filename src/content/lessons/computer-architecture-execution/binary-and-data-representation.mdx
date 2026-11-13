@@ -12,7 +12,7 @@ learningObjectives:
   - Choose byte, code-unit or code-point counts for a text-processing task
   - Test a fixed-width arithmetic and record-layout model at representation boundaries
 prerequisites:
-  - computer-architecture-execution/cpu-registers-and-instructions
+  - computer-architecture-execution/how-computers-execute-programs
 tags: [binary, memory, representation, complexity]
 skills: [debugging, implementation, complexity-analysis]
 status: draft
@@ -75,6 +75,10 @@ sources:
     url: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String
 ---
 
+import inspection from '../../../../labs/computer-architecture-execution/binary-and-data-representation/inspect.ts?raw';
+
+import ArchitectureFlow from '../../../components/diagrams/ArchitectureFlow.astro';
+
 import source from '../../../../labs/computer-architecture-execution/binary-and-data-representation/example.ts?raw';
 
 ## A byte needs an interpretation
@@ -88,12 +92,37 @@ binary. That analogy explains interpretation, but computer formats also specify
 what happens when a value cannot fit. A wrong format can turn a valid packet into
 an impossible measurement without changing a single bit.
 
-The [instruction lesson](/learn/computer-architecture-execution/cpu-registers-and-instructions/)
-introduced registers and operations. Here we establish what their operands mean.
+The execution lesson introduced changing machine state. Here we establish what its bits mean before decoding instruction fields.
 We use eight-bit bytes and byte-addressed memory throughout; other machine models
 must state their own units.
 
 ## Unsigned and signed integers
+
+<ArchitectureFlow
+  caption="Bytes, fields and alignment describe different views of the same storage."
+  nodes={[
+    {
+      label: '11111111: unsigned 255 / signed \u22121',
+      detail:
+        'Unsigned high-bit weight is +128; signed two\u2019s-complement weight is \u2212128. Sign-extending to 16 bits gives 0xffff; zero-extending gives 0x00ff.',
+    },
+    {
+      label: 'Binary32 6.5: 0 | 10000001 | 10100000000000000000000',
+      detail:
+        '6.5 = 1.101\u2082 \u00d7 2\u00b2. Stored exponent 129 minus bias 127 gives 2; fraction .101\u2082 is 0.625.',
+    },
+    {
+      label: '0x1234 in addressed bytes',
+      detail:
+        'Lower \u2192 higher address: little endian [34, 12], big endian [12, 34], in hex. Bits inside a byte are not reversed.',
+    },
+    {
+      label: 'Record offsets: 0 / 4 / 8; total 12 bytes',
+      detail:
+        'Field bytes: [A][pad][pad][pad][B][B][B][B][C][pad][pad][pad]. Padding preserves alignment between consecutive records.',
+    },
+  ]}
+/>
 
 A binary digit at position k, counting from zero at the right, contributes 2 to
 the power k. Thus `00001101` means 8 + 4 + 1 = 13. Hexadecimal groups four bits
@@ -109,14 +138,10 @@ patterns.
 
 A fixed-width modular adder retains the low w result bits. For eight bits:
 
-<div className="table-scroll" tabIndex={0} role="region" aria-label="Unsigned carry and signed overflow examples">
-
-| Inputs interpreted as unsigned | Retained byte | Unsigned carry | Signed interpretation                          |
-| ------------------------------ | ------------- | -------------- | ---------------------------------------------- |
-| 127 + 1                        | `10000000`    | No             | 127 + 1 cannot fit; retained result means -128 |
-| 255 + 1                        | `00000000`    | Yes            | -1 + 1 = 0 fits                                |
-
-</div>
+The figure separates signed interpretation from the unsigned pattern.
+For 127 + 1, the retained byte is 128: signed overflow occurs without unsigned
+carry. For 255 + 1, the retained byte is zero: unsigned carry occurs while the
+signed interpretation −1 + 1 fits.
 
 **Carry** reports a result beyond the unsigned range. **Signed overflow** reports
 a signed mathematical result beyond the signed range. Neither condition implies
@@ -212,6 +237,9 @@ This TypeScript lab is an executable educational model, not an inspection of
 native object layout. Its arithmetic and layout rules are explicit. The output
 below is checked exactly by its tests.
 
+<details>
+<summary>Inspect the tested model and expected output</summary>
+
 <CodeExample
   title="Interpret bytes and apply explicit layout rules"
   code={source}
@@ -221,33 +249,49 @@ below is checked exactly by its tests.
   }
 />
 
+</details>
+
 For fixed eight-bit and 16-bit widths the arithmetic functions use O(1) work and
 space. For f fields, `layoutRecord` uses O(f) work and O(f) output space under
 constant-cost safe-integer arithmetic. Arbitrary-precision integers require a
 cost model that includes the number of machine words processed.
 
-<LabCard
-  title="Three representation investigations"
-  command="pnpm exec vitest run labs/computer-architecture-execution/binary-and-data-representation/"
->
+## Inspect floating-point bits and text units
 
-1. Predict the signed result, carry and signed overflow for the bytes 128 and 255. Add a test that distinguishes all three properties.
-2. Reorder the modeled fields to integer, byte, byte. Predict every offset and
-   the final size, then confirm the padding with `layoutRecord`.
-3. Use `bitAt` to count the one bits in every byte from 0 through 255. Check zero,
-   all ones and a byte with only its highest bit set.
-
-</LabCard>
+For normal binary32 numbers the value is sign × (1 + fraction) × 2 to the power
+(stored exponent − 127). In the figure, 6.5 is (1 + 0.625) × 4. The leading one
+is implicit; 23 stored fraction bits plus that one give 24 bits of precision.
+Between 1 and 2, adjacent binary32 values are separated by 2 to the power −23;
+between 2 and 4 the spacing doubles. A halfway value rounds to an even low bit
+under the default nearest-even rule. Zeros, subnormals, infinities and NaNs need
+the special exponent encodings rather than the normal-value formula.
 
 <details>
-  <summary>Hints after your attempt</summary>
+<summary>Inspect the tested DataView and text-counting helpers</summary>
 
-1. Interpret 128 and 255 as signed values before adding: -128 + -1 is below the
-   signed minimum, while unsigned addition also exceeds 255.
-2. The first field already meets alignment four. Round the final occupied end
-   up to alignment four even when no interior padding was needed.
-3. Visit exactly eight positions. This O(8) bound is constant for a byte; a
-   generalized w-bit scan uses O(w) bit inspections.
+<CodeExample
+  title="Inspect explicit binary32 storage and Unicode units"
+  code={inspection}
+/>
+
+</details>
+
+`floatBits(6.5)` yields `01000000110100000000000000000000`. Tests also check
+negative zero, infinity and the rounding boundary halfway above 1. `DataView`
+uses explicitly selected byte order here; it does not infer native object layout.
+
+<LabCard title="Independent representation attempt" command="pnpm lab computer-architecture-execution/binary-and-data-representation">
+Implement `solve` in `starter.ts` to interpret any unsigned byte as two's
+complement. Predict the results for 173 and 250 before running the attempt tests.
+Then use the separate inspection helpers to count `🙂é` in bytes, UTF-16 units,
+code points and graphemes; explain why these counts differ.
+</LabCard>
+<details>
+<summary>Check after attempting</summary>
+
+The signed values are −83 and −6. The text has 7 UTF-8 bytes, 4 UTF-16 units,
+3 code points and 2 graphemes. A combining accent belongs to the preceding visible
+letter. Tests check those counts, including empty text.
 
 </details>
 
