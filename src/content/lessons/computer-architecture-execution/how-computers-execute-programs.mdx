@@ -60,6 +60,8 @@ sources:
     url: https://pages.cs.wisc.edu/~remzi/OSTEP/cpu-intro.pdf
 ---
 
+import ArchitectureFlow from '../../../components/diagrams/ArchitectureFlow.astro';
+
 import example from '../../../../labs/computer-architecture-execution/how-computers-execute-programs/example.ts?raw';
 
 ## A program is a sequence of state changes
@@ -85,23 +87,31 @@ starting point.
 
 ## Follow the next instruction
 
-The **program counter**, or PC, identifies where execution continues. To explain
-one instruction, use four conceptual steps:
-
-1. **Fetch:** obtain the instruction selected by the PC.
-2. **Decode:** interpret the operation and identify its operands.
-3. **Execute:** calculate a result, inspect a condition, or access data.
-4. **Update state:** record the result and the next instruction position.
-
-An operand is an input to an operation: for example, a value already in a
-register or a constant encoded in the instruction. A branch chooses a different
-next position when its condition holds. A call and return also change control
-flow, while preserving enough information to resume the caller.
-
-These steps describe effects, not a universal physical pipeline. Different
-processors divide execution differently and overlap the work. Nor does an
-instruction always occupy one byte: a PC increment in a byte-addressed system
-depends on the instruction's length.
+<ArchitectureFlow
+  caption="A load, computation and store connect control to data. Illustrative addresses; not a physical timing model."
+  nodes={[
+    {
+      label: 'PC \u2192 instruction memory',
+      detail:
+        'PC selects the instruction; decoder/control selects the operands and operation.',
+    },
+    {
+      label: 'Load \u2192 register',
+      detail:
+        'Read a 32-bit value 7 at byte address 1000 into R0. RAM stays 7.',
+    },
+    {
+      label: 'ALU \u2192 write-back',
+      detail:
+        'Add 1 to R0: R0 becomes 8. State is retained between clock edges; decoding alone does not change RAM.',
+    },
+    {
+      label: 'Store \u2192 data memory',
+      detail:
+        'Write R0 to address 1000: RAM becomes 8. A branch can select a different next PC.',
+    },
+  ]}
+/>
 
 ## Trace a deliberately small machine
 
@@ -128,12 +138,17 @@ The branch executes twice, even though it appears once in the program.
 **Static instruction count** counts instructions in the program; **dynamic
 instruction count** counts the instructions actually executed.
 
+<details>
+<summary>Inspect the tested model and expected output</summary>
+
 <CodeExample
   title="A bounded instruction trace in TypeScript"
   code={example}
   verified
   output={'0: 0\n1: 2\n2: 1\n1: 1\n2: 0\n3: 0\n3: 0 halted'}
 />
+
+</details>
 
 Each output line shows PC and accumulator after a state transition, with the
 initial state first. The final line records the halt instruction. The tests check
@@ -152,13 +167,7 @@ The trace completes six instructions: one set, two additions, two branches and
 one halt. It contains no clock model. Six instructions do not imply six cycles,
 six nanoseconds, or any particular hardware speed.
 
-A **pipeline** overlaps stages of different instructions. In an ideal four-stage
-pipeline with no stalls, three independent instructions finish in six cycles:
-four cycles for the first, then one additional completion in each of the next
-two. Each instruction still travels through four stages. This separates
-**latency**, time for one operation, from **throughput**, completed operations per
-unit of time. Dependencies, resource conflicts and unexpected branches limit
-that ideal overlap.
+A pipeline overlaps instruction stages. The [performance lesson](/learn/computer-architecture-execution/architecture-and-performance/) works the latency, throughput and dependency timeline.
 
 Our TypeScript implementation validates p stored instructions and records s
 executed steps. Under constant-cost operations on these bounded values, its
@@ -180,59 +189,20 @@ application normally exits through its runtime and operating system. Keep the
 layers separate when diagnosing a failure: the PC explains control flow, while
 the process and runtime explain which memory and services that flow can use.
 
-## Practise tracing before changing the model
+## Attempt the control-flow contract
 
-<LabCard
-  title="01 / Predict a different initial counter"
-  command="pnpm exec vitest run labs/computer-architecture-execution/how-computers-execute-programs/"
->
-  Start with accumulator 3 instead of 2. Write the complete expected trace in a
-  new test before running it. Count the dynamic additions and branches,
-  including the final branch whose condition is false.
+<LabCard title="Independent execution attempt" command="pnpm lab computer-architecture-execution/how-computers-execute-programs">
+Implement `solve(initial)` in `starter.ts`: count executed instructions for the
+set/add-255/conditional-branch/halt program. Count the untaken branch and halt.
+Try 7 and 19, then explain the special case where the initial byte is zero.
 </LabCard>
-
 <details>
-  <summary>Hint after an attempt</summary>
+<summary>Check after deriving the count</summary>
 
-The accumulator visits 3, 2, 1 and 0. There are three additions and three
-branches. The set and halt each execute once, giving eight executed
-instructions and nine snapshots when the initial state is included.
-
-</details>
-
-<LabCard
-  title="02 / Explain a zero that does not finish immediately"
-  command="pnpm exec vitest run labs/computer-architecture-execution/how-computers-execute-programs/"
->
-  Set the initial accumulator to zero. Predict its value after the first add,
-  then find the step budget needed to reach halt. Add a test for a sufficient
-  budget and a second for a budget that expires first.
-</LabCard>
-
-<details>
-  <summary>Hint after an attempt</summary>
-
-The addition happens before the branch, so zero becomes 255. It takes 256
-additions and 256 branches to return to zero, plus set and halt: 514
-instructions. The default budget deliberately does not allow that run.
-
-</details>
-
-<LabCard
-  title="03 / Remove the termination path"
-  command="pnpm exec vitest run labs/computer-architecture-execution/how-computers-execute-programs/"
->
-  Construct a two-instruction program that sets a nonzero accumulator then
-  repeatedly branches to itself. Test that a finite budget rejects it. Explain
-  why the rejection is different from falling beyond the final instruction.
-</LabCard>
-
-<details>
-  <summary>Hint after an attempt</summary>
-
-A self-branch keeps selecting a valid position forever because nothing changes
-the condition. Falling beyond the program selects a position with no instruction;
-the simulator reports a different error for that invalid fetch.
+For a positive byte n, there are n additions, n branches, one set and one halt:
+2n + 2 instructions. Zero first wraps to 255, so the loop runs 256 times and the
+count is 514. The reference uses a sufficient step budget and the same contracts
+as the learner's attempt.
 
 </details>
 
