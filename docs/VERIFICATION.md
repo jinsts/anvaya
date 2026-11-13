@@ -383,3 +383,36 @@ the diagrams fit their containers. Captures remain local under
 Owner promotion and independent pedagogical review remain pending. Browser
 coverage uses Chromium emulation, not physical devices or manual screen-reader
 evaluation. No push, deployment, new runtime service, or content promotion occurred.
+
+## Subject chapters — 2026-11-13
+
+Platform change for [ADR 0008](adr/0008-subject-chapters-and-lesson-pages.md),
+run with the same local toolchain as the previous entry:
+
+```sh
+ANVAYA_CC=/tmp/anvaya-cc/compiler \
+  PLAYWRIGHT_PORT=4339 \
+  LD_LIBRARY_PATH=/tmp/anvaya-browser-deps/usr/lib/x86_64-linux-gnu \
+  pnpm verify
+```
+
+| Check               | Result                                                          |
+| ------------------- | --------------------------------------------------------------- |
+| Type checking       | 118 files; zero errors, warnings or hints                       |
+| Formatting and lint | Passed, including token and placeholder checks                  |
+| Unit/lab tests      | 165 passed in 22 files, including native compilation/execution  |
+| Static build        | 29 pages; 22 search pages; link, anchor and recap checks passed |
+| Browser tests       | 58 passed across desktop and mobile Chromium                    |
+
+The new unit test covers grouping, separated chapters and the duplicate
+overview outline. The new browser test checks one subject heading with six
+chapter headings on the path page, chapter links from the subject outline to
+their path anchors, and the subject label in the study sidebar. The existing
+axe scans cover the changed path and subject pages in both themes.
+
+Screenshots of the path page (desktop light, mobile dark), the subject outline
+(desktop dark), the lesson sidebar and the unchanged DSA path were inspected.
+Review found that HTML compression removed the space between "Chapter N" and
+the chapter title in accessible names; an explicit space fixed it. Captures
+remain local in the session scratchpad; no visual baselines were accepted.
+No push, deployment or content promotion occurred.

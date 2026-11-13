@@ -102,3 +102,17 @@ Owner request, decided in [ADR 0007](docs/adr/0007-curriculum-scaffolding.md).
 
 No lesson was written, no competency is recorded as achieved, and no push,
 deployment or license choice is part of this entry.
+
+## Subject chapters and lesson pages — 2026-11-13
+
+Owner request, proposed in [ADR 0008](docs/adr/0008-subject-chapters-and-lesson-pages.md).
+
+- [x] A path section is a chapter. A subject's adjacent sections are grouped on
+      the path page, the study sidebar and the subject outline; separated
+      chapters and a duplicate overview chapter list fail the build.
+- [x] Lesson sizing guidance: one teaching unit per page, usually 15–30 minutes.
+- [x] Computer Architecture & Execution restructured into six chapters. Its nine
+      lessons keep their URLs; ten planned pages hold split or missing material.
+- [ ] Owner review of the ADR and the restructured outline (approve by merging).
+- [ ] Draft the planned pages, one lesson per change, moving material out of the
+      existing lessons named in the path's YAML comments.
