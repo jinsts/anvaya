@@ -1,0 +1,12 @@
+title: LRU Cache
+url: https://leetcode.com/problems/lru-cache/
+difficulty: medium
+lessons:
+  - computer-architecture-execution/cache-organization
+  - dsa/hash-maps
+topics: [caches, hashing, design]
+lists: [neetcode-150]
+hints:
+  - 'Two questions need constant-time answers on every operation: where is this key, and which key was used least recently?'
+  - A map answers the first. Keep a recency order that can unlink any entry in constant time, and make the map point into it.
+  - On every use, move the entry to the most recent end; on overflow, remove the least recent entry from both structures. Each operation is expected O(1), with O(capacity) space.

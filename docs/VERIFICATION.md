@@ -416,3 +416,39 @@ Review found that HTML compression removed the space between "Chapter N" and
 the chapter title in accessible names; an explicit space fixed it. Captures
 remain local in the session scratchpad; no visual baselines were accepted.
 No push, deployment or content promotion occurred.
+
+## Cache organization lesson — 2026-11-13
+
+Draft of the planned page "Cache organization and write policies", with a tested
+lab model, a static placement figure and an interactive explorer that runs the
+same lab model. Same local toolchain as the previous entry:
+
+| Check               | Result                                                          |
+| ------------------- | --------------------------------------------------------------- |
+| Type checking       | Zero errors, warnings or hints                                  |
+| Formatting and lint | Passed, including token and placeholder checks                  |
+| Unit/lab tests      | 189 passed in 26 files, including native compilation/execution  |
+| Static build        | 30 pages; 23 search pages; link, anchor and recap checks passed |
+| Browser tests       | 62 passed across desktop and mobile Chromium                    |
+
+The lab tests check placement in three organizations, LRU against a stream that
+FIFO would handle differently, miss classification against a fully associative
+shadow cache, both write policies with and without write-allocate, invalid
+input, the lesson's matrix-padding and 16-array claims on the recorded L1d
+geometry, and the exact displayed output. A further test derives every set count
+in the recorded `lscpu --caches` output from size, ways and line size. The
+learner attempt fails until implemented, as intended. Component tests cover
+prediction scoring, organization and policy changes, reset and the LRU marker;
+a browser test drives the explorer by keyboard. The axe scans, overflow checks
+and JavaScript-disabled checks now include the new lesson.
+
+Screenshots of the figure and explorer at 1280 px (light) and 390 px (dark) were
+inspected. Review fixed inline-code borders inside the bit fields, truncated
+select labels, a cramped fully associative panel, an overflowing set label, and
+prose list spacing that offset the first field. No console errors or page
+overflow occurred. No visual baselines were accepted.
+
+One full run failed because the mock-interview test lists the problems it may
+draw at random, and the new LRU Cache problem was missing from that list. After
+adding it, the test passed 20 repeated runs on desktop and mobile, and the full
+gate passed again.

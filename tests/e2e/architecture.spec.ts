@@ -7,6 +7,7 @@ const slugs = [
   'cpu-registers-and-instructions',
   'compilation-and-execution',
   'memory-hierarchy-and-caches',
+  'cache-organization',
   'stack-and-heap',
   'hardware-software-interaction',
   'io-mechanisms',
@@ -101,4 +102,32 @@ test('all architecture lessons retain diagrams and working source disclosures wi
     await expect(disclosure.locator('pre').first()).toBeVisible();
   }
   await context.close();
+});
+
+test('the cache explorer takes a prediction and changes organization by keyboard', async ({
+  page,
+}) => {
+  await page.goto(`/learn/${subject}/cache-organization/`);
+  const explorer = page.getByRole('region', {
+    name: 'Interactive cache explorer',
+  });
+  await explorer.scrollIntoViewIfNeeded();
+  // Astro visible hydration has completed when the island drops `ssr`.
+  await expect(
+    page.locator('astro-island[component-export="default"]'),
+  ).not.toHaveAttribute('ssr', '');
+  const status = explorer.getByRole('status');
+  await expect(status).toContainText('Next: read address 0');
+
+  await explorer.getByRole('button', { name: 'Predict miss' }).focus();
+  await page.keyboard.press('Enter');
+  await expect(status).toContainText('Miss (compulsory)');
+  await expect(status).toContainText('You predicted miss: correct.');
+
+  const organization = explorer.getByRole('combobox', { name: 'Organization' });
+  await organization.focus();
+  await page.keyboard.press('ArrowDown');
+  await expect(organization).toHaveValue('two-way');
+  await expect(status).toContainText('Next: read address 0');
+  await expect(explorer.getByRole('table')).toContainText('Way 1');
 });

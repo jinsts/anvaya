@@ -182,3 +182,140 @@
     font-size: var(--text-xl);
   }
 }
+/* Cache explorer: shares the container, controls and story styles above. */
+.cache-explorer .operation-controls label {
+  flex: 1 1 15rem;
+}
+.access-stream {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: var(--space-4) 0;
+  padding: 0;
+  list-style: none;
+}
+.access-stream li {
+  display: grid;
+  min-width: var(--space-12);
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  text-align: center;
+}
+.access-stream li.next {
+  border: 2px solid var(--accent);
+  background: var(--accent-soft);
+}
+.access-stream code,
+.cache-fields code {
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: var(--text-sm);
+}
+.access-stream span {
+  min-height: 1lh;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+.cache-fields {
+  display: flex;
+  gap: var(--space-1);
+  max-width: 420px;
+  margin: 0 0 var(--space-4);
+  padding: 0;
+  list-style: none;
+}
+.cache-fields li {
+  display: grid;
+  min-width: 0;
+  padding: var(--space-1);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--diagram-cell);
+  text-align: center;
+}
+.cache-fields code {
+  overflow-wrap: anywhere;
+}
+.cache-fields span {
+  color: var(--muted);
+  font-size: var(--text-xs);
+}
+.cache-table-wrap {
+  overflow-x: auto;
+}
+.cache-table {
+  width: 100%;
+  margin: 0;
+  border-collapse: separate;
+  border-spacing: var(--space-1);
+  table-layout: fixed;
+  font-size: var(--text-xs);
+}
+.cache-table caption {
+  padding-bottom: var(--space-1);
+  color: var(--muted);
+  font-size: var(--text-xs);
+  text-align: left;
+}
+.cache-table th {
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-weight: 500;
+}
+.cache-table thead th:first-child,
+.cache-table tbody th {
+  width: 6em;
+}
+.cache-table tbody th span {
+  display: block;
+  color: var(--accent);
+}
+.cache-table td {
+  height: var(--space-16);
+  padding: var(--space-1);
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--diagram-cell);
+  text-align: center;
+  vertical-align: middle;
+  overflow-wrap: anywhere;
+}
+.cache-table td > * {
+  display: block;
+}
+.cache-table td strong {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+}
+.cache-table td span {
+  color: var(--muted);
+}
+.cache-table tr.lookup td {
+  border-style: solid;
+  border-color: var(--accent);
+}
+.cache-table td.changed {
+  border: 2px solid var(--accent);
+  background: var(--accent-soft);
+}
+.cache-table td.changed span {
+  color: var(--text);
+}
+.prediction-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+/* Lesson prose indents lists and spaces list items; these rows are not prose. */
+.cache-explorer .access-stream,
+.cache-explorer .cache-fields {
+  padding-left: 0;
+}
+.cache-explorer .access-stream li,
+.cache-explorer .cache-fields li {
+  margin-top: 0;
+}

@@ -156,8 +156,9 @@ checking it gives the same hit decision for this model.
 The figure shows a cold cache. First use is a compulsory miss; the final access
 is a conflict miss because block 2 displaced block 0 from their only permitted
 slot. A capacity miss instead reflects a working set too large even without
-those mapping conflicts. Associativity permits several ways per set; a replacement
-policy is needed when all ways are occupied.
+those mapping conflicts. Giving each set several ways removes many such
+conflicts; the [cache organization lesson](/learn/computer-architecture-execution/cache-organization/)
+traces sets, ways and replacement.
 
 ## Locality is a property of the access stream
 
@@ -174,15 +175,12 @@ columns long enough for reuse. These are predictions to test, not speedup
 promises: prefetchers, cache geometry and compiler transformations can alter the
 result.
 
-Writes introduce additional policies. A **write-through** cache propagates writes
-to the next level; a **write-back** cache marks modified lines dirty and writes
-them back later, so it can hold the only current copy until eviction or a
-coherence request. Write allocation determines whether a write miss fetches a
-line. A **prefetcher** predicts future addresses and fetches lines early;
-sequential access helps it, but wrong predictions consume bandwidth and
-capacity. Our read-only simulator models none of these mechanisms or multicore
-coherence. Writing a dirty line back toward RAM also does not make file data
-durable.
+A **prefetcher** predicts future addresses and fetches lines early; sequential
+access helps it, but wrong predictions consume bandwidth and capacity. Writes add
+their own policies, which the cache organization lesson compares. A write-back
+cache can hold the only current copy of a modified line until eviction, and
+writing that line back toward RAM still does not make file data durable. Our
+read-only simulator models none of these mechanisms or multicore coherence.
 
 ## Estimate one access before predicting the whole program
 
