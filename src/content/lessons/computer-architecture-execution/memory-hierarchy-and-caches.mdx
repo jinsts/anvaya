@@ -69,6 +69,8 @@ sources:
     url: https://pages.cs.wisc.edu/~remzi/OSTEP/vm-tlbs.pdf
 ---
 
+import ArchitectureFlow from '../../../components/diagrams/ArchitectureFlow.astro';
+
 import source from '../../../../labs/computer-architecture-execution/memory-hierarchy-and-caches/example.ts?raw';
 
 ## The same number of reads can cost different amounts
@@ -111,6 +113,31 @@ lower in a hierarchy diagram.
 
 ## A cache moves lines, not individual variables
 
+<ArchitectureFlow
+  caption="A cold two-slot cache with 16-byte lines: unused capacity does not prevent a mapping conflict."
+  nodes={[
+    {
+      label: 'Registers \u2192 SRAM caches \u2192 DRAM RAM \u2192 storage',
+      detail:
+        'Caches favor low latency; DRAM favors capacity. SSD/HDD storage persists under its contract and uses device I/O. These are qualitative roles, not universal timings.',
+    },
+    {
+      label: 'Address = tag | index | offset',
+      detail:
+        'For this two-slot cache: four offset bits select a byte; one index bit selects the slot; remaining bits distinguish blocks.',
+    },
+    {
+      label: '0, 4, 8, 12 \u2192 block 0 in slot 0',
+      detail: 'First access misses; the next three hit. Slot 1 is empty.',
+    },
+    {
+      label: '32 \u2192 block 2 in slot 0; then 0',
+      detail:
+        'Block 2 evicts block 0. Reading 0 misses again. With the same total capacity arranged as one two-way set, blocks 0 and 2 coexist: miss, miss, hit, hit for 0,32,0,32.',
+    },
+  ]}
+/>
+
 A **cache line** is the transfer and bookkeeping unit for this model. With
 16-byte lines, addresses 0 through 15 belong to memory block 0, addresses 16
 through 31 to block 1, and so on. The block number is the byte address divided
@@ -126,26 +153,11 @@ the only possible slot. Blocks 0 and 2 both map to slot 0. The simulator stores
 the full block identifier in that slot rather than splitting out a hardware tag;
 checking it gives the same hit decision for this model.
 
-Start with an empty cache and access byte addresses 0, 4, 8, 12, 32, 0:
-
-| Address | Block | Slot | Outcome and reason                 |
-| ------- | ----- | ---- | ---------------------------------- |
-| 0       | 0     | 0    | Miss; first use fills block 0      |
-| 4       | 0     | 0    | Hit; another byte in the same line |
-| 8       | 0     | 0    | Hit; block 0 is still resident     |
-| 12      | 0     | 0    | Hit; block 0 is still resident     |
-| 32      | 2     | 0    | Miss; block 2 evicts block 0       |
-| 0       | 0     | 0    | Miss; the earlier copy was evicted |
-
-The first use of a block is a **cold** or compulsory miss. The final access
-illustrates a **conflict** miss: the cache has a spare slot, but the placement
-rule prevents using it for block 0. A capacity miss instead reflects a working
-set too large to retain even without these direct-mapping conflicts.
-
-A set-associative cache gives each block several candidate ways within one set.
-It reduces some conflicts but needs a replacement policy when all ways are full.
-Increasing capacity, increasing associativity and changing the access pattern
-solve different problems.
+The figure shows a cold cache. First use is a compulsory miss; the final access
+is a conflict miss because block 2 displaced block 0 from their only permitted
+slot. A capacity miss instead reflects a working set too large even without
+those mapping conflicts. Associativity permits several ways per set; a replacement
+policy is needed when all ways are occupied.
 
 ## Locality is a property of the access stream
 
@@ -204,6 +216,9 @@ The lab accepts numerical byte addresses; it does not inspect JavaScript array
 addresses or real CPU caches. Every trace starts cold, each read fits within a
 line, each miss fills the line, and no prefetch or overlapping execution occurs.
 
+<details>
+<summary>Inspect the tested model and expected output</summary>
+
 <CodeExample
   title="A direct-mapped cache and a separate latency calculation"
   code={source}
@@ -211,35 +226,35 @@ line, each miss fills the line, and no prefetch or overlapping execution occurs.
   output={'miss hit hit hit miss miss\naverage model time: 6 ns'}
 />
 
+</details>
+
 The simulator processes n accesses in expected O(n) time under constant-cost map
 operations. It retains at most the lesser of n and the number of cache slots in
 its map, plus O(n) output records. That is a software simulation bound, not a
 statement about hardware lookup taking a JavaScript map operation.
 
-<LabCard
-  title="Three cache investigations"
-  command="pnpm exec vitest run labs/computer-architecture-execution/memory-hierarchy-and-caches/"
->
+## Predict unfamiliar accesses
 
-1. Predict the results for addresses 0, 32, 0, 32 with two 16-byte lines. Add a
-   test and explain why unused capacity cannot prevent these misses.
-2. Repeat with four lines. Identify exactly which accesses change and whether
-   any compulsory misses remain.
-3. Calculate average access time for a 2 ns hit, 25% miss rate and an additional
-   40 ns penalty. Add tests for both zero misses and all misses before using the
-   formula for the middle case.
+A write-back cache can retain the only current dirty copy until eviction or a
+coherence request requires transfer; writing it toward RAM is not file durability.
+A prefetcher predicts future addresses and brings lines in early. Sequential
+access can help it, but wrong predictions consume bandwidth and capacity. The
+read-only teaching model includes neither mechanism.
 
+<LabCard title="Independent cache attempt" command="pnpm lab computer-architecture-execution/memory-hierarchy-and-caches">
+Implement `solve` in `starter.ts`: return hit/miss decisions for a cold two-slot,
+16-byte-line direct-mapped cache. Explain why 16,20,48,16 differs from 0,16,0,16.
+For a row-major 4×4 matrix of four-byte elements at base zero, write the addresses
+of its first row and first column before predicting line reuse.
 </LabCard>
-
 <details>
-  <summary>Hints after your attempt</summary>
+<summary>Check the reasoning after attempting</summary>
 
-1. Blocks 0 and 2 both map to slot 0 with two slots, so each access evicts the
-   other block.
-2. With four slots, blocks 0 and 2 can coexist. Their first accesses still miss
-   because the cache starts empty.
-3. Pay the 2 ns lookup on every access, then add the penalty only for the
-   fraction that miss. The average for the middle case is 12 ns.
+The first stream gives miss, hit, miss, miss; the second gives miss, miss, hit,
+hit. The first row uses addresses 0,4,8,12; the first column uses 0,16,32,48.
+The row uses one line, while the column touches four. A TLB miss asks for an
+address translation; a data-cache miss asks for a data block; a page fault requires
+OS handling. None is a synonym for the others or automatically a disk read.
 
 </details>
 
