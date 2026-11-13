@@ -70,6 +70,8 @@ sources:
     url: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Atomics
 ---
 
+import ArchitectureFlow from '../../../components/diagrams/ArchitectureFlow.astro';
+
 import example from '../../../../labs/computer-architecture-execution/hardware-software-interaction/example.ts?raw';
 
 ## A function call cannot grant permission
@@ -97,29 +99,43 @@ kernel. Knowing a calling convention does not itself authorize a request.
 
 ## Three reasons to enter a handler
 
+<ArchitectureFlow
+  caption="Protected entry saves a continuation; an ordinary call grants no privilege."
+  nodes={[
+    {
+      label: 'User mode: ordinary procedure call',
+      detail:
+        'Control changes within user mode; access rights do not increase.',
+    },
+    {
+      label: 'Controlled entry \u2192 kernel handler',
+      detail:
+        'Syscall at instruction index 12 saves 13; restartable fault saves 12; an interrupt saves the already-next index 12 in this model.',
+    },
+    {
+      label: 'Validate \u2192 service \u2192 authorized return',
+      detail:
+        'Kernel entry is not necessarily a process switch. Restore the saved user context rather than trust a caller-supplied destination.',
+    },
+  ]}
+/>
+
 An **exception** is an event associated with executing an instruction. An
 **interrupt** arrives from a source such as a timer or device rather than being
 caused by the program's current instruction. Terminology varies by ISA; here,
 “synchronous” means tied to the instruction stream.
 
-| Event           | Trigger                                                                | Typical action before resuming                                  |
-| --------------- | ---------------------------------------------------------------------- | --------------------------------------------------------------- |
-| System call     | A deliberate request instruction                                       | Validate arguments and perform or reject the service            |
-| Page fault      | An access cannot complete under the current translation or permissions | Resolve a valid missing mapping, or report a protection failure |
-| Timer interrupt | A timer signals independently of the program                           | Account for time and possibly schedule another thread           |
+The boundary figure distinguishes deliberate requests, synchronous faults and
+asynchronous notification. The trigger determines which operation can resume.
 
 A page fault does not always mean a program bug or a storage read. The operating
 system might provide a newly allocated page, establish a mapping, or terminate
 an invalid access. The faulting operation can be retried only when the handler
 has made that safe and the architecture supports the required restart behavior.
 
-For a system call, a useful conceptual sequence is:
-
-1. A library wrapper arranges the request number and arguments according to the ABI.
-2. The entry instruction transfers control through the protected entry mechanism.
-3. Entry code saves the needed user context and establishes a safe kernel context.
-4. The kernel checks permissions, lengths, and user memory before using the request.
-5. Return code restores the authorized context and resumes user execution.
+For a syscall, the wrapper supplies the request and arguments; protected entry
+establishes a safe context, the kernel validates and services the request, and
+return code restores the authorized continuation.
 
 Hardware and entry code divide the saving work differently across systems.
 Entering the kernel also does not necessarily switch processes: the same thread
@@ -133,12 +149,17 @@ at index 12 consumes that instruction and saves 13. A restartable fault at 12
 saves 12. An interrupt arrives between instructions, so its current index already
 names the next instruction to execute.
 
+<details>
+<summary>Inspect the tested model and expected output</summary>
+
 <CodeExample
   title="Protected entry and return in an instruction-index model"
   code={example}
   verified
   output={'syscall resumes at 13\nfault retries 12\ninterrupt resumes at 12'}
 />
+
+</details>
 
 The invariant is that kernel entry preserves a user resume location, and only a
 kernel state with that location can return. Inputs stay unchanged. Each
@@ -201,6 +222,26 @@ For JavaScript shared-memory programming, use the specified `Atomics` operations
 on supported shared typed-array views when atomic operations are required.
 This lesson's lab uses no shared memory and tests no concurrency protocol.
 
+## Trace visibility separately from atomicity
+
+Imagine core A holding a cache line containing x in a modified state. Core B
+requests that line: coherence must obtain the current data and appropriate
+permissions rather than read a stale backing-RAM copy. In a MESI-style model,
+shared read copies differ from exclusive write ownership. The exact transition
+protocol is processor-specific.
+
+Now A writes payload at one location and a ready flag at another. A store buffer
+can defer visibility while A continues executing. Coherence of each location
+alone does not establish the cross-location publication order. A correct protocol
+uses the language's release/acquire operations or locks. Acquiring the published
+flag must pair with publication of the payload; ordinary loads/stores are not a
+substitute. This is a conceptual protocol, not tested concurrent C code.
+
+**Diagnosis:** a trace says both cores read counter 7 and later store 8. Is the
+first error necessarily stale caching? No: even a coherent order can lose an
+update when load/add/store is not an atomic read-modify-write. Identify which
+property is needed before proposing a cache flush.
+
 ## Practise the boundary
 
 <LabCard
@@ -218,25 +259,6 @@ This lesson's lab uses no shared memory and tests no concurrency protocol.
 The syscall resumes at 1; the other two cases use 0 under this model's
 instruction-boundary convention. The handler index controls execution inside
 the kernel, while the saved context identifies the interrupted user execution.
-
-</details>
-
-<LabCard
-  title="02 / Guard the saved context"
-  command="pnpm exec vitest run labs/computer-architecture-execution/hardware-software-interaction/"
->
-  Add tests that attempt nested entry and a return without a saved context.
-  Check that rejected operations leave their input unchanged. Describe what
-  extra state a model supporting nested handlers would need.
-</LabCard>
-
-<details>
-  <summary>Hint after an attempt</summary>
-
-Both operations must throw under the present contract. Supporting nesting needs
-separate saved contexts, commonly organized as a stack, so a second entry cannot
-overwrite the first return location. Real kernels also need rules for masking,
-priorities, and which contexts may be interrupted.
 
 </details>
 
