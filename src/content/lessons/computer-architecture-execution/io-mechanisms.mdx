@@ -58,6 +58,8 @@ sources:
     url: https://docs.kernel.org/core-api/dma-api-howto.html
 ---
 
+import ArchitectureFlow from '../../../components/diagrams/ArchitectureFlow.astro';
+
 import example from '../../../../labs/computer-architecture-execution/io-mechanisms/example.ts?raw';
 
 ## A request has several finish lines
@@ -111,15 +113,35 @@ queue depth, batching, CPU availability, and latency targets all matter.
 
 ## Trace a DMA receive request
 
+<ArchitectureFlow
+  caption="Driver, device and host coordinate ownership; notification is not payload movement."
+  nodes={[
+    {
+      label: 'Host/driver: ready \u2192 submit',
+      detail:
+        'Establish a valid device mapping; publish descriptor and bounds. Host gives up buffer access.',
+    },
+    {
+      label: 'Device: in-flight \u2192 transfer',
+      detail:
+        'DMA writes payload to memory. Polling checks status; an interrupt announces an event. Either can accompany DMA.',
+    },
+    {
+      label: 'Driver: completed \u2192 reclaim',
+      detail:
+        'Confirm the device stopped using the buffer and perform required synchronization. Completed still means reserved until reclamation.',
+    },
+    {
+      label: 'Host: ready again',
+      detail:
+        'Use only the reported received bytes. Timeout alone has no arrow to reuse; cancellation needs confirmed quiescence.',
+    },
+  ]}
+/>
+
 The [hardware boundary](/learn/computer-architecture-execution/hardware-software-interaction/)
 established that application pointers and device addresses can belong to
-different translation domains. A typical receive lifecycle adds ownership:
-
-1. **Prepare:** the driver obtains a suitable buffer and establishes the required mapping.
-2. **Submit:** it publishes a descriptor naming the buffer and allowed byte range.
-3. **Transfer:** the device writes the payload and records status under its protocol.
-4. **Observe completion:** polling or an interrupt tells the driver where to check status.
-5. **Reclaim:** the driver confirms completion, performs required synchronization, and returns access to software.
+different translation domains.
 
 The descriptor must be visible before the device is told to use it. The CPU must
 not use received bytes before the platform's completion and visibility rules
@@ -148,6 +170,9 @@ Here `device` ownership means “reserved from host access by the I/O protocol.�
 It includes the completed phase until the driver has reclaimed it; the model
 does not claim that the device is still writing after completion.
 
+<details>
+<summary>Inspect the tested model and expected output</summary>
+
 <CodeExample
   title="A receive buffer moves through explicit ownership states"
   code={example}
@@ -155,17 +180,24 @@ does not claim that the device is still writing after completion.
   output={'submitted: device\ncompleted: device\nreclaimed: host (4 bytes)'}
 />
 
+</details>
+
 An eight-byte buffer can complete with four received bytes. Reclamation does not
 invent the missing four bytes. Zero-byte completion is also allowed by this
 model; the meaning of zero depends on the real interface. Failure marks contents
 unusable here and reports zero usable bytes. It does not promise that the
 physical buffer was untouched before the failure.
 
+<details>
+<summary>Model contract and implementation costs</summary>
+
 The transition invariant is that transferred bytes stay between zero and
 capacity, and only a terminal result can be reclaimed. Each transition is O(1)
 time and space for a fixed-size request record. These are software model costs,
 not bounds on a real device's transfer time. The model accesses no hardware,
 creates no real mapping, and supplies no cache or persistence guarantees.
+
+</details>
 
 ## Distinguish latency, throughput, and CPU work
 
@@ -204,6 +236,15 @@ When reviewing an I/O API, name its finish line. “The write completed” is to
 ambiguous to establish visibility, remote processing, durable storage, and
 all-or-nothing behavior at once.
 
+## Diagnose an incomplete cancellation
+
+A driver stops waiting, marks a request cancelled, and immediately recycles its
+buffer. Later a device completion arrives. The first invalid step was recycling
+without establishing that device access had stopped. A safe trace must include
+confirmed completion or quiescence and the required reclamation/synchronization.
+An interrupt is evidence to inspect status, not a replacement for that protocol.
+This diagnosis is independent of whether DMA or programmed I/O moved the data.
+
 ## Practise a request lifecycle
 
 <LabCard
@@ -221,25 +262,6 @@ all-or-nothing behavior at once.
 All three in-range completions retain device ownership until reclaimed; nine
 bytes exceeds the buffer capacity and must throw. A short result is a byte count
 to handle, not a reason to read unreceived data.
-
-</details>
-
-<LabCard
-  title="02 / Handle failure before reuse"
-  command="pnpm exec vitest run labs/computer-architecture-execution/io-mechanisms/"
->
-  Trace submit, fail, reclaim, and submit again. Add a test rejecting reclaim
-  while still in flight. Explain why replacing the failed event with a timeout
-  would need an additional cancellation protocol in a real driver.
-</LabCard>
-
-<details>
-  <summary>Hint after an attempt</summary>
-
-An explicit terminal failure permits reclamation in this model. A timeout only
-reports that software did not observe completion by a deadline. The device may
-still access the buffer, so a safe extension needs states for cancellation and
-confirmed quiescence before ownership returns.
 
 </details>
 
