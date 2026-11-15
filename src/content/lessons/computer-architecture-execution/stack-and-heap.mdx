@@ -12,6 +12,7 @@ learningObjectives:
   - Explain stack overflow, dangling references, leaks and fragmentation
   - Test independent frame and allocation lifetimes in an explicit model
 prerequisites:
+  - computer-architecture-execution/reading-assembly
   - computer-architecture-execution/compilation-and-execution
   - computer-architecture-execution/text-encoding-and-memory-layout
 tags: [memory, stack, heap, lifetime]
@@ -62,6 +63,8 @@ interviewQuestions:
 sources:
   - label: Dive Into Systems — Functions in assembly and call-frame management
     url: https://diveintosystems.org/book/C7-x86_64/functions.html
+  - label: 'System V AMD64 psABI, 3.2.2 — The stack frame and the red zone'
+    url: https://gitlab.com/x86-psABIs/x86-64-ABI
   - label: Dive Into Systems — Dynamic memory allocation and pointers
     url: https://diveintosystems.org/book/C2-C_depth/dynamic_memory.html
   - label: OSTEP, chapter 13 — The abstraction of an address space
@@ -72,7 +75,8 @@ sources:
     url: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Memory_management
 ---
 
-import ArchitectureFlow from '../../../components/diagrams/ArchitectureFlow.astro';
+import RealFrames from '../../../components/diagrams/RealFrames.astro';
+import CallStackStepper from '../../../components/interactive/CallStackStepper';
 
 import source from '../../../../labs/computer-architecture-execution/stack-and-heap/example.ts?raw';
 
@@ -106,22 +110,21 @@ first-out order. Suppose `main` calls `parse`, which calls `readField`. The call
 remain unfinished in that order, while `readField` executes. Returning from
 `readField` resumes `parse`; returning from `parse` resumes `main`.
 
-The **stack pointer** tracks the current stack boundary. A frame pointer, when
-used, provides a stable base for references inside a frame. A compiler may omit
-the frame pointer or keep a value entirely in a register. Source-level local
-variables do not imply one fixed stack slot each.
+The **stack pointer** marks the top of the stack, and a **frame pointer**, when
+the compiler keeps one, gives a fixed base for addressing a frame's slots. Here
+is what GCC's unoptimized code from the
+[assembly lesson](/learn/computer-architecture-execution/reading-assembly/)
+actually keeps on the stack while `scale_sum` waits for `sum_to`:
 
-A **calling convention** is the agreement that lets separately compiled functions
-cooperate. It specifies argument and return-value locations, register-preservation
-responsibilities and stack-alignment requirements. Caller-saved registers can be
-clobbered by a call; the caller preserves any values it still needs. A callee
-that uses a callee-saved register must restore the agreed value before returning.
+<RealFrames />
 
-On a conventional x86-64 call, the return address is pushed to the stack. Other
-architectures may first place it in a link register. A nested callee then needs
-to preserve that return information if the next call would overwrite it. Neither
-mechanism makes the return address a pointer to a local variable: it identifies
-where instruction execution resumes.
+Each frame holds the return address its caller's `call` pushed, the caller's
+saved frame pointer, and slots for the function's arguments and locals. The
+calling convention decides which registers a callee must preserve and that rsp
+is 16-byte aligned at a call. At `-O2` the same functions keep everything in
+registers, and `sum_to` needs no frame at all: a source function does not imply
+a fixed physical frame. On ARM64 the return address arrives in the link register
+instead, and a function that calls another saves it in its frame.
 
 ## Independently allocated storage has another lifetime
 
@@ -131,31 +134,24 @@ structure used in a priority queue. A heap can span multiple mapped regions;
 there is no requirement that all live allocations occupy one contiguous physical
 area.
 
-<ArchitectureFlow
-  caption="Removing a call frame does not release an independently allocated result."
-  nodes={[
-    {
-      label: 'Before call: main frame',
-      detail:
-        'The caller retains its continuation and any caller-saved values needed after the call.',
-    },
-    {
-      label: 'During makeBuffer: main + callee frame',
-      detail:
-        'The callee preserves required state and creates a 128-byte allocation. Its local handle points to that allocation.',
-    },
-    {
-      label: 'After return: main frame + live buffer',
-      detail:
-        'The callee frame is gone; the returned handle still names the allocation. Physical frame layout depends on ABI and optimization.',
-    },
-    {
-      label: 'After release: main frame only',
-      detail:
-        'The owner releases the buffer after its last valid use. A stale handle does not extend lifetime.',
-    },
-  ]}
-/>
+Before stepping, predict what happens to an allocation when the frame that
+created it returns, and what a variable holds after the allocation is freed.
+
+<CallStackStepper client:visible />
+
+<div className="table-scroll" tabIndex={0} role="region" aria-label="The call stack story, event by event">
+
+| Event                  | Stack, newest first         | Heap                  |
+| ---------------------- | --------------------------- | --------------------- |
+| main starts            | main: data empty            | empty                 |
+| main calls makeBuffer  | makeBuffer: buf empty; main | empty                 |
+| makeBuffer allocates   | makeBuffer: buf → 1; main   | object 1, 128 B       |
+| makeBuffer returns buf | main: data → 1              | object 1, 128 B       |
+| main frees data        | main: data → 1, dangling    | object 1 freed        |
+| main clears data       | main: data empty            | object 1 freed        |
+| main returns           | empty                       | empty of live objects |
+
+</div>
 
 The temporary reference in the callee and the buffer it names have separate
 lifetimes. Returning or copying a reference does not copy the whole target.
@@ -264,41 +260,45 @@ updates or a production allocator.
 </details>
 
 <LabCard
-  title="Three lifetime investigations"
-  command="pnpm exec vitest run labs/computer-architecture-execution/stack-and-heap/"
+  title="01 / Find the dangling handles"
+  command="pnpm lab computer-architecture-execution/stack-and-heap"
 >
-
-1. Give the model a 64-byte stack limit and repeatedly enter eight-byte recursive
-   frames. Predict the maximum outstanding calls and test the first failure.
-2. Allocate two buffers in an inner call, return from it, and release the buffers
-   in creation order. Check that their lifetime order is independent of the
-   frame's return order.
-3. Attempt a double free and a return from an empty stack. Verify that each is
-   rejected and the remaining live byte counts stay correct.
-
+  Implement `solve(events)` in `starter.ts`: run call, allocate, return, free
+  and clear events and report which heap objects are still allocated and which
+  locals in active frames hold a handle to a freed object. Before running the
+  tests, trace a caller that keeps a handle while the callee frees the same
+  object through its own copy.
 </LabCard>
 
 <details>
-  <summary>Hints after your attempt</summary>
+<summary>Check after attempting</summary>
 
-1. Eight equal frames fit when no other frame is present. The ninth must fail
-   without adding a partial frame.
-2. Returning removes only the most recent frame. Neither allocation disappears
-   until its own release event.
-3. Record the state before each invalid operation and compare it afterwards.
-   Rejection should preserve unrelated live state.
+Track each frame's locals and each object's state separately. Freeing through
+one copy of a handle frees the object for every copy, so the caller's local
+becomes dangling even though the caller never called free. Returning pops a
+frame and drops its locals, but never frees what they referred to.
 
 </details>
 
-## Follow the shared native call
+<LabCard
+  title="02 / Find the stack limit"
+  command="pnpm exec vitest run labs/computer-architecture-execution/stack-and-heap/"
+>
+  Give `LifetimeModel` a 64-byte stack limit and repeatedly enter eight-byte
+  recursive frames. Predict how many calls fit and test that the first failing
+  call leaves the stack unchanged.
+</LabCard>
 
-In the Linux x86-64 native example, the caller places the address of its unsigned
-value in RDI. A `call` saves the address of the next instruction on the stack and
-transfers control to `bump`; `ret` restores that continuation. The result arrives
-in EAX. Caller-saved registers may change; preserved registers must be restored
-if used. The checked `-O0` listing in the compilation lesson has an explicit
-frame; the `-O2` leaf needs no local frame storage beyond the call's return address.
-This is why a source function does not imply a fixed-sized physical frame.
+<details>
+<summary>Check after testing</summary>
+
+Eight equal frames fit when no other frame is present. The ninth must fail
+without adding a partial frame. Record the state before the failing call and
+compare it afterwards.
+
+</details>
+
+## Reason about aliases
 
 **Unfamiliar trace:** a caller retains handle H to an allocation; the callee's
 frame disappears; a later access through H succeeds; then H is released. Which

@@ -663,3 +663,26 @@ formatting and lint passed; 272 tests in 41 files; 33 pages; 78 browser tests.
 Screenshots of both figures at 1280 px and 390 px in both themes were
 inspected; review relabelled the object file's bytes with offsets instead of
 executable addresses.
+
+## Stack lesson frames and lifetimes — 2026-11-15
+
+The stack lesson's text card is replaced by two visuals. A static figure shows
+GCC's `-O0` `scale_sum` and `sum_to` frames while `sum_to` runs: slot names come
+from the prologue's stores and values from the reading-assembly interpreter's
+memory, so it shows the real return addresses, saved frame pointers, argument
+slots and `sum_to`'s locals in the red zone (checked against the psABI's red
+zone text). A call stack stepper island runs a new tested lifetime trace
+(frames with named locals, heap objects, handles) through a callee creating a
+buffer that outlives its frame, a free that leaves a dangling handle, and the
+fix; it asks for a prediction before both lifetime questions. A table gives the
+same events without JavaScript. The calling-convention definition now defers to
+the assembly lesson. The first exercise became an attempt lab with hidden
+contracts, and Exclusive Time of Functions was linked (LeetCode GraphQL metadata;
+on neither published list).
+
+Same command as the previous entry: zero type errors, warnings or hints;
+formatting and lint passed; 284 tests in 45 files; 33 pages; 80 browser tests.
+Screenshots of both visuals at 1280 px and 390 px in both themes, including the
+dangling state, were inspected. Review caught a bug before commit: two
+consecutive question steps skipped the second question; answers are now tracked
+per step and a browser test checks that both questions ask.

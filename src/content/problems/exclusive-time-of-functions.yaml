@@ -1,0 +1,10 @@
+title: Exclusive Time of Functions
+url: https://leetcode.com/problems/exclusive-time-of-functions/
+difficulty: medium
+lessons: [computer-architecture-execution/stack-and-heap]
+topics: [stack, simulation]
+lists: []
+hints:
+  - The logs describe a single thread's calls, so they nest exactly like stack frames. The function running at any moment is the one on top.
+  - When a call starts, charge the time since the last event to whichever function was on top, then push the new one. When it ends, charge the top through the end of that time unit and pop it.
+  - Keep one previous timestamp and a stack of function ids. Each log line is processed once, so the work is O(n) for n log lines with O(depth) stack space.

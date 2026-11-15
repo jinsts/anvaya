@@ -905,3 +905,83 @@
     grid-template-columns: 1fr;
   }
 }
+/* Call stack stepper. New frames slide in and references draw in once;
+   reduced motion removes both animations. */
+.callstack {
+  display: block;
+  width: 100%;
+  max-width: 520px;
+  height: auto;
+  margin: var(--space-3) 0;
+}
+.callstack text {
+  fill: var(--text);
+  font-family: var(--font-body);
+  font-size: var(--text-xs);
+}
+.callstack .column {
+  fill: var(--muted);
+  font-weight: 600;
+}
+.callstack .base {
+  stroke: var(--border-strong);
+  stroke-width: 2;
+}
+.callstack .frame-box > rect {
+  fill: var(--tone-violet-soft);
+  stroke: var(--tone-violet);
+  stroke-width: 1.5;
+}
+.callstack .frame-box {
+  animation: frame-in 0.35s ease-out;
+}
+@keyframes frame-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+.callstack .slot {
+  fill: var(--surface);
+  stroke: var(--border);
+}
+.callstack .frame-name {
+  font-weight: 700;
+}
+.callstack .local {
+  font-family: var(--font-mono);
+}
+.callstack .object rect {
+  fill: var(--tone-teal-soft);
+  stroke: var(--tone-teal);
+  stroke-width: 1.5;
+}
+.callstack .object.freed rect {
+  fill: var(--surface);
+  stroke: var(--border-strong);
+  stroke-dasharray: 5 4;
+}
+.callstack .ref path {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2.5;
+  stroke-dasharray: 100;
+  stroke-dashoffset: 0;
+  animation: datapath-draw 0.6s ease-out;
+}
+.callstack .ref.dangling path {
+  stroke: var(--error);
+  stroke-dasharray: 6 4;
+  animation: none;
+}
+.callstack .warning {
+  fill: var(--error);
+  font-weight: 700;
+  text-anchor: middle;
+}
+.callstack-question {
+  font-weight: 600;
+}
+.callstack-head {
+  fill: var(--accent);
+}

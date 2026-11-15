@@ -264,3 +264,26 @@ test('the assembly stepper asks for jump predictions by keyboard', async ({
   await stepper.getByRole('button', { name: 'Run to the end' }).click();
   await expect(status).toContainText('Returned 48 in eax');
 });
+
+test('the call stack stepper asks before each lifetime question by keyboard', async ({
+  page,
+}) => {
+  await page.goto(`/learn/${subject}/stack-and-heap/`);
+  const stepper = page.getByRole('region', {
+    name: 'Interactive call stack stepper',
+  });
+  await stepper.scrollIntoViewIfNeeded();
+  await expect(
+    page.locator('astro-island[component-export="default"]'),
+  ).not.toHaveAttribute('ssr', '');
+  const status = stepper.getByRole('status');
+  const next = stepper.getByRole('button', { name: 'Next event' });
+  await next.focus();
+  for (let i = 0; i < 3; i++) await page.keyboard.press('Enter');
+  await expect(status).toContainText('what happens to the 128-byte buffer?');
+  await stepper.getByRole('button', { name: 'It stays allocated' }).focus();
+  await page.keyboard.press('Enter');
+  await expect(status).toContainText('Your prediction was correct.');
+  // The next event asks its own question rather than being skipped.
+  await expect(status).toContainText('After free(data), what does data hold?');
+});

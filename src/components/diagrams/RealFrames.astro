@@ -1,0 +1,116 @@
+---
+import DiagramFrame from '../learning/DiagramFrame.astro';
+import { parseListing } from '../../../labs/computer-architecture-execution/reading-assembly/x86';
+import { realFrames } from '../../../labs/computer-architecture-execution/stack-and-heap/frames';
+import scaleO0 from '../../../labs/computer-architecture-execution/reading-assembly/scale-O0.txt?raw';
+import sumO0 from '../../../labs/computer-architecture-execution/reading-assembly/sum-O0.txt?raw';
+// Both -O0 frames while sum_to runs, read from the tested interpreter.
+// Higher addresses are at the top; the stack grows downward.
+const rows = realFrames(parseListing(scaleO0), parseListing(sumO0));
+const frames = (['scale_sum', 'sum_to'] as const).map((name) => ({
+  name,
+  rows: rows.filter((r) => r.frame === name),
+}));
+---
+
+<DiagramFrame caption="GCC's -O0 scale_sum and sum_to while sum_to runs, run in the tested interpreter with values = {3, 5, 7, 9} and factor 2. Offsets are from each function's rbp; higher addresses are at the top. The call's return address sits between the frames, and sum_to, a leaf, keeps its locals below rsp without moving it.">
+  <ol class="frames">
+    {frames.map((frame) => (
+      <li class={`frame ${frame.name}`}>
+        <p class="frame-name">
+          <strong>{frame.name}</strong> frame
+        </p>
+        <ol class="slots">
+          {frame.rows.map((row) => (
+            <li class:list={{ red: row.belowRsp, link: row.label === 'rbp+8' }}>
+              <code class="offset">{row.label}</code>
+              <span>
+                {row.value}
+                {row.label === 'rbp' && frame.name === 'sum_to' && (
+                  <strong class="rsp"> ← rsp</strong>
+                )}
+              </span>
+            </li>
+          ))}
+        </ol>
+        {frame.name === 'sum_to' && (
+          <p class="note">
+            Shaded: below rsp, in the 128-byte red zone the ABI lets a leaf
+            function use without adjusting rsp.
+          </p>
+        )}
+      </li>
+    ))}
+  </ol>
+</DiagramFrame>
+<style>
+  .frames {
+    display: grid;
+    gap: var(--space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .frames > li {
+    margin: 0;
+    padding: var(--space-3);
+    border: 2px solid var(--tone-violet);
+    border-radius: var(--radius);
+    background: var(--tone-violet-soft);
+  }
+  .frames > li.sum_to {
+    border-color: var(--tone-teal);
+    background: var(--tone-teal-soft);
+  }
+  .diagram-frame .frames > li + li {
+    margin-top: 0;
+  }
+  .frame-name {
+    margin: 0 0 var(--space-2);
+    font-size: var(--text-sm);
+  }
+  .slots {
+    display: grid;
+    gap: 2px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .frames .slots li {
+    display: grid;
+    grid-template-columns: 4.5rem minmax(0, 1fr);
+    gap: var(--space-2);
+    align-items: baseline;
+    margin: 0;
+    padding: var(--space-1) var(--space-2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--surface);
+    font-size: var(--text-sm);
+  }
+  .frames .slots li.link {
+    border-style: dashed;
+  }
+  .frames .slots li.red {
+    background: repeating-linear-gradient(
+      135deg,
+      var(--surface) 0 6px,
+      var(--subtle) 6px 12px
+    );
+  }
+  .offset {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--muted);
+    font-size: var(--text-xs);
+  }
+  .rsp {
+    color: var(--accent);
+  }
+  .note {
+    margin: var(--space-2) 0 0;
+    color: var(--muted);
+    font-size: var(--text-xs);
+  }
+</style>
