@@ -642,3 +642,24 @@ Same command as the previous entry: zero type errors, warnings or hints;
 formatting and lint passed; 264 tests in 39 files; 33 pages; 78 browser tests.
 The unsolved attempt fails as intended. Screenshots of the panel at 1280 px and
 390 px in both themes were inspected; no layout fixes were needed.
+
+## Compilation lesson artifacts and relocation — 2026-11-15
+
+The compilation lesson's text card is replaced by two figures built from new
+recorded artifacts: `objdump -dr` of `scale.o` (a call with four placeholder
+bytes and an `R_X86_64_PLT32 sum_to-0x4` relocation) and `objdump -d` plus `nm`
+of the linked executable (`call 1260 <sum_to>`). The native lab regenerates and
+drift-checks both, and `toolchain.json` now records the binutils version, since
+the system's binutils 2.46 assembles, links and disassembles. A new tested
+model parses both files and computes S + A − P; its test checks that the result
+is the byte sequence the linker wrote and that the call lands on `sum_to`. The
+attempt lab asks for the same computation, with contracts cross-checked in
+Python. The teaching linker moved into a disclosure, the duplicated diagnosis
+paragraph was removed, and the third exercise was replaced by the attempt. The
+prerequisite is now the reading-assembly lesson.
+
+Same command as the previous entry: zero type errors, warnings or hints;
+formatting and lint passed; 272 tests in 41 files; 33 pages; 78 browser tests.
+Screenshots of both figures at 1280 px and 390 px in both themes were
+inspected; review relabelled the object file's bytes with offsets instead of
+executable addresses.

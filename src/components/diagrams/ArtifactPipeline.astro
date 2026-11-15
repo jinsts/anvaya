@@ -1,0 +1,152 @@
+---
+import DiagramFrame from '../learning/DiagramFrame.astro';
+import {
+  parseLinked,
+  parseObjectCall,
+} from '../../../labs/computer-architecture-execution/compilation-and-execution/relocation';
+import scaleSource from '../../../labs/computer-architecture-execution/reading-assembly/scale.c?raw';
+import scaleAssembly from '../../../labs/computer-architecture-execution/reading-assembly/scale-O2.txt?raw';
+import objectText from '../../../labs/computer-architecture-execution/compilation-and-execution/native/scale-object.txt?raw';
+import linkedText from '../../../labs/computer-architecture-execution/compilation-and-execution/native/scale-linked.txt?raw';
+// Every snippet is read from a recorded artifact of one call, scale_sum →
+// sum_to, as it passes through the build.
+const object = parseObjectCall(objectText);
+const linked = parseLinked(linkedText, 'scale_sum');
+const hex = (n: number) => n.toString(16);
+const bytes = (b: number[]) =>
+  b.map((x) => x.toString(16).padStart(2, '0')).join(' ');
+const sourceLine = scaleSource
+  .split('\n')
+  .find((l) => l.includes('sum_to(values'))!
+  .trim();
+const callLine = scaleAssembly
+  .split('\n')
+  .find((l) => l.includes('call'))!
+  .trim()
+  .replace(/\s+/g, ' ');
+const { relocation } = object;
+const stages = [
+  {
+    name: 'Source',
+    file: 'scale.c',
+    lines: [sourceLine],
+    note: 'sum_to is only declared here; its code is in sum.c.',
+  },
+  {
+    tool: 'compiler · gcc -S',
+    name: 'Assembly',
+    file: 'scale.s',
+    lines: [callLine],
+    note: 'Still a name: the compiler does not know where sum_to will be.',
+  },
+  {
+    tool: 'assembler · as',
+    name: 'Object file',
+    file: 'scale.o',
+    lines: [
+      `${hex(object.at)}: ${bytes(object.bytes)}   call`,
+      `${hex(relocation.offset)}: ${relocation.type}  ${relocation.symbol}${relocation.addend}`,
+    ],
+    note: 'Machine code with four placeholder bytes, a relocation saying how to fill them, and sum_to listed as undefined.',
+  },
+  {
+    tool: 'linker · ld, with main.o and sum.o',
+    name: 'Executable',
+    file: 'a.out',
+    lines: [
+      `${hex(linked.at)}: ${bytes(linked.bytes)}   call ${hex(linked.target)} <sum_to>`,
+    ],
+    note: `Symbol resolution found sum_to at 0x${hex(linked.symbols.sum_to!)}; relocation wrote its distance into the call.`,
+  },
+  {
+    tool: 'loader · kernel and ld.so',
+    name: 'Process',
+    file: 'memory',
+    lines: [],
+    note: 'The loader maps the file at a randomized base address. Both functions move together, so the relative call still reaches sum_to without another patch.',
+  },
+];
+---
+
+<DiagramFrame caption="One call through the build. Each artifact's snippet is the recorded output of GCC 15.2 and GNU binutils 2.46 for x86-64 Linux; only the process stage is described rather than recorded.">
+  <ol class="pipeline">
+    {stages.map((stage) => (
+      <li>
+        {stage.tool && (
+          <p class="tool">
+            <span aria-hidden="true">↓</span> {stage.tool}
+          </p>
+        )}
+        <div class="stage">
+          <p class="name">
+            <strong>{stage.name}</strong> <code>{stage.file}</code>
+          </p>
+          {stage.lines.length > 0 && (
+            <code class="snippet">{stage.lines.join('\n')}</code>
+          )}
+          <p class="note">{stage.note}</p>
+        </div>
+      </li>
+    ))}
+  </ol>
+</DiagramFrame>
+<style>
+  .pipeline {
+    display: grid;
+    gap: var(--space-1);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .pipeline > li {
+    display: grid;
+    gap: var(--space-1);
+    margin: 0;
+  }
+  .diagram-frame .pipeline > li + li {
+    margin-top: 0;
+  }
+  .tool {
+    margin: 0;
+    padding-left: var(--space-4);
+    color: var(--accent);
+    font-size: var(--text-sm);
+    font-weight: 600;
+  }
+  .stage {
+    display: grid;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-4);
+    border: 1px solid var(--border-strong);
+    border-left: 4px solid var(--tone-violet);
+    border-radius: var(--radius);
+    background: var(--bg);
+  }
+  .name {
+    margin: 0;
+    font-size: var(--text-sm);
+  }
+  .name code {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--muted);
+  }
+  .snippet {
+    display: block;
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--code-bg);
+    font-size: var(--text-xs);
+    line-height: var(--leading);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+  .note {
+    margin: 0;
+    color: var(--muted);
+    font-size: var(--text-sm);
+    line-height: var(--leading);
+  }
+</style>

@@ -44,6 +44,8 @@ const describe = (cc) => ({
 });
 const toolchain = {
   ...describe(compiler),
+  // The system binutils assemble, link and disassemble.
+  binutils: run('objdump', ['--version']).split('\n')[0],
   ...(arm64 ? { arm64: describe(arm64) } : {}),
 };
 const toolchainFile = join(directory, 'toolchain.json');
@@ -52,7 +54,8 @@ const recordedToolchain = existsSync(toolchainFile)
   : null;
 const sameToolchain =
   recordedToolchain?.version === toolchain.version &&
-  recordedToolchain?.target === toolchain.target;
+  recordedToolchain?.target === toolchain.target &&
+  recordedToolchain?.binutils === toolchain.binutils;
 const sameArm64 =
   !!toolchain.arm64 &&
   recordedToolchain?.arm64?.version === toolchain.arm64.version &&
@@ -73,9 +76,25 @@ function functionListing(assembly, symbol) {
   return match[0] + '\n';
 }
 
+/** One function's block from objdump output, through the next blank line. */
+function objdumpBlock(text, symbol) {
+  const start = text.indexOf(`<${symbol}>:\n`);
+  if (start < 0) throw new Error(`objdump shows no ${symbol}`);
+  const lineStart = text.lastIndexOf('\n', start) + 1;
+  const end = text.indexOf('\n\n', start);
+  return text.slice(lineStart, end < 0 ? undefined : end) + '\n';
+}
+
 // Each artifact is regenerated on every run. `file` is relative to the
 // subject folder so lessons and labs can keep their own artifacts.
 const native = 'compilation-and-execution/native';
+/**
+ * @typedef {{
+ *   kind: string; file: string; flags: string[]; compiler?: string;
+ *   source?: string; sources?: string[]; symbol?: string; symbols?: string[];
+ * }} Artifact
+ * @type {Artifact[]}
+ */
 export const ARTIFACTS = [
   {
     kind: 'asm',
@@ -124,6 +143,20 @@ export const ARTIFACTS = [
       file: `reading-assembly/${file.replace('.c', '')}-arm64-O2.txt`,
     };
   }),
+  {
+    kind: 'object-disassembly',
+    source: 'reading-assembly/scale.c',
+    flags: ['-O2'],
+    symbol: 'scale_sum',
+    file: 'compilation-and-execution/native/scale-object.txt',
+  },
+  {
+    kind: 'linked-disassembly',
+    sources: ['main.c', 'sum.c', 'scale.c'].map((f) => `reading-assembly/${f}`),
+    flags: ['-O2'],
+    symbols: ['sum_to', 'scale_sum'],
+    file: 'compilation-and-execution/native/scale-linked.txt',
+  },
   {
     kind: 'output',
     source: 'text-encoding-and-memory-layout/representation.c',
@@ -219,6 +252,32 @@ try {
       const output = join(temporary, `artifact${index}.o`);
       build(artifact.source, artifact.flags, output, ['-c']);
       text = run('nm', ['-u', output]);
+    } else if (artifact.kind === 'object-disassembly') {
+      const output = join(temporary, `artifact${index}.o`);
+      build(artifact.source, artifact.flags, output, ['-c']);
+      text = objdumpBlock(run('objdump', ['-dr', output]), artifact.symbol);
+    } else if (artifact.kind === 'linked-disassembly') {
+      const output = join(temporary, `artifact${index}`);
+      run(compiler, [
+        ...artifact.flags,
+        ...(artifact.sources ?? []).map((s) => join(subject, s)),
+        '-o',
+        output,
+      ]);
+      run(output, []);
+      const disassembly = run('objdump', ['-d', output]);
+      const symbols = run('nm', [output])
+        .split('\n')
+        .filter((line) =>
+          (artifact.symbols ?? []).some((s) => line.endsWith(` ${s}`)),
+        )
+        .sort();
+      text =
+        symbols.join('\n') +
+        '\n\n' +
+        (artifact.symbols ?? [])
+          .map((s) => objdumpBlock(disassembly, s))
+          .join('\n');
     } else if (artifact.kind === 'output') {
       const output = join(temporary, `artifact${index}`);
       build(artifact.source, artifact.flags, output);

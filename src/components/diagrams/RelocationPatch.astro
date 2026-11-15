@@ -1,0 +1,189 @@
+---
+import DiagramFrame from '../learning/DiagramFrame.astro';
+import {
+  parseLinked,
+  parseObjectCall,
+  pc32,
+} from '../../../labs/computer-architecture-execution/compilation-and-execution/relocation';
+import objectText from '../../../labs/computer-architecture-execution/compilation-and-execution/native/scale-object.txt?raw';
+import linkedText from '../../../labs/computer-architecture-execution/compilation-and-execution/native/scale-linked.txt?raw';
+// The linker's arithmetic for one relocation, from the recorded object file
+// and executable. A lab test checks that the computed bytes are the ones the
+// linker actually wrote.
+const object = parseObjectCall(objectText);
+const linked = parseLinked(linkedText, 'scale_sum');
+const { relocation } = object;
+const S = linked.symbols[relocation.symbol]!;
+const base = linked.symbols.scale_sum!;
+const P = base + relocation.offset;
+const A = relocation.addend;
+const patch = pc32(S, A, P);
+const value = S + A - P;
+const next = linked.at + linked.bytes.length;
+const hex = (n: number) =>
+  n < 0 ? `−0x${(-n).toString(16)}` : `0x${n.toString(16)}`;
+const b = (x: number) => x.toString(16).padStart(2, '0');
+const rows = [
+  {
+    label: 'scale.o, before linking: offsets within scale_sum',
+    bytes: object.bytes,
+    place: (i: number) => `+${object.at + i}`,
+    placeholder: true,
+  },
+  {
+    label: 'executable, after linking: addresses',
+    bytes: linked.bytes,
+    place: (i: number) => hex(linked.at + i),
+    placeholder: false,
+  },
+];
+---
+
+<DiagramFrame
+  caption={`The linker fills the call's four-byte displacement with S + A − P. The processor adds it to the address of the next instruction, ${hex(next)}, and arrives at sum_to, ${hex(S)}. Addresses are from the recorded executable.`}
+>
+  <div class="patch">
+    {rows.map((row) => (
+      <div
+        class="row"
+        role="group"
+        aria-label={`${row.label}: ${row.bytes.map(b).join(' ')}`}
+      >
+        <p class="label">{row.label}</p>
+        <ol aria-hidden="true">
+          {row.bytes.map((x, i) => (
+            <li
+              class:list={{
+                opcode: i === 0,
+                field: i > 0,
+                empty: row.placeholder && i > 0,
+              }}
+            >
+              <code>{b(x)}</code>
+              <span>{row.place(i)}</span>
+            </li>
+          ))}
+        </ol>
+        <p class="legend">
+          {row.placeholder ? (
+            <>
+              e8 = call; the four placeholder bytes start at offset{' '}
+              {relocation.offset}, which becomes P
+            </>
+          ) : (
+            <>the same instruction with the displacement filled in</>
+          )}
+        </p>
+      </div>
+    ))}
+    <dl class="formula">
+      <div>
+        <dt>S, address of {relocation.symbol}</dt>
+        <dd>{hex(S)}</dd>
+      </div>
+      <div>
+        <dt>A, addend from {relocation.type}</dt>
+        <dd>{hex(A)}</dd>
+      </div>
+      <div>
+        <dt>
+          P, address of the bytes: scale_sum {hex(base)} + {relocation.offset}
+        </dt>
+        <dd>{hex(P)}</dd>
+      </div>
+      <div class="result">
+        <dt>S + A − P, as 32-bit little-endian bytes</dt>
+        <dd>
+          {hex(value)} → {patch.map(b).join(' ')}
+        </dd>
+      </div>
+    </dl>
+  </div>
+</DiagramFrame>
+<style>
+  .patch {
+    display: grid;
+    gap: var(--space-4);
+  }
+  .label,
+  .legend {
+    margin: 0;
+    font-size: var(--text-sm);
+  }
+  .legend {
+    color: var(--muted);
+    font-size: var(--text-xs);
+  }
+  .row {
+    display: grid;
+    gap: var(--space-2);
+  }
+  ol {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 4.5rem));
+    gap: var(--space-1);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .patch ol li {
+    display: grid;
+    justify-items: center;
+    gap: 2px;
+    margin: 0;
+    padding: var(--space-2) var(--space-1);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+  }
+  .patch ol li.field {
+    border: 2px solid var(--tone-amber);
+    background: var(--tone-amber-soft);
+  }
+  .patch ol li.empty {
+    border-style: dashed;
+  }
+  .patch code {
+    padding: 0;
+    border: 0;
+    background: none;
+    font-size: var(--text-base);
+    font-weight: 700;
+  }
+  .patch li span {
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+  }
+  .formula {
+    display: grid;
+    gap: var(--space-1);
+    margin: 0;
+    padding: var(--space-3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg);
+  }
+  .formula div {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0 var(--space-3);
+    font-size: var(--text-sm);
+  }
+  .formula dt {
+    color: var(--muted);
+  }
+  .formula dd {
+    margin: 0;
+    font-family: var(--font-mono);
+  }
+  .formula .result {
+    padding-top: var(--space-2);
+    border-top: 1px solid var(--border);
+    font-weight: 700;
+  }
+  .formula .result dt {
+    color: var(--text);
+  }
+</style>

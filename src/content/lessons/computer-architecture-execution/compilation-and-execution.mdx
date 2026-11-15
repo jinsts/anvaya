@@ -1,17 +1,17 @@
 ---
 title: 'Compilation: Connect source code to a running program'
 shortTitle: Compilation and execution
-summary: Follow a native build through compilation, assembly, linking, and loading, then trace symbol relocation in a tested model.
+summary: Follow one call through compilation, assembly, linking and loading, compute the relocation a real linker applied, and diagnose which build boundary failed.
 subject: computer-architecture-execution
 path: engineering-fundamentals
 difficulty: foundation
 estimatedMinutes: 40
 learningObjectives:
   - Distinguish the artifacts and errors produced by compilation, assembly, linking, and loading
-  - Resolve a symbolic reference after assigning addresses to separate object modules
+  - Resolve a symbolic reference and compute the relocation that patches it
   - Compare static linking, dynamic linking, interpretation, and just-in-time compilation
   - Explain why optimized machine code need not resemble the original source
-prerequisites: [computer-architecture-execution/cpu-registers-and-instructions]
+prerequisites: [computer-architecture-execution/reading-assembly]
 tags: [compilation, instructions, execution, debugging]
 skills: [debugging, implementation, trade-off-analysis]
 status: draft
@@ -75,7 +75,8 @@ import nativeSource from '../../../../labs/computer-architecture-execution/compi
 import unoptimized from '../../../../labs/computer-architecture-execution/compilation-and-execution/native/bump-O0.txt?raw';
 import optimized from '../../../../labs/computer-architecture-execution/compilation-and-execution/native/bump-O2.txt?raw';
 
-import ArchitectureFlow from '../../../components/diagrams/ArchitectureFlow.astro';
+import ArtifactPipeline from '../../../components/diagrams/ArtifactPipeline.astro';
+import RelocationPatch from '../../../components/diagrams/RelocationPatch.astro';
 
 import example from '../../../../labs/computer-architecture-execution/compilation-and-execution/example.ts?raw';
 
@@ -97,51 +98,42 @@ We will describe a conventional ahead-of-time native build, using C terminology.
 Other languages and toolchains may combine stages or emit intermediate code.
 The roles remain useful even when one command runs several tools.
 
-## Identify the artifact at each boundary
+## Follow one call through the build
 
-<ArchitectureFlow
-  caption="Artifacts pass between tools; loading establishes execution state."
-  nodes={[
-    {
-      label: 'Source \u2192 compiler',
-      detail:
-        'Preprocessing expands includes/macros; compilation translates the language to target instructions.',
-    },
-    {
-      label: 'Assembly \u2192 assembler \u2192 object',
-      detail:
-        'An object contains encoded instructions, symbols and relocations. A reference can still name helper.',
-    },
-    {
-      label: 'Objects \u2192 linker \u2192 executable',
-      detail:
-        'At base 100, the two-word entry module precedes helper at 102. Relocation patches the reference to 102.',
-    },
-    {
-      label: 'Executable \u2192 loader/runtime',
-      detail:
-        'Mappings, dependencies and initial state are established before user code runs.',
-    },
-  ]}
-/>
+The [assembly lesson](/learn/computer-architecture-execution/reading-assembly/)
+compiled `scale_sum`, which calls `sum_to` in another file. Follow that one call
+through each tool:
 
-## Resolve a reference after assigning positions
+<ArtifactPipeline />
 
-Our illustrative linker uses word-addressed memory. A word is one array element,
-not a real machine's byte or fixed-width instruction. Every module supplies
-words, symbol definitions as offsets within those words, and reference sites to
-patch with absolute addresses.
+Two separate jobs turn the name `sum_to` into a working call. **Symbol
+resolution** finds the one definition each undefined name refers to, here
+`sum_to` in `sum.o`; zero definitions or two conflicting ones are link errors.
+**Relocation** then patches every place that needs the chosen address, using
+the relocation records the assembler left. An object file can be complete
+machine code and still say "I call something named `sum_to`; fill in its
+distance later".
 
-The first module has two words, positions 0 and 1, and defines entry at its local
-position 0. Its first word contains a reference to helper. The second module has
-one word and defines helper at its own local position 0. Lay the modules out in
-that order at load base 100. Entry then begins at 100 and helper at 102, as in
-the figure's linking step. The first module's reference is patched after all
-definitions have been collected.
+## Compute the patch the linker wrote
 
-Resolving helper selects the definition from the second module. Relocating the
-reference replaces the first word with 102. Other words, 99 and 7, remain data in
-this model. They are not claimed to be valid native instructions.
+<RelocationPatch />
+
+The call stores a **displacement**: how far to jump from the next instruction.
+The relocation type `R_X86_64_PLT32` tells the linker to store S + A − P: the
+symbol's address S, plus the addend A, minus the address P of the four bytes
+being patched. The addend −4 accounts for the processor measuring from the end
+of those four bytes. A lab test computes the bytes from the recorded addresses
+and checks that they are the ones the linker wrote.
+
+Because the displacement is relative, moving the whole executable to another
+base address leaves it correct. That is what lets the loader place a
+position-independent executable at a random address without patching its
+calls again.
+
+The lab also has a small teaching linker that does the same job with absolute
+word addresses: it lays out two modules at a chosen base, collects their
+definitions, then patches each reference. With base 100, a two-word module
+followed by a one-word module puts `helper` at 102, and the reference becomes 102.
 
 <details>
 <summary>Inspect the tested model and expected output</summary>
@@ -153,27 +145,10 @@ this model. They are not claimed to be valid native instructions.
   output={'image: [102, 99, 7]\nentry: 100\nhelper: 102'}
 />
 
-</details>
-
-The linker first collects all definitions and locations, then patches references.
-That ordering handles a forward reference to a module that has not yet been
-visited. It rejects duplicate names and unresolved references instead of picking
-an arbitrary definition. It also rejects invalid offsets and overlapping patches.
-The tests check these cases and confirm that linking does not mutate its inputs.
-
-The central invariant is that each patched site contains the address assigned to
-its selected symbol. Moving the same image to base 200 would put helper at 202,
-so the absolute reference must change. Real systems can also use relative
-references, indirection tables and position-independent code; this model does
-not implement them or parse a real object format.
-
-<details>
-<summary>Model contract and implementation costs</summary>
-
-For W words, D definitions and R references, the model does O(W + D + R) work
-under the usual expected constant-cost map/set model for bounded-length symbol
-names. It retains O(W + D + R) data. Long symbol names add hashing and comparison
-costs, and these bounds do not describe production linker performance.
+For W words, D definitions and R references the model does O(W + D + R) work
+under expected constant-cost map operations. It rejects duplicate and missing
+definitions, invalid offsets and overlapping patches, and never mutates its
+inputs. It parses no real object format; the figures above read real ones.
 
 </details>
 
@@ -275,39 +250,59 @@ refreshing the recorded assembly and measurement artifacts.
 
 </details>
 
-`nm -u` marks `__assert_fail` as U (undefined) in the object. The final link supplies
-that implementation from the C library. The compiler-added stack protector also
-references `__stack_chk_fail`. An object can therefore assemble before
-all called functions have addresses. Compare how the unoptimized function uses frame-relative storage while the
-optimized one keeps the intermediate value in EAX. Both preserve the assertions.
-Neither assembly length nor optimization level alone proves elapsed-time speed.
-An object is produced by assembly and still carries symbols/relocations; linking
-resolves references, while loading creates mappings. To diagnose a new failure,
-ask which artifact exists: an object with an unresolved external name points to
-link inputs; a finished executable with a missing shared library points to loading.
+`nm -u` lists `__assert_fail` and the compiler-added `__stack_chk_fail` as
+undefined in `program.o`; the final link takes both from the C library. Compare
+how the `-O0` function keeps its argument in a stack slot while the `-O2` one
+uses only registers; the [assembly lesson](/learn/computer-architecture-execution/reading-assembly/)
+reads both styles in detail.
 
 ## Practise layout and failure diagnosis
 
 <LabCard
-  title="01 / Move the image"
-  command="pnpm exec vitest run labs/computer-architecture-execution/compilation-and-execution/"
+  title="01 / Compute a relocation"
+  command="pnpm lab computer-architecture-execution/compilation-and-execution"
 >
-  Recreate the two-module example in a test at load bases 0 and 200. Predict the
-  relocated first word and both symbol addresses. Confirm that the original
-  module words remain unchanged after both links.
+  Implement `solve(symbol, addend, place)` in `starter.ts`: return the four
+  little-endian bytes of S + A − P as a signed 32-bit value, and throw a
+  `RangeError` when it does not fit. Before running the tests, compute the bytes
+  for a call at 0x2000 whose four displacement bytes start at 0x2001, to a
+  function at 0x2100, with addend −4.
 </LabCard>
 
 <details>
-  <summary>Hint after an attempt</summary>
+<summary>Check after attempting</summary>
 
-The helper is always two words after the base, so its addresses are 2 and 202.
-Entry begins at the base. Only the reference site changes; the untouched words
-are still 99 and 7. Reusing unchanged input matters when testing another layout.
+S + A − P = 0x2100 − 4 − 0x2001 = 0xfb, so the bytes are `fb 00 00 00`. Check:
+the next instruction starts at 0x2005, and 0x2005 + 0xfb = 0x2100. A backward
+call gives a negative value, stored in two's complement, like the `b4 ff ff ff`
+in the figure.
 
 </details>
 
 <LabCard
-  title="02 / Distinguish a missing name from an invalid site"
+  title="02 / Move the image"
+  command="pnpm exec vitest run labs/computer-architecture-execution/compilation-and-execution/"
+>
+  In the teaching linker, recreate the two-module example in a test at load
+  bases 0 and 200. Predict the relocated first word and both symbol addresses,
+  and confirm that the original module words are unchanged after both links. Why
+  must an absolute reference change when the base moves, while the real relative
+  call above does not?
+</LabCard>
+
+<details>
+<summary>Check after an attempt</summary>
+
+The helper is always two words after the base, so its addresses are 2 and 202,
+and entry starts at the base. Only the reference site changes; the other words
+stay 99 and 7. An absolute reference stores the target's address, which moves
+with the base; a relative one stores the distance between two places that move
+together.
+
+</details>
+
+<LabCard
+  title="03 / Distinguish a missing name from an invalid site"
   command="pnpm exec vitest run labs/computer-architecture-execution/compilation-and-execution/"
 >
   Add one test referencing an undefined helper and another placing a reference
@@ -316,29 +311,11 @@ are still 99 and 7. Reusing unchanged input matters when testing another layout.
 </LabCard>
 
 <details>
-  <summary>Hint after an attempt</summary>
+<summary>Check after an attempt</summary>
 
-A definition can satisfy a missing symbol. It cannot make an out-of-range local
-patch site valid. The model validates sites while collecting modules, then
-checks unresolved names while applying relocations.
-
-</details>
-
-<LabCard
-  title="03 / Reorder independent modules"
-  command="pnpm exec vitest run labs/computer-architecture-execution/compilation-and-execution/"
->
-  Place the one-word helper module before the two-word entry module. At load
-  base 100, predict the image and symbol addresses and add a test. Explain why
-  names still resolve even though their addresses change.
-</LabCard>
-
-<details>
-  <summary>Hint after an attempt</summary>
-
-Helper becomes 100 and entry becomes 101. The words become 7, 100, 99: the
-reference has moved with its containing module and now points backward. Symbols
-identify definitions independently of a particular layout.
+A definition can satisfy a missing symbol. It cannot make an out-of-range patch
+site valid. The model validates sites while collecting modules, then checks
+unresolved names while applying relocations.
 
 </details>
 
