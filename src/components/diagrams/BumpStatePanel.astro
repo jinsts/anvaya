@@ -1,0 +1,152 @@
+---
+import DiagramFrame from '../learning/DiagramFrame.astro';
+import {
+  int32Bytes,
+  parseListing,
+  run,
+} from '../../../labs/computer-architecture-execution/reading-assembly/x86';
+import listing from '../../../labs/computer-architecture-execution/compilation-and-execution/native/bump-O2.txt?raw';
+// Registers and memory around each data instruction of GCC's real bump,
+// computed by running the committed listing in the tested interpreter.
+interface Props {
+  value?: number;
+  address?: number;
+}
+const { value = 7, address = 1000 } = Astro.props;
+const at = BigInt(address);
+const result = run([parseListing(listing)], 'bump', {
+  args: [at],
+  memory: [{ address: at, bytes: int32Bytes([value]) }],
+  watch: [{ address: at, bytes: 4 }],
+});
+const byte = (n: number) => n.toString(16).padStart(2, '0');
+const word = (bytes: number[]) =>
+  bytes.reduce((sum, b, i) => sum + b * 256 ** i, 0);
+const data = result.steps.filter(
+  (s) => s.text !== 'endbr64' && s.text !== 'ret',
+);
+const states = [
+  {
+    title: 'Entry',
+    text: 'rdi holds the pointer',
+    registers: result.initial.registers,
+    memory: result.initial.watched[0]!,
+    eaxChanged: false,
+    memoryChanged: false,
+  },
+  ...data.map((s, i) => ({
+    title: `After ${i + 1}`,
+    text: s.text,
+    registers: s.registers,
+    memory: s.watched[0]!,
+    eaxChanged: s.wrote.includes('rax'),
+    memoryChanged: s.stored.length > 0,
+  })),
+];
+---
+
+<DiagramFrame
+  caption={`GCC's bump at -O2, run in the tested model with ${value} at address ${address} (illustrative). The load copies four bytes into eax, the add changes only eax, and memory changes only at the store. The bytes are little-endian.`}
+>
+  <ol class="states">
+    {states.map((state) => (
+      <li>
+        <p class="title">
+          <strong>{state.title}</strong>
+          <code>{state.text}</code>
+        </p>
+        <dl>
+          <div>
+            <dt>rdi</dt>
+            <dd>{String(state.registers.rdi)}</dd>
+          </div>
+          <div class:list={{ changed: state.eaxChanged }}>
+            <dt>eax</dt>
+            <dd>
+              {String(state.registers.rax & 0xffffffffn)}
+              {state.eaxChanged && <span class="mark"> changed</span>}
+            </dd>
+          </div>
+          <div class:list={['memory', { changed: state.memoryChanged }]}>
+            <dt>
+              memory {address}–{address + 3}
+            </dt>
+            <dd>
+              <span class="bytes">{state.memory.map(byte).join(' ')}</span> ={' '}
+              {word(state.memory)}
+              {state.memoryChanged && <span class="mark"> changed</span>}
+            </dd>
+          </div>
+        </dl>
+      </li>
+    ))}
+  </ol>
+</DiagramFrame>
+<style>
+  .states {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 9.5rem), 1fr));
+    gap: var(--space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .states > li {
+    display: grid;
+    align-content: start;
+    gap: var(--space-2);
+    margin: 0;
+    padding: var(--space-3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg);
+  }
+  .diagram-frame .states > li + li {
+    margin-top: 0;
+  }
+  .title {
+    display: grid;
+    gap: var(--space-1);
+    margin: 0;
+    font-size: var(--text-sm);
+  }
+  .states code {
+    padding: 0;
+    border: 0;
+    background: none;
+    font-size: var(--text-xs);
+  }
+  dl {
+    display: grid;
+    gap: var(--space-1);
+    margin: 0;
+  }
+  dl > div {
+    padding: var(--space-1) var(--space-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+  }
+  dl > div.changed {
+    border: 2px solid var(--success);
+    background: var(--success-soft);
+  }
+  dt {
+    color: var(--muted);
+    font-size: var(--text-xs);
+  }
+  dd {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+  }
+  .bytes {
+    color: var(--muted);
+  }
+  .mark {
+    color: var(--success);
+    font-family: var(--font-body);
+    font-size: var(--text-xs);
+    font-weight: 700;
+  }
+</style>

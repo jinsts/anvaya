@@ -186,10 +186,14 @@ export interface StepRecord {
   rspAtCall?: bigint;
   /** 8-byte stack words from rsp up to the harness's frame, top first. */
   stack: { address: bigint; value: bigint | null }[];
+  /** Bytes of each watched range after this step. */
+  watched: number[][];
 }
 
 export interface RunOptions {
   args?: bigint[];
+  /** Memory ranges to read after every step, for figures. */
+  watch?: { address: bigint; bytes: number }[];
   memory?: { address: bigint; bytes: number[] }[];
   maxSteps?: number;
 }
@@ -344,10 +348,15 @@ export function run(
     return words;
   };
 
+  const watchBytes = () =>
+    (options.watch ?? []).map(({ address, bytes }) =>
+      [...Array(bytes).keys()].map((i) => memory.get(address + BigInt(i)) ?? 0),
+    );
   const initial = {
     registers: { ...regs },
     flags: { ...flags },
     stack: stackWords(),
+    watched: watchBytes(),
   };
 
   let current = byName.get(entry);
@@ -471,6 +480,7 @@ export function run(
       ...(taken === undefined ? {} : { taken }),
       ...(rspAtCall === undefined ? {} : { rspAtCall }),
       stack: stackWords(),
+      watched: watchBytes(),
     });
     if (halt) break;
     pc = next;

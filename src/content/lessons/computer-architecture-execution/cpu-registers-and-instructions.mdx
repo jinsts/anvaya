@@ -64,6 +64,7 @@ sources:
 
 import nativeAssembly from '../../../../labs/computer-architecture-execution/compilation-and-execution/native/bump-O2.txt?raw';
 
+import BumpStatePanel from '../../../components/diagrams/BumpStatePanel.astro';
 import InstructionFields from '../../../components/diagrams/InstructionFields.astro';
 
 import example from '../../../../labs/computer-architecture-execution/cpu-registers-and-instructions/example.ts?raw';
@@ -167,33 +168,34 @@ the complete generated code and memory behavior.
 
 ## A calling convention connects separate functions
 
-The ISA alone does not say which register a language's first argument must use.
-A **calling convention** makes that agreement: how arguments and results travel,
-which registers survive a call, and how stack state is maintained. A broader
-**application binary interface**, or ABI, covers additional binary agreements
-such as data layout and object-file interfaces.
+The ISA alone does not say which register carries a function's first argument.
+A **calling convention** does: where arguments and results travel, which
+registers a call may overwrite, and how the stack is kept. It is part of the
+platform's **application binary interface**, or ABI, which also fixes data
+layout and object-file formats. The [assembly lesson](/learn/computer-architecture-execution/reading-assembly/)
+follows real calls through the x86-64 convention, and the
+[stack lesson](/learn/computer-architecture-execution/stack-and-heap/) shows the
+frames they build.
 
-The [stack lesson](/learn/computer-architecture-execution/stack-and-heap/) traces caller/callee preservation and return state using the shared native example.
+<details>
+<summary>Model contract and decoder costs</summary>
 
-## Costs and limits of this decoder
+Encoding or decoding one fixed 16-bit word takes a bounded number of shifts and
+masks: O(1) time and space in the lab's model. That describes these TypeScript
+helpers, not a processor's decode latency. Real formats trade register fields,
+immediate range, instruction length and room for future operations against
+each other; a larger constant may need another instruction or a longer
+encoding, and variable-length encodings improve code density at the cost of
+harder decoding.
 
-Encoding or decoding one fixed 16-bit word uses a bounded number of operations,
-so it takes O(1) time and O(1) auxiliary space in the lab's word-operation model.
-That statement describes these TypeScript helpers. It does not measure a real
-processor's decode latency or prove anything about a complete compiler.
-
-Real formats must trade off register selection, immediate range, instruction
-length and room for more operations. A larger immediate may require another
-instruction or a different encoding. Variable-length encodings can improve code
-density but add decoding considerations. Choose a concrete target before
-reasoning about those trade-offs quantitatively.
+</details>
 
 ## Read the real load, add and store
 
-The shared native lab compiles `bump` for Linux x86-64 using the System V ABI.
-Its tested input is an unsigned 32-bit value 7. The pointer arrives in the
-64-bit register RDI; the returned 32-bit value uses EAX. These names belong to
-this target, not the illustrative 16-bit format above.
+The shared native lab compiles the C function `bump`, which increments the
+`unsigned` value its argument points to, for Linux x86-64. The pointer arrives
+in the 64-bit register `rdi`; the 32-bit result returns in `eax`. These names
+belong to that target, not to the 16-bit teaching format above.
 
 <CodeExample
   title="GCC 15.2 -O2 -fno-inline: tested bump function"
@@ -201,48 +203,53 @@ this target, not the illustrative 16-bit format above.
   language="text"
 />
 
-Read the three data instructions in order: `movl (%rdi), %eax` loads four bytes
-at the address in RDI; `addl $1, %eax` changes only the register; `movl %eax, (%rdi)`
-stores four bytes back. With RDI = 1000, memory[1000..1003] changes from 7 to 8
-only at the store. For an indexed operand, a base of 1000 plus index 3 scaled by
-4 addresses byte 1012. Loading the address and loading its contents are distinct.
+Ignore `endbr64`, a landing pad for indirect branches, and the assembler
+directives. Three instructions do the work, and the figure runs them in the
+assembly lesson's tested interpreter:
 
-`ret` resumes the caller using the saved return address. The security landing
-instruction `endbr64` and assembler directives do not implement the increment.
-A 64-bit pointer, a 32-bit operand, and a variable-length x86 instruction are
-three different widths. Sign-extending byte `0xff` preserves −1 as `0xffff`;
-zero-extension preserves unsigned 255 as `0x00ff`.
+<BumpStatePanel />
 
-**Transfer task:** start with memory value 41 and base 2000. Predict memory and
-EAX after each data instruction, then locate the first mistake in a trace that
-changes memory immediately after the addition. See the compilation lesson to
-reproduce the actual artifact; the model decoder is not an x86 emulator.
+`movl (%rdi), %eax` loads four bytes from the address in `rdi`; `addl $1, %eax`
+changes only the register; `movl %eax, (%rdi)` stores four bytes back. An
+address in a register and the value stored at that address are different
+things: changing `eax` did not change memory. Three widths meet here: a 64-bit
+pointer, a 32-bit operand and a variable-length x86 instruction. When a narrow
+value is widened, the [binary lesson](/learn/computer-architecture-execution/binary-and-data-representation/)'s
+sign or zero extension decides the new high bits. `ret` resumes the caller.
+
+**Transfer task:** start with memory value 41 at address 2000. Predict `eax` and
+memory after each data instruction, then find the first mistake in a trace that
+changes memory right after the addition.
 
 <details>
 <summary>Check after predicting</summary>
 
-After the load, EAX is 41 and memory[2000..2003] still holds 41. After the add,
-EAX is 42 while memory is unchanged. Only the store writes 42 back. A trace that
+After the load, `eax` is 41 and memory still holds 41. After the add, `eax` is
+42 while memory is unchanged. Only the store writes 42 back. A trace that
 changes memory right after the addition makes its first mistake there: `addl`
-changes only the register.
+changes only the register. A test runs this case in the interpreter.
 
 </details>
 
 ## Practise changing one field at a time
 
 <LabCard
-  title="01 / Separate hexadecimal digits from decimal values"
-  command="pnpm exec vitest run labs/computer-architecture-execution/cpu-registers-and-instructions/"
+  title="01 / Decode by hand"
+  command="pnpm lab computer-architecture-execution/cpu-registers-and-instructions"
 >
-  Predict the fields in words 0x1000, 0x1fff, and 0x200a. Add tests before
-  decoding them. Explain why the last immediate is ten rather than the letter a.
+  Implement `solve(word)` in `starter.ts`: split a 16-bit teaching instruction
+  into opcode, register and immediate with shifts and masks, and throw a
+  `RangeError` for reserved opcodes and values outside 16 bits. Before running
+  the tests, decode `0x2a0b` and say why `0x3000` must be rejected.
 </LabCard>
 
 <details>
-  <summary>Hint after an attempt</summary>
+<summary>Check after attempting</summary>
 
-The first word means opcode 1, register 0, immediate 0. The second means opcode
-1, register 15, immediate 255. The third means opcode 2, register 0, immediate 10. Hexadecimal is a notation for the bit pattern, not a separate stored type.
+`0x2a0b` is opcode 2, register 10 (hexadecimal a) and immediate 11 (hexadecimal
+0b). `0x3000` has opcode 3, which this format does not define; decoding it
+anyway would invent an operation. Shift right by 12 for the opcode, then mask
+with `0xf` and `0xff` for the other fields.
 
 </details>
 

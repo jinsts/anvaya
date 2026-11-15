@@ -625,3 +625,20 @@ figure and the stepper at 1280 px and 390 px in both themes were inspected;
 review wrapped a clipped C line, removed vertical jump labels that collided
 with their lanes, and put two wide tables in scroll regions after a 27 px
 overflow at 390 px.
+
+## Registers lesson state panel and attempt — 2026-11-15
+
+The registers lesson gains a register-and-memory panel for GCC's real `bump`:
+the committed `-O2` listing runs in the reading-assembly interpreter, which now
+records watched memory bytes after each step, so the figure shows `eax` and the
+four little-endian bytes at entry and after each data instruction. A new lab
+test runs the lesson's transfer task (41 at address 2000) the same way. The
+first exercise became an attempt lab with hidden decoding contracts, the
+decoder's cost paragraph moved into a disclosure, the calling-convention
+section now defers to the assembly and stack lessons, and the duplicated
+sign-extension example links to the binary lesson instead.
+
+Same command as the previous entry: zero type errors, warnings or hints;
+formatting and lint passed; 264 tests in 39 files; 33 pages; 78 browser tests.
+The unsolved attempt fails as intended. Screenshots of the panel at 1280 px and
+390 px in both themes were inspected; no layout fixes were needed.
