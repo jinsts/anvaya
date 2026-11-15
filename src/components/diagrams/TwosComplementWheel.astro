@@ -1,0 +1,234 @@
+---
+import DiagramFrame from '../learning/DiagramFrame.astro';
+import {
+  addPatterns,
+  wheel,
+} from '../../../labs/computer-architecture-execution/binary-and-data-representation/example';
+// All sixteen 4-bit patterns around a circle. Adding 1 moves one step
+// clockwise; the two places where a reading jumps are where carry and signed
+// overflow occur. Values and both breaks come from the tested model.
+const WIDTH = 4;
+const patterns = wheel(WIDTH);
+const n = patterns.length;
+const size = 320;
+const c = size / 2;
+const step = 360 / n;
+const polar = (r: number, degrees: number) => {
+  const a = (degrees * Math.PI) / 180;
+  return [c + r * Math.cos(a), c + r * Math.sin(a)] as const;
+};
+const angle = (i: number) => -90 + i * step;
+// Find the steps where +1 sets carry or overflow, from the model.
+const breaks = patterns.map((p) => addPatterns(p.raw, 1, WIDTH));
+const carryAt = breaks.findIndex((b) => b.carry);
+const overflowAt = breaks.findIndex((b) => b.signedOverflow);
+const boundary = (i: number) => angle(i) + step / 2;
+const segment = (i: number, inner: number, outer: number) => {
+  const [a0, a1] = [boundary(i - 1), boundary(i)];
+  const [x0, y0] = polar(outer, a0);
+  const [x1, y1] = polar(outer, a1);
+  const [x2, y2] = polar(inner, a1);
+  const [x3, y3] = polar(inner, a0);
+  return `M${x0} ${y0} A${outer} ${outer} 0 0 1 ${x1} ${y1} L${x2} ${y2} A${inner} ${inner} 0 0 0 ${x3} ${y3}Z`;
+};
+const line = (i: number, from: number, to: number) => {
+  const [x0, y0] = polar(from, boundary(i));
+  const [x1, y1] = polar(to, boundary(i));
+  return { x0, y0, x1, y1 };
+};
+const carryLine = line(carryAt, 58, 150);
+const overflowLine = line(overflowAt, 58, 150);
+const carryTag = polar(46, boundary(carryAt));
+const overflowTag = polar(46, boundary(overflowAt));
+const minus = (v: number) => (v < 0 ? `−${-v}` : String(v));
+---
+
+<DiagramFrame caption="Every 4-bit pattern read two ways. Outer ring: unsigned. Inner ring: two's complement, where the top bit weighs −8. Adding 1 steps clockwise; crossing the top break sets carry, crossing the bottom break sets signed overflow.">
+  <div class="wheel">
+    <svg
+      viewBox={`-12 -4 ${size + 24} ${size + 8}`}
+      role="img"
+      aria-labelledby="wheel-title wheel-desc"
+    >
+      <title id="wheel-title">Four-bit two's complement wheel</title>
+      <desc id="wheel-desc">
+        {patterns
+          .map((p) => `${p.bits}: unsigned ${p.unsigned}, signed ${p.signed}`)
+          .join('. ')}
+        . Carry occurs stepping from {patterns[carryAt]!.bits} to{' '}
+        {patterns[(carryAt + 1) % n]!.bits}. Signed overflow occurs stepping
+        from {patterns[overflowAt]!.bits} to {patterns[overflowAt + 1]!.bits}.
+      </desc>
+      {patterns.map((p, i) => (
+        <g>
+          <path d={segment(i, 98, 128)} class="outer" />
+          <path
+            d={segment(i, 64, 96)}
+            class:list={['inner', { negative: p.signed < 0 }]}
+          />
+          <text
+            x={polar(113, angle(i))[0]}
+            y={polar(113, angle(i))[1]}
+            class="value"
+          >
+            {p.unsigned}
+          </text>
+          <text
+            x={polar(80, angle(i))[0]}
+            y={polar(80, angle(i))[1]}
+            class:list={['value', { negative: p.signed < 0 }]}
+          >
+            {minus(p.signed)}
+          </text>
+          <text
+            x={polar(145, angle(i))[0]}
+            y={polar(145, angle(i))[1]}
+            class="bits"
+          >
+            {p.bits}
+          </text>
+        </g>
+      ))}
+      <line
+        {...{
+          x1: carryLine.x0,
+          y1: carryLine.y0,
+          x2: carryLine.x1,
+          y2: carryLine.y1,
+        }}
+        class="break carry"
+      />
+      <line
+        {...{
+          x1: overflowLine.x0,
+          y1: overflowLine.y0,
+          x2: overflowLine.x1,
+          y2: overflowLine.y1,
+        }}
+        class="break overflow"
+      />
+      <text x={c} y={c - 8} class="center">
+        +1 steps
+      </text>
+      <text x={c} y={c + 10} class="center">
+        clockwise
+      </text>
+      <text x={carryTag[0]} y={carryTag[1]} class="tag">
+        C
+      </text>
+      <text x={overflowTag[0]} y={overflowTag[1]} class="tag">
+        V
+      </text>
+    </svg>
+    <ul class="legend">
+      <li>
+        <span class="swatch carry"></span>
+        <strong>C, carry</strong> between {patterns[carryAt]!.bits} and{' '}
+        {patterns[(carryAt + 1) % n]!.bits}: unsigned{' '}
+        {patterns[carryAt]!.unsigned} + 1 wraps to 0.
+      </li>
+      <li>
+        <span class="swatch overflow"></span>
+        <strong>V, signed overflow</strong> between {patterns[overflowAt]!.bits}{' '}
+        and {patterns[overflowAt + 1]!.bits}: signed{' '}
+        {patterns[overflowAt]!.signed} + 1 wraps to −{2 ** (WIDTH - 1)}.
+      </li>
+      <li>
+        <span class="swatch negative"></span>Shaded inner cells have the top bit
+        set: negative in two's complement.
+      </li>
+    </ul>
+  </div>
+</DiagramFrame>
+<style>
+  .wheel {
+    display: grid;
+    grid-template-columns: minmax(0, 340px) minmax(0, 1fr);
+    gap: var(--space-5);
+    align-items: center;
+  }
+  svg {
+    width: 100%;
+    height: auto;
+  }
+  .outer {
+    fill: var(--diagram-cell);
+    stroke: var(--surface);
+    stroke-width: 2;
+  }
+  .inner {
+    fill: var(--tone-teal-soft);
+    stroke: var(--surface);
+    stroke-width: 2;
+  }
+  .inner.negative {
+    fill: var(--tone-rose-soft);
+  }
+  text {
+    fill: var(--text);
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    text-anchor: middle;
+    dominant-baseline: central;
+  }
+  .value {
+    font-size: var(--text-sm);
+    font-weight: 600;
+  }
+  .bits {
+    fill: var(--muted);
+  }
+  .center {
+    font-family: var(--font-body);
+    font-size: var(--text-sm);
+  }
+  .break {
+    stroke-width: 4;
+    stroke-linecap: round;
+  }
+  .break.carry {
+    stroke: var(--tone-amber);
+  }
+  .break.overflow {
+    stroke: var(--tone-violet);
+  }
+  .tag {
+    font-family: var(--font-body);
+    font-weight: 700;
+  }
+  .legend {
+    display: grid;
+    gap: var(--space-3);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: var(--text-sm);
+    line-height: var(--leading);
+  }
+  .wheel .legend li {
+    margin: 0;
+  }
+  .swatch {
+    display: inline-block;
+    width: 0.9em;
+    height: 0.9em;
+    margin-right: var(--space-2);
+    vertical-align: -0.1em;
+    border-radius: 3px;
+  }
+  .swatch.carry {
+    background: var(--tone-amber);
+  }
+  .swatch.overflow {
+    background: var(--tone-violet);
+  }
+  .swatch.negative {
+    border: 1px solid var(--border-strong);
+    background: var(--tone-rose-soft);
+  }
+  @media (max-width: 640px) {
+    .wheel {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

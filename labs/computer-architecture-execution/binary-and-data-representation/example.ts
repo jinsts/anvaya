@@ -1,90 +1,89 @@
-// An explicit byte model; these are not JavaScript's ordinary number rules.
-function byte(value: number): void {
-  if (!Number.isInteger(value) || value < 0 || value > 255) {
-    throw new RangeError('Expected an unsigned byte.');
-  }
+// An explicit fixed-width integer model; these are not JavaScript's ordinary
+// number rules. Widths are small so every pattern can be checked and drawn.
+
+function checkWidth(width: number): void {
+  if (!Number.isInteger(width) || width < 1 || width > 16)
+    throw new RangeError('Expected a width from 1 to 16 bits.');
+}
+function checkPattern(raw: number, width: number): void {
+  checkWidth(width);
+  if (!Number.isInteger(raw) || raw < 0 || raw >= 2 ** width)
+    throw new RangeError(`Expected an unsigned ${width}-bit pattern.`);
+}
+
+/** The two's complement value of a pattern: the top bit weighs −2^(w−1). */
+export function signedValue(raw: number, width: number): number {
+  checkPattern(raw, width);
+  return raw < 2 ** (width - 1) ? raw : raw - 2 ** width;
 }
 
 export function signedByte(raw: number): number {
-  byte(raw);
-  return raw < 128 ? raw : raw - 256;
+  return signedValue(raw, 8);
 }
 
-export function addBytes(left: number, right: number) {
-  byte(left);
-  byte(right);
-  const unsigned = (left + right) % 256;
-  const signedSum = signedByte(left) + signedByte(right);
+/** Add two patterns, keep the low w bits, and report both conditions. */
+export function addPatterns(left: number, right: number, width: number) {
+  checkPattern(left, width);
+  checkPattern(right, width);
+  const unsigned = (left + right) % 2 ** width;
+  const signedSum = signedValue(left, width) + signedValue(right, width);
+  const half = 2 ** (width - 1);
   return {
     unsigned,
-    signed: signedByte(unsigned),
-    carry: left + right > 255,
-    signedOverflow: signedSum < -128 || signedSum > 127,
+    signed: signedValue(unsigned, width),
+    carry: left + right >= 2 ** width,
+    signedOverflow: signedSum < -half || signedSum >= half,
   };
 }
 
-export function wordBytes(value: number, littleEndian: boolean): number[] {
-  if (!Number.isInteger(value) || value < 0 || value > 65535) {
-    throw new RangeError('Expected an unsigned 16-bit word.');
-  }
-  const bytes = [Math.floor(value / 256), value % 256];
-  return littleEndian ? bytes.reverse() : bytes;
+export function addBytes(left: number, right: number) {
+  return addPatterns(left, right, 8);
 }
 
 export function bitAt(raw: number, position: number): number {
-  byte(raw);
-  if (!Number.isInteger(position) || position < 0 || position > 7) {
+  checkPattern(raw, 8);
+  if (!Number.isInteger(position) || position < 0 || position > 7)
     throw new RangeError('Expected a bit position from 0 through 7.');
-  }
   return (raw >>> position) & 1;
 }
 
-// Field alignments are explicit inputs, not JavaScript object-layout rules.
-export function layoutRecord(
-  fields: readonly { bytes: number; alignment: number }[],
-) {
-  let end = 0;
-  let payload = 0;
-  let recordAlignment = 1;
-  const offsets: number[] = [];
-  for (const { bytes, alignment } of fields) {
-    if (
-      !Number.isSafeInteger(bytes) ||
-      bytes <= 0 ||
-      !Number.isSafeInteger(alignment) ||
-      alignment <= 0 ||
-      !Number.isInteger(Math.log2(alignment))
-    ) {
-      throw new RangeError(
-        'Expected positive sizes and power-of-two alignments.',
-      );
-    }
-    const offset = Math.ceil(end / alignment) * alignment;
-    end = offset + bytes;
-    payload += bytes;
-    if (!Number.isSafeInteger(end) || !Number.isSafeInteger(payload)) {
-      throw new RangeError('Record exceeds the model address range.');
-    }
-    offsets.push(offset);
-    recordAlignment = Math.max(recordAlignment, alignment);
-  }
-  const size = Math.ceil(end / recordAlignment) * recordAlignment;
-  if (!Number.isSafeInteger(size)) throw new RangeError('Record is too large.');
-  return { offsets, size, paddingBytes: size - payload };
+/** Widen a byte to 16 bits by copying its sign bit or by adding zeros. */
+export function extendByte(raw: number, kind: 'sign' | 'zero'): number {
+  checkPattern(raw, 8);
+  return kind === 'zero' || raw < 128 ? raw : raw | 0xff00;
+}
+
+/** Shift a byte right by n, filling with zeros or with copies of bit 7. */
+export function shiftRightByte(
+  raw: number,
+  by: number,
+  kind: 'logical' | 'arithmetic',
+): number {
+  checkPattern(raw, 8);
+  if (!Number.isInteger(by) || by < 0 || by > 7)
+    throw new RangeError('Expected a shift from 0 through 7.');
+  const shifted = raw >>> by;
+  if (kind === 'logical' || raw < 128) return shifted;
+  return shifted | ((0xff << (8 - by)) & 0xff);
+}
+
+/** Every w-bit pattern with its unsigned and signed values, for the wheel. */
+export function wheel(width: number) {
+  checkWidth(width);
+  return Array.from({ length: 2 ** width }, (_, raw) => ({
+    raw,
+    bits: raw.toString(2).padStart(width, '0'),
+    unsigned: raw,
+    signed: signedValue(raw, width),
+  }));
 }
 
 export function representationExample(): string {
   return [
     `255 as signed byte: ${signedByte(255)}`,
     `127 + 1: ${JSON.stringify(addBytes(127, 1))}`,
-    `0x1234 little-endian: ${wordBytes(0x1234, true).join(', ')}`,
-    `0.1 + 0.2: ${0.1 + 0.2}`,
-    `record: ${JSON.stringify(
-      layoutRecord([
-        { bytes: 1, alignment: 1 },
-        { bytes: 4, alignment: 4 },
-        { bytes: 1, alignment: 1 },
-      ]),
-    )}`,
+    `255 + 1: ${JSON.stringify(addBytes(255, 1))}`,
+    `0xf0 sign-extended: 0x${extendByte(0xf0, 'sign').toString(16)}; zero-extended: 0x${extendByte(0xf0, 'zero').toString(16).padStart(4, '0')}`,
+    `0x96 >> 2: logical 0x${shiftRightByte(0x96, 2, 'logical').toString(16)}, arithmetic 0x${shiftRightByte(0x96, 2, 'arithmetic').toString(16)}`,
   ].join('\n');
 }

@@ -186,3 +186,28 @@ test('the layout explorer reorders fields by keyboard and keeps focus', async ({
     explorer.getByRole('button', { name: 'Move ratio down' }),
   ).toBeFocused();
 });
+
+test('the byte explorer flips the sign bit and scores flag predictions by keyboard', async ({
+  page,
+}) => {
+  await page.goto(`/learn/${subject}/binary-and-data-representation/`);
+  const explorer = page.getByRole('region', {
+    name: 'Interactive byte explorer',
+  });
+  await explorer.scrollIntoViewIfNeeded();
+  await expect(
+    page.locator('astro-island[component-export="default"]'),
+  ).not.toHaveAttribute('ssr', '');
+  const status = explorer.getByRole('status');
+  await explorer.getByRole('button', { name: /^Bit 7,/ }).focus();
+  await page.keyboard.press('Space');
+  await expect(status).toContainText('signed −1 → 127');
+
+  await explorer.getByLabel('Carry?').focus();
+  await explorer.getByLabel('Carry?').selectOption('no');
+  await explorer.getByRole('button', { name: 'Add and reveal' }).focus();
+  await page.keyboard.press('Enter');
+  // 127 + 1: no carry, signed overflow.
+  await expect(status).toContainText('fits in 8 bits, so no carry (correct)');
+  await expect(status).toContainText('signed overflow is set (no prediction)');
+});

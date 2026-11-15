@@ -1,0 +1,10 @@
+title: Reverse Integer
+url: https://leetcode.com/problems/reverse-integer/
+difficulty: medium
+lessons: [computer-architecture-execution/binary-and-data-representation]
+topics: [binary, overflow]
+lists: [neetcode-150]
+hints:
+  - Peel digits off the low end with the remainder and push them onto the result by multiplying it by 10.
+  - The result may not fit in a signed 32-bit integer. Detect that before the multiply-and-add that would overflow, by comparing against the limit divided by 10 and the last digit.
+  - Decide how your language's remainder treats negative inputs; truncating division keeps the sign on each digit. The loop runs once per digit, at most 10 times.

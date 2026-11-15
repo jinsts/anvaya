@@ -538,3 +538,26 @@ broke mid-word at 390 px: the byte grid now draws each field and padding run as
 one block. In this environment's Chromium the emoji glyph renders as a missing
 glyph box; its code point is labelled in the next row. Component tests cover
 moves, reset, sorting and focus retention; a browser test reorders by keyboard.
+
+## Binary representation narrowed to integers — 2026-11-15
+
+Follow-up to the two split pages: the lesson now teaches integers and bits
+only. Floating point, text, byte order and layout moved out with their tests
+(`inspect.ts` was removed; the floating-point and text labs replace it). The
+ArchitectureFlow text card is replaced by a four-bit two's complement wheel,
+whose carry and overflow breaks are found by the model, a grid of the four
+carry/overflow combinations, and a byte explorer island with sign/zero
+extension and a predict-then-add panel. The model gained sign and zero
+extension and logical and arithmetic shifts; its tests check every byte, all
+65,536 byte pairs against the hardware sign rule for overflow, and every shift.
+Sum of Two Integers, Reverse Integer and Counting Bits were added; their titles
+and difficulty came from LeetCode's GraphQL endpoint and their Blind 75 and
+NeetCode 150 flags from NeetCode's published data. The stack lesson's layout
+link and prerequisite now point to the text and layout page.
+
+Same command as the previous entry: zero type errors, warnings or hints;
+formatting and lint passed; 229 tests in 32 files; 32 pages; 72 browser tests,
+including a new keyboard test of the byte explorer. Screenshots of the wheel,
+grid and explorer at 1280 px and 390 px in both themes were inspected; review
+widened the wheel's view box so side labels cannot clip, replaced a `pre` that
+picked up indentation, and shortened a wrapping label in the explorer.
