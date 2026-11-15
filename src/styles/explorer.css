@@ -647,3 +647,141 @@
   color: var(--text);
   font-weight: 700;
 }
+/* Datapath diagram and stepper. Active wires draw in once; with reduced motion
+   the global rule removes the animation and they appear solid immediately. */
+.datapath {
+  display: block;
+  width: 100%;
+  max-width: 440px;
+  height: auto;
+}
+.datapath-unit rect {
+  fill: var(--diagram-cell);
+  stroke: var(--border-strong);
+  stroke-width: 1.5;
+}
+.datapath-unit.on rect {
+  fill: var(--accent-soft);
+  stroke: var(--accent);
+  stroke-width: 3;
+}
+.datapath text {
+  fill: var(--text);
+  font-family: var(--font-body);
+  font-size: var(--text-xs);
+}
+.datapath .datapath-label {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  text-anchor: middle;
+}
+.datapath .datapath-value {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  text-anchor: middle;
+}
+.datapath-wire path {
+  fill: none;
+  stroke: var(--diagram-edge);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 3;
+}
+.datapath-wire text {
+  fill: var(--muted);
+  font-size: var(--text-xs);
+  paint-order: stroke;
+  stroke: var(--surface);
+  stroke-width: 4px;
+  stroke-linejoin: round;
+}
+.datapath-wire.on path {
+  stroke: var(--accent);
+  stroke-width: 3;
+  stroke-dasharray: 100;
+  stroke-dashoffset: 0;
+  animation: datapath-draw 0.7s ease-out;
+}
+.datapath-wire.on text {
+  fill: var(--text);
+  font-weight: 600;
+}
+.datapath-head {
+  fill: var(--diagram-edge);
+}
+.datapath-head.on {
+  fill: var(--accent);
+}
+@keyframes datapath-draw {
+  from {
+    stroke-dashoffset: 100;
+  }
+}
+.datapath-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 420px) minmax(13rem, 1fr);
+  gap: var(--space-5);
+  align-items: start;
+  margin: var(--space-4) 0;
+}
+.datapath-side {
+  display: grid;
+  gap: var(--space-4);
+}
+.datapath-stepper .datapath-program {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.datapath-stepper .datapath-program li {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+.datapath-program li.next {
+  border: 2px solid var(--accent);
+  background: var(--accent-soft);
+}
+.datapath-program li.done {
+  color: var(--muted);
+}
+.datapath-program li.done::after {
+  content: ' ✓ executed';
+  font-size: var(--text-xs);
+}
+.datapath-stepper code {
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: var(--text-sm);
+  white-space: nowrap;
+}
+.datapath-state {
+  margin: 0;
+  font-family: var(--font-mono);
+}
+.datapath-state caption {
+  padding: 0 0 var(--space-2);
+  font-family: var(--font-body);
+  font-size: var(--text-xs);
+}
+.datapath-state th,
+.datapath-state td {
+  padding: var(--space-2) var(--space-3);
+}
+.datapath-state tr.changed {
+  background: var(--diagram-active);
+}
+.datapath-state tr.changed td::after {
+  content: ' changed';
+  color: var(--muted);
+  font-family: var(--font-body);
+  font-size: var(--text-xs);
+}
+@media (max-width: 760px) {
+  .datapath-layout {
+    grid-template-columns: 1fr;
+  }
+}

@@ -211,3 +211,25 @@ test('the byte explorer flips the sign bit and scores flag predictions by keyboa
   await expect(status).toContainText('fits in 8 bits, so no carry (correct)');
   await expect(status).toContainText('signed overflow is set (no prediction)');
 });
+
+test('the datapath stepper predicts and steps by keyboard', async ({
+  page,
+}) => {
+  await page.goto(`/learn/${subject}/how-computers-execute-programs/`);
+  const stepper = page.getByRole('region', {
+    name: 'Interactive datapath stepper',
+  });
+  await stepper.scrollIntoViewIfNeeded();
+  await expect(
+    page.locator('astro-island[component-export="default"]'),
+  ).not.toHaveAttribute('ssr', '');
+  const status = stepper.getByRole('status');
+  await stepper.getByRole('button', { name: 'A register' }).focus();
+  await page.keyboard.press('Enter');
+  await expect(status).toContainText('Your prediction was correct.');
+  await expect(
+    stepper.getByRole('button', { name: 'Next instruction' }),
+  ).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(status).toContainText('Next: add R0, R0, 1.');
+});

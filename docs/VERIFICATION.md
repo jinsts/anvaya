@@ -561,3 +561,22 @@ including a new keyboard test of the byte explorer. Screenshots of the wheel,
 grid and explorer at 1280 px and 390 px in both themes were inspected; review
 widened the wheel's view box so side labels cannot clip, replaced a `pre` that
 picked up indentation, and shortened a wrapping label in the explorer.
+
+## Execution lesson datapath — 2026-11-15
+
+The program-execution lesson's text-card figure is replaced by a datapath
+stepper: an SVG block diagram (PC, next-PC adder, instruction memory, decoder,
+registers, ALU, data memory) whose highlighted units and wires come from a new
+tested register-machine model (`datapath.ts`). The learner predicts which state
+a load, an add and a store change before each step; active wires draw in once,
+and reduced motion shows them immediately. A table gives the same trace without
+JavaScript. A second figure plots the accumulator machine's executed positions
+over time from its tested trace, showing static and dynamic counts and the
+taken branch. The simulator's cost paragraph moved into a disclosure.
+
+Same command as the previous entry: zero type errors, warnings or hints;
+formatting and lint passed; 235 tests in 34 files; 32 pages; 74 browser tests,
+including a keyboard test of the stepper. Screenshots at 1280 px and 390 px in
+both themes, before and after a step, were inspected. Review fixed wire labels
+that CSS had re-anchored onto their wires, added halos where labels cross dashed
+lines, and moved three labels clipped by boxes or lines.

@@ -8,6 +8,7 @@ difficulty: foundation
 estimatedMinutes: 35
 learningObjectives:
   - Trace the program counter and register state across sequential instructions and branches
+  - Identify which datapath units a load, an arithmetic instruction and a store use
   - Distinguish a stored program, a running process, and a processor executing instructions
   - Explain why an instruction count does not determine elapsed time
 prerequisites: []
@@ -54,15 +55,19 @@ sources:
     url: https://diveintosystems.org/book/C5-Arch/von.html
   - label: 'Dive into Systems — Processor instruction execution'
     url: https://diveintosystems.org/book/C5-Arch/instrexec.html
+  - label: 'MIT Computation Structures, L13 — Building the Beta datapath: fetch, ALU, load and store paths'
+    url: https://computationstructures.org/lectures/beta/beta.html
   - label: 'Dive into Systems — Pipelining instruction execution'
     url: https://diveintosystems.org/book/C5-Arch/pipelining.html
   - label: 'Operating Systems: Three Easy Pieces — The abstraction of a process'
     url: https://pages.cs.wisc.edu/~remzi/OSTEP/cpu-intro.pdf
 ---
 
-import ArchitectureFlow from '../../../components/diagrams/ArchitectureFlow.astro';
+import BranchTimeline from '../../../components/diagrams/BranchTimeline.astro';
+import DatapathStepper from '../../../components/interactive/DatapathStepper';
 
 import example from '../../../../labs/computer-architecture-execution/how-computers-execute-programs/example.ts?raw';
+import datapath from '../../../../labs/computer-architecture-execution/how-computers-execute-programs/datapath.ts?raw';
 
 ## A program is a sequence of state changes
 
@@ -85,33 +90,46 @@ input and output connect execution to devices. Modern systems refine this model
 with caches and separate instruction and data paths, but it remains a useful
 starting point.
 
-## Follow the next instruction
+## Follow one instruction through the datapath
 
-<ArchitectureFlow
-  caption="A load, computation and store connect control to data. Illustrative addresses; not a physical timing model."
-  nodes={[
-    {
-      label: 'PC \u2192 instruction memory',
-      detail:
-        'PC selects the instruction; decoder/control selects the operands and operation.',
-    },
-    {
-      label: 'Load \u2192 register',
-      detail:
-        'Read a 32-bit value 7 at byte address 1000 into R0. RAM stays 7.',
-    },
-    {
-      label: 'ALU \u2192 write-back',
-      detail:
-        'Add 1 to R0: R0 becomes 8. State is retained between clock edges; decoding alone does not change RAM.',
-    },
-    {
-      label: 'Store \u2192 data memory',
-      detail:
-        'Write R0 to address 1000: RAM becomes 8. A branch can select a different next PC.',
-    },
-  ]}
+The **datapath** is the hardware an instruction flows through. The **program
+counter** (PC) holds the position of the next instruction. Instruction memory
+returns that instruction, and the **decoder** turns its bits into control
+signals: which registers to read, what the **ALU** (arithmetic logic unit)
+should compute, and whether data memory is read or written. Meanwhile a small
+adder computes the next PC.
+
+The stepper runs three instructions that increment a value in memory, the same
+load, add and store that the compiled C function `bump` performs in a later
+lesson. Before each step, predict which state changes besides the PC.
+
+<DiagramFrame caption="A single-cycle teaching datapath. Highlighted units and wires are the ones the tested model reports for the current instruction. A real ISA with 4-byte instructions adds 4 to the PC instead of 1.">
+  <DatapathStepper client:visible />
+</DiagramFrame>
+
+| Step | Instruction        | Path through the datapath                                | State after              |
+| ---- | ------------------ | -------------------------------------------------------- | ------------------------ |
+| 1    | `load R0, [1000]`  | ALU passes the address; data memory returns 7 to R0      | PC 1, R0 7, [1000] 7     |
+| 2    | `add R0, R0, 1`    | R0 and the constant enter the ALU; the result goes to R0 | PC 2, R0 8, [1000] 7     |
+| 3    | `store R0, [1000]` | ALU passes the address; R0's value is written to memory  | PC 3, R0 8, [1000] **8** |
+
+Only the store changes memory. Between the load and the store the new value
+exists only in R0, which is why a crash or another thread reading memory in
+between would still see 7.
+
+<details>
+<summary>Inspect the tested datapath model and expected output</summary>
+
+<CodeExample
+  title="A register machine that reports the units and wires each step uses"
+  code={datapath}
+  verified
+  output={
+    'load R0, [1000]: PC 1, R0 7, memory[1000] 7\nadd R0, R0, 1: PC 2, R0 8, memory[1000] 7\nstore R0, [1000]: PC 3, R0 8, memory[1000] 8'
+  }
 />
+
+</details>
 
 ## Trace a deliberately small machine
 
@@ -132,11 +150,13 @@ where the PC will point afterward.
 | 2                    | Branch to 1 if accumulator is nonzero | Otherwise continue at 3    |
 | 3                    | Halt                                  | Stop with PC retained at 3 |
 
-After the first addition the accumulator is 1, so the branch returns to instruction
-position one. After the second it is 0, so the branch continues to position 3.
-The branch executes twice, even though it appears once in the program.
-**Static instruction count** counts instructions in the program; **dynamic
-instruction count** counts the instructions actually executed.
+<BranchTimeline />
+
+After the first addition the accumulator is 1, so the branch returns to
+instruction position 1. After the second it is 0, so execution continues to
+position 3. The branch executes twice, even though it appears once in the
+program. **Static instruction count** counts instructions in the program;
+**dynamic instruction count** counts the instructions actually executed.
 
 <details>
 <summary>Inspect the tested model and expected output</summary>
@@ -151,15 +171,21 @@ instruction count** counts the instructions actually executed.
 </details>
 
 Each output line shows PC and accumulator after a state transition, with the
-initial state first. The final line records the halt instruction. The tests check
-the full sequence, unsigned wraparound, taken and untaken branches, invalid
-operands, and the step limit.
+initial state first. The tests check the full sequence, unsigned wraparound,
+taken and untaken branches, invalid operands, and the step limit.
 
-The model invariant is that every successful step uses a valid instruction
-position and keeps the accumulator within one unsigned byte. Invalid control
-flow throws instead of reading arbitrary host memory. A step budget stops an
-endless loop; reaching the budget is a simulator limit, not evidence that a real
-program would eventually halt.
+<details>
+<summary>Model contract and simulator costs</summary>
+
+Every successful step uses a valid instruction position and keeps the
+accumulator within one unsigned byte. Invalid control flow throws instead of
+reading arbitrary host memory. A step budget stops an endless loop; reaching it
+is a simulator limit, not evidence that a real program would halt. For p stored
+instructions and s executed steps, the simulator does O(p + s) work and keeps an
+O(s) trace so you can inspect it. These are costs of the TypeScript model, not
+of a processor.
+
+</details>
 
 ## Separate program behavior from processor timing
 
@@ -168,12 +194,6 @@ one halt. It contains no clock model. Six instructions do not imply six cycles,
 six nanoseconds, or any particular hardware speed.
 
 A pipeline overlaps instruction stages. The [performance lesson](/learn/computer-architecture-execution/architecture-and-performance/) works the latency, throughput and dependency timeline.
-
-Our TypeScript implementation validates p stored instructions and records s
-executed steps. Under constant-cost operations on these bounded values, its
-work is O(p + s) and its retained trace uses O(s) space. Those are simulator
-costs. A production emulator could keep only its current state when no history
-is needed; this teaching version keeps history so you can inspect it.
 
 ## The operating system supplies an execution context
 
