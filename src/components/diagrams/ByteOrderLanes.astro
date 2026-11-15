@@ -1,0 +1,138 @@
+---
+import DiagramFrame from '../learning/DiagramFrame.astro';
+import { bytesInOrder } from '../../../labs/computer-architecture-execution/text-encoding-and-memory-layout/example';
+import recorded from '../../../labs/computer-architecture-execution/text-encoding-and-memory-layout/representation-output.txt?raw';
+// One 32-bit value placed at four consecutive addresses in both byte orders.
+// The observed line is the recorded output of representation.c.
+const value = 0x12345678;
+const big = bytesInOrder(value, 4, 'big');
+const significance = ['most significant', '', '', 'least significant'];
+const tone = (byte: number) => `tone-${big.indexOf(byte)}`;
+const hex = (n: number) => n.toString(16).padStart(2, '0');
+const lanes = [
+  {
+    name: 'Little-endian',
+    note: 'x86-64 and most ARM systems',
+    bytes: bytesInOrder(value, 4, 'little'),
+  },
+  { name: 'Big-endian', note: 'network byte order', bytes: big },
+];
+const observed = recorded
+  .split('\n')
+  .find((line) => line.startsWith('uint32 0x12345678'))!
+  .split(':')[1]!
+  .trim();
+---
+
+<DiagramFrame caption="Byte order decides which end of a multi-byte value sits at the lowest address. The bits inside each byte are not reversed; only the order of whole bytes changes.">
+  <div class="lanes">
+    <div
+      class="value"
+      role="group"
+      aria-label={`The value 0x${value.toString(16)}, most significant byte first: ${big.map(hex).join(' ')}`}
+    >
+      <p class="title">
+        <strong>Value 0x{value.toString(16)}</strong> as four bytes
+      </p>
+      <ol aria-hidden="true">
+        {big.map((byte, i) => (
+          <li class={tone(byte)}>
+            <code>{hex(byte)}</code>
+            <span>{significance[i] || ' '}</span>
+          </li>
+        ))}
+      </ol>
+    </div>
+    {lanes.map((lane) => (
+      <div
+        class="lane"
+        role="group"
+        aria-label={`${lane.name}, addresses a to a+3: ${lane.bytes.map(hex).join(' ')}`}
+      >
+        <p class="title">
+          <strong>{lane.name}</strong> · {lane.note}
+        </p>
+        <ol aria-hidden="true">
+          {lane.bytes.map((byte, address) => (
+            <li class={tone(byte)}>
+              <span>a+{address}</span>
+              <code>{hex(byte)}</code>
+            </li>
+          ))}
+        </ol>
+      </div>
+    ))}
+    <p class="observed">
+      Recorded on this subject's x86-64 machine by <code>representation.c</code>
+      : <code>{observed}</code>, little-endian.
+    </p>
+  </div>
+</DiagramFrame>
+<style>
+  .lanes {
+    display: grid;
+    gap: var(--space-4);
+  }
+  .title {
+    margin: 0 0 var(--space-2);
+    font-size: var(--text-sm);
+  }
+  ol {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .lanes ol li {
+    display: grid;
+    gap: var(--space-1);
+    justify-items: center;
+    margin: 0;
+    padding: var(--space-2) var(--space-1);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    text-align: center;
+  }
+  .lanes li span {
+    min-height: 1lh;
+    color: var(--muted);
+    font-size: var(--text-xs);
+    line-height: var(--leading-snug);
+  }
+  .lanes li code {
+    padding: 0;
+    border: 0;
+    background: none;
+    font-size: var(--text-lg);
+    font-weight: 700;
+  }
+  .lanes li.tone-0 {
+    background: var(--tone-rose-soft);
+    border-color: var(--tone-rose);
+  }
+  .lanes li.tone-1 {
+    background: var(--tone-amber-soft);
+  }
+  .lanes li.tone-2 {
+    background: var(--tone-teal-soft);
+  }
+  .lanes li.tone-3 {
+    background: var(--tone-violet-soft);
+    border-color: var(--tone-violet);
+  }
+  .observed {
+    margin: 0;
+    padding: var(--space-3);
+    border-left: 3px solid var(--success);
+    background: var(--success-soft);
+    font-size: var(--text-sm);
+  }
+  .observed code {
+    padding: 0;
+    border: 0;
+    background: none;
+    font-weight: 600;
+  }
+</style>

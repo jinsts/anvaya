@@ -5,6 +5,7 @@ const slugs = [
   'how-computers-execute-programs',
   'binary-and-data-representation',
   'floating-point-representation',
+  'text-encoding-and-memory-layout',
   'cpu-registers-and-instructions',
   'compilation-and-execution',
   'memory-hierarchy-and-caches',
@@ -159,5 +160,29 @@ test('the binary32 explorer flips bits and takes a prediction by keyboard', asyn
   await expect(status).toContainText('Your prediction was correct.');
   await expect(
     explorer.getByRole('button', { name: 'Next challenge' }),
+  ).toBeFocused();
+});
+
+test('the layout explorer reorders fields by keyboard and keeps focus', async ({
+  page,
+}) => {
+  await page.goto(`/learn/${subject}/text-encoding-and-memory-layout/`);
+  const explorer = page.getByRole('region', {
+    name: 'Interactive record layout explorer',
+  });
+  await explorer.scrollIntoViewIfNeeded();
+  await expect(
+    page.locator('astro-island[component-export="default"]'),
+  ).not.toHaveAttribute('ssr', '');
+  await expect(explorer).toContainText('sizeof = 24 bytes');
+  const up = explorer.getByRole('button', { name: 'Move ratio up' });
+  await up.focus();
+  await page.keyboard.press('Enter');
+  await expect(explorer.getByRole('status')).toContainText(
+    'Size 24 → 16 bytes',
+  );
+  // ratio is now first, so its up button is disabled and focus moves down.
+  await expect(
+    explorer.getByRole('button', { name: 'Move ratio down' }),
   ).toBeFocused();
 });

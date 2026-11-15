@@ -1,0 +1,9 @@
+name: IETF RFC series
+kind: specification
+by: Internet Engineering Task Force, published by the RFC Editor
+url: https://www.rfc-editor.org/
+prefixes:
+  - https://www.rfc-editor.org/rfc/
+description: >-
+  The official archive of Internet standards, including RFC 3629, which defines
+  UTF-8 and its byte templates.

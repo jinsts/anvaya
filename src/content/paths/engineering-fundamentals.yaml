@@ -44,9 +44,7 @@ sections:
       - computer-architecture-execution/how-computers-execute-programs
       - computer-architecture-execution/binary-and-data-representation
       - computer-architecture-execution/floating-point-representation
-    # Split from binary-and-data-representation, which narrows to integers.
-    planned:
-      - Text encodings and memory layout
+      - computer-architecture-execution/text-encoding-and-memory-layout
   - id: architecture-source-to-process
     title: From source to running process
     subject: computer-architecture-execution

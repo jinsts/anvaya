@@ -80,6 +80,12 @@ export const ARTIFACTS = [
     flags: ['-O2', '-fno-inline'],
     file: `${native}/object-symbols.txt`,
   },
+  {
+    kind: 'output',
+    source: 'text-encoding-and-memory-layout/representation.c',
+    flags: ['-std=c17', '-O2'],
+    file: 'text-encoding-and-memory-layout/representation-output.txt',
+  },
 ];
 
 // Programs whose assertions must pass at each listed optimization level.

@@ -1,0 +1,181 @@
+---
+import DiagramFrame from '../learning/DiagramFrame.astro';
+import {
+  UTF8_ROWS,
+  utf8Bytes,
+} from '../../../labs/computer-architecture-execution/text-encoding-and-memory-layout/example';
+// RFC 3629's table, then one code point's bits moved into the template's x
+// positions. Bytes and bit groups come from the tested encoder.
+interface Props {
+  codePoint?: number;
+}
+const { codePoint = 0x20ac } = Astro.props;
+const bytes = utf8Bytes(codePoint);
+const row = UTF8_ROWS.findIndex((r) => codePoint <= r.last);
+const u = (n: number) => `U+${n.toString(16).toUpperCase().padStart(4, '0')}`;
+const tones = ['a', 'b', 'c', 'd'];
+const hex = (n: number) => n.toString(16).toUpperCase().padStart(2, '0');
+---
+
+<DiagramFrame
+  caption={`UTF-8 picks a template by the code point's range, then copies the code point's bits, highest first, into the x positions. ${u(codePoint)} (${String.fromCodePoint(codePoint)}) needs ${bytes.length} bytes: ${bytes.map((b) => hex(b.value)).join(' ')}.`}
+>
+  <div class="utf8">
+    <div
+      class="table-scroll"
+      tabindex="0"
+      role="region"
+      aria-label="UTF-8 byte templates"
+    >
+      <table>
+        <caption>Templates from RFC 3629; x marks a payload bit</caption>
+        <thead>
+          <tr>
+            <th scope="col">Code points</th>
+            <th scope="col">Bytes</th>
+          </tr>
+        </thead>
+        <tbody>
+          {UTF8_ROWS.map((r, index) => (
+            <tr class:list={{ chosen: index === row }}>
+              <th scope="row">
+                {u(r.first)}–{u(r.last)}
+                {index === row && <span class="mark"> ← {u(codePoint)}</span>}
+              </th>
+              <td>
+                <code>{r.templates.join(' ')}</code>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+    <div class="worked">
+      <p class="step-label">
+        {u(codePoint)} in binary, split into the template's payload widths
+      </p>
+      <p
+        class="groups"
+        aria-label={`Payload groups: ${bytes.map((b) => b.payload).join(', ')}`}
+      >
+        {bytes.map((b, i) => (
+          <code class={`tone-${tones[i]}`}>{b.payload}</code>
+        ))}
+      </p>
+      <p class="step-label">Each group goes after its byte's marker bits</p>
+      <ol class="bytes">
+        {bytes.map((b, i) => (
+          <li>
+            <span class="byte-name">
+              byte {i + 1}
+              {i === 0 ? ' · lead' : ' · continuation'}
+            </span>
+            <code>
+              <span class="marker">{b.prefix}</span>
+              <span class={`tone-${tones[i]}`}>{b.payload}</span>
+            </code>
+            <strong>0x{hex(b.value)}</strong>
+          </li>
+        ))}
+      </ol>
+    </div>
+  </div>
+</DiagramFrame>
+<style>
+  .utf8 {
+    display: grid;
+    gap: var(--space-4);
+  }
+  .utf8 .table-scroll {
+    margin: 0;
+  }
+  table th,
+  table td {
+    padding: var(--space-2) var(--space-3);
+  }
+  tbody th {
+    font-family: var(--font-mono);
+    font-weight: 400;
+    white-space: nowrap;
+  }
+  tr.chosen {
+    background: var(--accent-soft);
+  }
+  tr.chosen th {
+    font-weight: 700;
+  }
+  .mark {
+    color: var(--accent);
+  }
+  .utf8 code {
+    padding: 0;
+    border: 0;
+    background: none;
+    font-size: var(--text-sm);
+    white-space: nowrap;
+  }
+  .step-label {
+    margin: 0;
+    color: var(--muted);
+    font-size: var(--text-xs);
+  }
+  .worked {
+    display: grid;
+    gap: var(--space-2);
+  }
+  .groups {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin: 0 0 var(--space-2);
+  }
+  .groups code,
+  .bytes code span {
+    padding: 2px var(--space-1);
+    border-radius: var(--radius-sm);
+  }
+  .tone-a {
+    background: var(--tone-teal-soft);
+    box-shadow: inset 0 -2px 0 var(--tone-teal);
+  }
+  .tone-b {
+    background: var(--tone-amber-soft);
+    box-shadow: inset 0 -2px 0 var(--tone-amber);
+  }
+  .tone-c {
+    background: var(--tone-violet-soft);
+    box-shadow: inset 0 -2px 0 var(--tone-violet);
+  }
+  .tone-d {
+    background: var(--tone-rose-soft);
+    box-shadow: inset 0 -2px 0 var(--tone-rose);
+  }
+  .bytes {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 9.5rem), 1fr));
+    gap: var(--space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .utf8 .bytes li {
+    display: grid;
+    gap: var(--space-1);
+    margin: 0;
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    background: var(--surface);
+  }
+  .byte-name {
+    color: var(--muted);
+    font-size: var(--text-xs);
+  }
+  .marker {
+    color: var(--muted);
+    text-decoration: underline dotted;
+  }
+  .bytes strong {
+    font-family: var(--font-mono);
+  }
+</style>

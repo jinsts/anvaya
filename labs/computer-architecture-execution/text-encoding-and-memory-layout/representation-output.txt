@@ -1,0 +1,6 @@
+uint32 0x12345678: 78 56 34 12
+float 0.1f: cd cc cc 3d
+double 0.1: 9a 99 99 99 99 99 b9 3f
+utf8 A U+1F642 e U+0301: 41 f0 9f 99 82 65 cc 81
+declared: size 24 align 8 tag@0 ratio@8 flag@16 count@20
+reordered: size 16 align 8 ratio@0 count@8 tag@12 flag@13

@@ -506,3 +506,35 @@ With the rebuilt compiler, the three committed artifacts (`bump-O0.txt`,
 passed with `ANVAYA_CC` and was reported as skipped without it. The full gate
 (same command as the previous entry) passed: zero type errors, warnings or
 hints; formatting and lint; 213 tests in 29 files; 31 pages; 66 browser tests.
+
+## Text encodings and memory layout lesson — 2026-11-15
+
+Draft of the planned page "Text encodings and memory layout". A new native
+program, `representation.c`, prints this target's integer and floating-point
+bytes, a UTF-8 literal and two record layouts; the native lab compiles it and
+checks its output against the committed copy. Lab tests compare the UTF-8
+encoder with `TextEncoder` at every length boundary, the UTF-16 model with
+JavaScript strings, and the byte-order, UTF-8 and layout models with that
+recorded native output. The attempt contracts were cross-checked with Python's
+UTF-8 encoder. UTF-8 Validation's title and difficulty came from LeetCode's
+public GraphQL endpoint; NeetCode's published data lists it on neither Blind 75
+nor NeetCode 150, so it claims no list. Encode and Decode Strings was not linked
+because it is paid-only on LeetCode.
+
+Same command as the previous entry:
+
+| Check               | Result                                                          |
+| ------------------- | --------------------------------------------------------------- |
+| Type checking       | Zero errors, warnings or hints                                  |
+| Formatting and lint | Passed, including token and placeholder checks                  |
+| Unit/lab tests      | 231 passed in 32 files, including native compilation/execution  |
+| Static build        | 32 pages; 25 search pages; link, anchor and recap checks passed |
+| Browser tests       | 70 passed across desktop and mobile Chromium                    |
+
+Screenshots of the UTF-8, text ladder and byte-order figures and the layout
+explorer at 1280 px and 390 px in both themes were inspected. Review fixed list
+indentation leaking from prose styles, a lost border color, and field names that
+broke mid-word at 390 px: the byte grid now draws each field and padding run as
+one block. In this environment's Chromium the emoji glyph renders as a missing
+glyph box; its code point is labelled in the next row. Component tests cover
+moves, reset, sorting and focus retention; a browser test reorders by keyboard.

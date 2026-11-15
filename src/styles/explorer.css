@@ -456,3 +456,112 @@
 .float-challenge [aria-pressed='true'] {
   box-shadow: inset 0 0 0 2px var(--text);
 }
+/* Record layout explorer. */
+.layout-decl {
+  margin: var(--space-3) 0;
+  padding: var(--space-3) var(--space-4);
+  background: var(--code-bg);
+  font-size: var(--text-sm);
+}
+.layout-fields {
+  display: grid;
+  gap: var(--space-2);
+  margin: var(--space-3) 0;
+  padding: 0;
+  list-style: none;
+}
+.layout-explorer .layout-fields li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border-strong);
+  border-left-width: 4px;
+  border-radius: var(--radius-sm);
+}
+.layout-name {
+  display: grid;
+  min-width: 0;
+}
+.layout-name span {
+  color: var(--muted);
+  font-size: var(--text-xs);
+}
+.layout-explorer code {
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: var(--text-sm);
+}
+.layout-moves {
+  display: flex;
+  gap: var(--space-1);
+}
+.layout-moves button {
+  min-width: 44px;
+  min-height: 36px;
+}
+.layout-total {
+  margin: var(--space-3) 0 var(--space-2);
+  font-size: var(--text-sm);
+}
+.layout-grid {
+  display: grid;
+  gap: 2px;
+  margin: 0 0 var(--space-3);
+}
+.layout-index {
+  align-self: center;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  text-align: center;
+}
+.layout-block {
+  display: grid;
+  place-content: center;
+  min-width: 0;
+  min-height: var(--space-10);
+  padding: 2px;
+  border: 1px solid var(--border-strong);
+  border-left-width: 4px;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  line-height: var(--leading-snug);
+  text-align: center;
+}
+.byte-offset {
+  color: var(--muted);
+}
+.layout-explorer .padding {
+  border-style: dashed;
+  background: repeating-linear-gradient(
+    135deg,
+    var(--subtle) 0 4px,
+    var(--surface) 4px 8px
+  );
+  color: var(--muted);
+}
+.layout-explorer :is(li, span).field-rose {
+  border-left-color: var(--tone-rose);
+  background: var(--tone-rose-soft);
+}
+.layout-explorer :is(li, span).field-teal {
+  border-left-color: var(--tone-teal);
+  background: var(--tone-teal-soft);
+}
+.layout-explorer :is(li, span).field-amber {
+  border-left-color: var(--tone-amber);
+  background: var(--tone-amber-soft);
+}
+.layout-explorer :is(li, span).field-violet {
+  border-left-color: var(--tone-violet);
+  background: var(--tone-violet-soft);
+}
+/* Lesson prose indents lists; these lists are not prose. */
+.layout-explorer .layout-fields {
+  padding-left: 0;
+}
