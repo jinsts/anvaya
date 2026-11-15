@@ -1,0 +1,203 @@
+---
+import DiagramFrame from '../learning/DiagramFrame.astro';
+import {
+  spacing,
+  toyBinade,
+} from '../../../labs/computer-architecture-execution/floating-point-representation/example';
+// A toy format with 3 fraction bits follows binary32's rules for normal
+// numbers, so its spacing pattern is the same at a visible scale. Positions are
+// linear: the number line is to scale.
+const FRACTION_BITS = 3;
+const low = 1;
+const high = 8;
+const binades = [0, 1, 2].map((power) => {
+  const values = toyBinade(FRACTION_BITS, power);
+  return {
+    power,
+    start: 2 ** power,
+    end: 2 ** (power + 1),
+    values,
+    gap: values[1]! - values[0]!,
+  };
+});
+const at = (value: number) => ((value - low) / (high - low)) * 100;
+const fraction = (gap: number) => `1/${1 / gap}`;
+const real = [1, 1024, 2 ** 20, 2 ** 24].map((value) => ({
+  value,
+  gap: spacing(value),
+}));
+const approx = (n: number) => {
+  if (String(n).length <= 8) return `= ${n}`;
+  const [digits, exponent] = n.toPrecision(3).includes('e')
+    ? n.toPrecision(3).split('e')
+    : n.toExponential(2).split('e');
+  return `≈ ${digits} × 10${String(Number(exponent))
+    .split('')
+    .map((c) => '⁻⁰¹²³⁴⁵⁶⁷⁸⁹'['-0123456789'.indexOf(c)])
+    .join('')}`;
+};
+const power = (n: number) => {
+  const k = Math.log2(n);
+  return `2${String(k)
+    .split('')
+    .map((c) => '⁻⁰¹²³⁴⁵⁶⁷⁸⁹'['-0123456789'.indexOf(c)])
+    .join('')}`;
+};
+---
+
+<DiagramFrame caption="Every power-of-two interval holds the same number of values, so the gap between neighbors doubles each time the interval does. Top: a toy format with 3 fraction bits, drawn to scale. Bottom: the same rule in binary32.">
+  <div class="spacing">
+    <div
+      class="line"
+      role="img"
+      aria-label={`Number line from ${low} to ${high} with ${binades.length * 8} toy values. ${binades.map((b) => `From ${b.start} to ${b.end}: 8 values, gap ${fraction(b.gap)}`).join('. ')}.`}
+    >
+      <div class="axis" aria-hidden="true">
+        {binades.flatMap((b) =>
+          b.values.map((value, index) => (
+            <span
+              class:list={['tick', { major: index === 0 }]}
+              style={`left: ${at(value)}%`}
+            />
+          )),
+        )}
+        <span class="tick major" style="left: 100%"></span>
+        {[1, 2, 4, 8].map((value) => (
+          <span class="label" style={`left: ${at(value)}%`}>
+            {value}
+          </span>
+        ))}
+      </div>
+      <div class="brackets" aria-hidden="true">
+        {binades.map((b) => (
+          <span
+            class="bracket"
+            style={`left: ${at(b.start)}%; width: ${at(b.end) - at(b.start)}%`}
+          >
+            <strong>gap {fraction(b.gap)}</strong>
+            <span>8 values</span>
+          </span>
+        ))}
+      </div>
+    </div>
+    <div
+      class="table-scroll"
+      tabindex="0"
+      role="region"
+      aria-label="Binary32 spacing at four magnitudes"
+    >
+      <table>
+        <caption>Gap to the next binary32 value, from the tested model</caption>
+        <thead>
+          <tr>
+            <th scope="col">Value</th>
+            <th scope="col">Gap to the next value</th>
+          </tr>
+        </thead>
+        <tbody>
+          {real.map(({ value, gap }) => (
+            <tr>
+              <th scope="row">
+                {value.toLocaleString('en')} ({power(value)})
+              </th>
+              <td>
+                {power(gap)} <span class="approx">{approx(gap)}</span>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</DiagramFrame>
+<style>
+  .spacing {
+    display: grid;
+    gap: var(--space-5);
+  }
+  .line {
+    display: grid;
+    gap: var(--space-2);
+    padding: 0 var(--space-3);
+  }
+  .axis {
+    position: relative;
+    height: var(--space-12);
+    border-bottom: 2px solid var(--diagram-edge);
+  }
+  .tick {
+    position: absolute;
+    bottom: 0;
+    width: 2px;
+    height: var(--space-4);
+    margin-left: -1px;
+    background: var(--accent);
+  }
+  .tick.major {
+    height: var(--space-5);
+    background: var(--text);
+  }
+  .label {
+    position: absolute;
+    top: 0;
+    transform: translateX(-50%);
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    color: var(--muted);
+  }
+  .brackets {
+    position: relative;
+    height: var(--space-12);
+  }
+  .bracket {
+    position: absolute;
+    top: 0;
+    display: grid;
+    justify-items: center;
+    align-content: start;
+    padding-top: var(--space-1);
+    border: 2px solid var(--border-strong);
+    border-top: 0;
+    border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+    height: var(--space-4);
+    font-size: var(--text-xs);
+    text-align: center;
+  }
+  .bracket strong,
+  .bracket span {
+    position: relative;
+    top: var(--space-4);
+    white-space: nowrap;
+  }
+  .bracket span {
+    top: var(--space-4);
+    color: var(--muted);
+  }
+  table {
+    width: 100%;
+    margin: 0;
+    font-size: var(--text-sm);
+  }
+  caption {
+    padding-bottom: var(--space-2);
+    color: var(--muted);
+    font-size: var(--text-xs);
+    text-align: left;
+  }
+  tbody th,
+  td {
+    font-family: var(--font-mono);
+    font-weight: 400;
+    text-align: left;
+  }
+  .approx {
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  @media (max-width: 480px) {
+    .bracket:first-child strong,
+    .bracket:first-child span {
+      justify-self: start;
+    }
+  }
+</style>

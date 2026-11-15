@@ -1,0 +1,9 @@
+name: GCC online documentation
+kind: documentation
+by: GNU Compiler Collection developers
+url: https://gcc.gnu.org/onlinedocs/
+description: >-
+  The official manuals for GCC, including the optimization options, the
+  generated-code conventions and the built-in functions used by this subject's
+  native labs. Citations name the GCC 15.2 manual that matches the recorded
+  compiler.

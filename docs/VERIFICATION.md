@@ -452,3 +452,41 @@ One full run failed because the mock-interview test lists the problems it may
 draw at random, and the new LRU Cache problem was missing from that list. After
 adding it, the test passed 20 repeated runs on desktop and mobile, and the full
 gate passed again.
+
+## Floating-point representation lesson — 2026-11-15
+
+Draft of the planned page "Floating-point representation and rounding". The
+`/tmp` toolchains were rebuilt from Ubuntu 26.04 packages (GCC 15.2.0 under
+`/tmp/anvaya-cc`, Chromium libraries under `/tmp/anvaya-browser-deps`) and the
+unchanged branch passed the full gate first (189 tests, 30 pages, 62 browser
+tests).
+
+```sh
+ANVAYA_CC=/tmp/anvaya-cc/compiler PLAYWRIGHT_PORT=4351 \
+  LD_LIBRARY_PATH=/tmp/anvaya-browser-deps/usr/lib/x86_64-linux-gnu pnpm verify
+```
+
+| Check               | Result                                                          |
+| ------------------- | --------------------------------------------------------------- |
+| Type checking       | Zero errors, warnings or hints                                  |
+| Formatting and lint | Passed, including token and placeholder checks                  |
+| Unit/lab tests      | 213 passed in 29 files, including native compilation/execution  |
+| Static build        | 31 pages; 24 search pages; link, anchor and recap checks passed |
+| Browser tests       | 66 passed across desktop and mobile Chromium                    |
+
+The binary32 model's exact decimal values, `0.1`, the smallest subnormal, the
+largest finite value and the binary64 values of `0.1` and `0.1 + 0.2`, were
+cross-checked with Python's `struct` and `decimal` modules. Four static figures
+(field anatomy, spacing, ties to even, summation order) are computed from the
+model at build time; the explorer island runs the same model. Component tests
+cover bit flips, typed input and its error, presets at the exponent edges,
+roving keyboard focus and the prediction challenges; a browser test drives the
+bits and a challenge by keyboard. The learner attempt fails until implemented.
+
+Screenshots of every figure and the explorer at 1280 px and 390 px in both
+themes were inspected. Review fixed colliding axis labels, a table that
+overflowed at 390 px, a wrapped summation column, a space lost to HTML
+compression, and a two-column readout that split long numbers on phones. No
+console errors or page overflow occurred. Sources consulted: Dive into Systems
+4.8, Goldberg's paper (newly registered), ECMA-262 and the GCC 15.2 manual
+(newly registered).

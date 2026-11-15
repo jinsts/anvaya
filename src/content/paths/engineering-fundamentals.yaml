@@ -43,9 +43,9 @@ sections:
     lessons:
       - computer-architecture-execution/how-computers-execute-programs
       - computer-architecture-execution/binary-and-data-representation
+      - computer-architecture-execution/floating-point-representation
     # Split from binary-and-data-representation, which narrows to integers.
     planned:
-      - Floating-point representation and rounding
       - Text encodings and memory layout
   - id: architecture-source-to-process
     title: From source to running process

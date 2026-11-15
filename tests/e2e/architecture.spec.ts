@@ -4,6 +4,7 @@ const subject = 'computer-architecture-execution';
 const slugs = [
   'how-computers-execute-programs',
   'binary-and-data-representation',
+  'floating-point-representation',
   'cpu-registers-and-instructions',
   'compilation-and-execution',
   'memory-hierarchy-and-caches',
@@ -130,4 +131,33 @@ test('the cache explorer takes a prediction and changes organization by keyboard
   await expect(organization).toHaveValue('two-way');
   await expect(status).toContainText('Next: read address 0');
   await expect(explorer.getByRole('table')).toContainText('Way 1');
+});
+
+test('the binary32 explorer flips bits and takes a prediction by keyboard', async ({
+  page,
+}) => {
+  await page.goto(`/learn/${subject}/floating-point-representation/`);
+  const explorer = page.getByRole('region', {
+    name: 'Interactive binary32 explorer',
+  });
+  await explorer.scrollIntoViewIfNeeded();
+  await expect(
+    page.locator('astro-island[component-export="default"]'),
+  ).not.toHaveAttribute('ssr', '');
+  const status = explorer.getByRole('status');
+
+  await explorer.getByRole('button', { name: /^Bit 31,/ }).focus();
+  for (let i = 0; i < 8; i++) await page.keyboard.press('ArrowRight');
+  await expect(
+    explorer.getByRole('button', { name: /^Bit 23,/ }),
+  ).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(status).toContainText('The value changes from 1 to 0.5.');
+
+  await explorer.getByRole('button', { name: '16,777,216' }).focus();
+  await page.keyboard.press('Enter');
+  await expect(status).toContainText('Your prediction was correct.');
+  await expect(
+    explorer.getByRole('button', { name: 'Next challenge' }),
+  ).toBeFocused();
 });

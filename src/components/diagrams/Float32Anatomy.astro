@@ -1,0 +1,193 @@
+---
+import DiagramFrame from '../learning/DiagramFrame.astro';
+import {
+  BIAS,
+  bitsOf,
+  decode,
+  exactDecimal,
+} from '../../../labs/computer-architecture-execution/floating-point-representation/example';
+// Every number in this figure comes from the tested binary32 model.
+interface Props {
+  value?: number;
+}
+const { value = 0.1 } = Astro.props;
+const bits = bitsOf(value);
+const fields = decode(bits);
+if (fields.kind !== 'normal')
+  throw new Error('Float32Anatomy shows a normal value: 1.f × 2^scale.');
+const pattern = bits.toString(2).padStart(32, '0');
+// The significand 1.f as an exact decimal: the same fraction with scale 2⁰.
+const significand = exactDecimal((bits & 0x7fffff) | (BIAS << 23));
+const groups = [
+  {
+    name: 'sign',
+    tone: 'sign',
+    bits: pattern.slice(0, 1),
+    first: 31,
+    reads: fields.sign ? '1 → negative' : '0 → positive',
+  },
+  {
+    name: 'exponent',
+    tone: 'exponent',
+    bits: pattern.slice(1, 9),
+    first: 30,
+    reads: `${fields.exponent} − ${BIAS} = ${String(fields.scale).replace('-', '−')}`,
+  },
+  {
+    name: 'fraction',
+    tone: 'fraction',
+    bits: pattern.slice(9),
+    first: 22,
+    reads: `${fields.fraction.toLocaleString('en')} ÷ 2²³`,
+  },
+];
+const hex = bits.toString(16).padStart(8, '0');
+const sup = (n: number) =>
+  String(n)
+    .split('')
+    .map((c) => '⁻⁰¹²³⁴⁵⁶⁷⁸⁹'['-0123456789'.indexOf(c)])
+    .join('');
+---
+
+<DiagramFrame
+  caption={`The literal ${value} stored as binary32 (0x${hex}). The exponent picks a power of two; the fraction picks one of 2²³ evenly spaced points after it.`}
+>
+  <div class="anatomy">
+    <div class="groups">
+      {groups.map((group) => (
+        <div
+          class:list={['group', group.tone]}
+          role="group"
+          aria-label={`${group.name}: bits ${group.first} to ${group.first - group.bits.length + 1}, ${group.bits}`}
+        >
+          <span class="group-name">
+            {group.name} · {group.bits.length}{' '}
+            {group.bits.length === 1 ? 'bit' : 'bits'}
+          </span>
+          <span class="cells" aria-hidden="true">
+            {group.bits.split('').map((bit) => (
+              <span class:list={['cell', { one: bit === '1' }]}>{bit}</span>
+            ))}
+          </span>
+          <span class="reads">{group.reads}</span>
+        </div>
+      ))}
+    </div>
+    <ol class="rebuild">
+      <li>
+        <span>Significand</span>
+        <code>1 + fraction ÷ 2²³ = {significand}</code>
+      </li>
+      <li>
+        <span>Scale</span>
+        <code>2{sup(fields.scale!)}</code>
+      </li>
+      <li>
+        <span>Stored value</span>
+        <code class="exact">
+          {fields.sign ? '−' : '+'}
+          {significand} × 2{sup(fields.scale!)} = {exactDecimal(bits)}
+        </code>
+      </li>
+    </ol>
+  </div>
+</DiagramFrame>
+<style>
+  .anatomy {
+    display: grid;
+    gap: var(--space-4);
+  }
+  .groups {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+  .group {
+    display: grid;
+    gap: var(--space-1);
+    padding: var(--space-2);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    min-width: 0;
+  }
+  .group.sign {
+    background: var(--tone-rose-soft);
+  }
+  .group.exponent {
+    background: var(--tone-amber-soft);
+  }
+  .group.fraction {
+    flex: 1 1 100%;
+    background: var(--tone-teal-soft);
+  }
+  .group-name,
+  .reads {
+    color: var(--muted);
+    font-size: var(--text-xs);
+  }
+  .group-name {
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .reads {
+    color: var(--text);
+    font-family: var(--font-mono);
+  }
+  .cells {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px;
+  }
+  .cell {
+    display: inline-grid;
+    place-items: center;
+    min-width: 1.4em;
+    padding: 2px 0;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    background: var(--surface);
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+  }
+  .cell.one {
+    border-color: var(--text);
+    color: var(--text);
+    font-weight: 700;
+  }
+  .rebuild {
+    display: grid;
+    gap: var(--space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .anatomy .rebuild li {
+    display: grid;
+    grid-template-columns: minmax(7rem, max-content) minmax(0, 1fr);
+    gap: var(--space-3);
+    align-items: baseline;
+    margin: 0;
+    font-size: var(--text-sm);
+  }
+  .rebuild span {
+    color: var(--muted);
+  }
+  .anatomy code {
+    padding: 0;
+    border: 0;
+    background: none;
+    font-size: var(--text-sm);
+    overflow-wrap: anywhere;
+  }
+  .exact {
+    font-weight: 600;
+  }
+  @media (max-width: 480px) {
+    .anatomy .rebuild li {
+      grid-template-columns: 1fr;
+      gap: 0;
+    }
+  }
+</style>
