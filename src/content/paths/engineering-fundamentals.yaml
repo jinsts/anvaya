@@ -50,11 +50,9 @@ sections:
     subject: computer-architecture-execution
     lessons:
       - computer-architecture-execution/cpu-registers-and-instructions
+      - computer-architecture-execution/reading-assembly
       - computer-architecture-execution/compilation-and-execution
       - computer-architecture-execution/stack-and-heap
-    # Intended position: after cpu-registers-and-instructions.
-    planned:
-      - 'Reading assembly: branches, loops, and calls'
   - id: architecture-memory-hierarchy
     title: The memory hierarchy
     subject: computer-architecture-execution

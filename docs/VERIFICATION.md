@@ -580,3 +580,48 @@ including a keyboard test of the stepper. Screenshots at 1280 px and 390 px in
 both themes, before and after a step, were inspected. Review fixed wire labels
 that CSS had re-anchored onto their wires, added halos where labels cross dashed
 lines, and moved three labels clipped by boxes or lines.
+
+## Reading assembly lesson — 2026-11-15
+
+Draft of the planned page "Reading assembly: branches, loops, and calls". The
+native lab gained `sum.c` (a loop), `scale.c` (a non-leaf call to a function in
+another file) and `main.c` (assertions); all three are compiled together and run
+at `-O0` and `-O2`. Their `-O0` and `-O2` listings for x86-64, and `-O2`
+listings from GCC 15.2 targeting aarch64-linux-gnu, are drift-checked artifacts.
+The ARM64 compiler was extracted from Ubuntu's `gcc-15-aarch64-linux-gnu`
+packages into `/tmp/anvaya-cc-arm64` and is selected with `ANVAYA_CC_ARM64`;
+without it the ARM64 comparison is reported as skipped.
+
+A new tested model interprets the subset of x86-64 these listings use, parsing
+the committed files directly. Its tests check the results of all four x86-64
+listings and both `bump` listings against the native program's assertions,
+callee-saved `rbx`, a balanced stack and 16-byte alignment at the call,
+executed-instruction counts (58 at `-O0`, 23 at `-O2`, also counted by hand),
+basic blocks, the trace table, and signed and unsigned jump conditions at their
+overflow edges; the attempt contracts were also cross-checked with an
+independent Python flag computation. Annotations that link C to assembly are
+checked against the listings. Two sources were registered after reading the
+relevant sections: the x86-64 psABI (register usage, stack alignment) and Arm's
+AAPCS64 (link register, callee-saved registers).
+
+```sh
+ANVAYA_CC=/tmp/anvaya-cc/compiler ANVAYA_CC_ARM64=/tmp/anvaya-cc-arm64/compiler \
+  PLAYWRIGHT_PORT=4351 \
+  LD_LIBRARY_PATH=/tmp/anvaya-browser-deps/usr/lib/x86_64-linux-gnu pnpm verify
+```
+
+| Check               | Result                                                          |
+| ------------------- | --------------------------------------------------------------- |
+| Type checking       | Zero errors, warnings or hints                                  |
+| Formatting and lint | Passed, including token and placeholder checks                  |
+| Unit/lab tests      | 257 passed in 37 files, including native and ARM64 drift checks |
+| Static build        | 33 pages; 26 search pages; link, anchor and recap checks passed |
+| Browser tests       | 78 passed across desktop and mobile Chromium                    |
+
+The first full run failed: the generic lesson test looks for a disclosure whose
+summary starts "Inspect the tested model", and this page's summary did not. It
+passed after renaming. Screenshots of both annotated listings, the control-flow
+figure and the stepper at 1280 px and 390 px in both themes were inspected;
+review wrapped a clipped C line, removed vertical jump labels that collided
+with their lanes, and put two wide tables in scroll regions after a 27 px
+overflow at 390 px.

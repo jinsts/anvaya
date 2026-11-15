@@ -1,0 +1,209 @@
+---
+import DiagramFrame from '../learning/DiagramFrame.astro';
+import {
+  basicBlocks,
+  parseListing,
+} from '../../../labs/computer-architecture-execution/reading-assembly/x86';
+// Basic blocks and edges computed from real listings by the tested model.
+// Fall-through edges run straight down; jumps use lanes on the right.
+interface Props {
+  graphs: { title: string; listing: string }[];
+  caption: string;
+}
+const { graphs, caption } = Astro.props;
+const LINE = 16;
+const PAD = 8;
+const WIDTH = 204;
+const GAP = 22;
+const LANE = 14;
+const laid = graphs.map(({ title, listing }) => {
+  const parsed = parseListing(listing);
+  const blocks = basicBlocks(parsed);
+  let y = 8;
+  const boxes = blocks.map((block, index) => {
+    const lines = [
+      ...block.labels.map((l) => ({ text: `${l}:`, label: true })),
+      ...parsed.instructions
+        .slice(block.first, block.last + 1)
+        .map((i) => ({ text: i.text, label: false })),
+    ];
+    const height = lines.length * LINE + PAD * 2;
+    const box = { index, block, lines, y, height };
+    y += height + GAP;
+    return box;
+  });
+  const jumps = boxes
+    .filter((b) => b.block.jump !== undefined)
+    .map((b, lane) => {
+      const target = boxes[b.block.jump!]!;
+      const x = WIDTH + 12 + lane * LANE;
+      const fromY = b.y + b.height - PAD - LINE / 2;
+      const toY = target.y + PAD + 4;
+      const mnemonic = parsed.instructions[b.block.last]!.mnemonic;
+      return {
+        d: `M${WIDTH} ${fromY} H${x} V${toY} H${WIDTH + 6}`,
+        back: target.index <= b.index,
+        label: mnemonic,
+        lx: x + 3,
+        ly: (fromY + toY) / 2,
+      };
+    });
+  const lanes = jumps.length;
+  return {
+    title,
+    boxes,
+    jumps,
+    width: WIDTH + 30 + lanes * LANE + 30,
+    height: y - GAP + 8,
+    describe: boxes
+      .map(
+        (b) =>
+          `Block ${b.index + 1} (${b.lines.map((l) => l.text).join('; ')})` +
+          (b.block.jump !== undefined
+            ? `, jumps to block ${b.block.jump + 1}`
+            : '') +
+          (b.block.fallthrough !== undefined
+            ? `, falls through to block ${b.block.fallthrough + 1}`
+            : '') +
+          (b.block.jump === undefined && b.block.fallthrough === undefined
+            ? ', returns'
+            : ''),
+      )
+      .join('. '),
+  };
+});
+---
+
+<DiagramFrame caption={caption}>
+  <div class="graphs">
+    {laid.map((graph, g) => (
+      <figure class="graph">
+        <svg
+          viewBox={`0 0 ${graph.width} ${graph.height}`}
+          role="img"
+          aria-labelledby={`cfg-${g}-title cfg-${g}-desc`}
+        >
+          <title id={`cfg-${g}-title`}>{graph.title}</title>
+          <desc id={`cfg-${g}-desc`}>{graph.describe}.</desc>
+          <defs>
+            <marker
+              id={`cfg-${g}-arrow`}
+              viewBox="0 0 8 8"
+              refX="7"
+              refY="4"
+              markerWidth="7"
+              markerHeight="7"
+              orient="auto-start-reverse"
+            >
+              <path d="M0 0 L8 4 L0 8 Z" class="head" />
+            </marker>
+            <marker
+              id={`cfg-${g}-back`}
+              viewBox="0 0 8 8"
+              refX="7"
+              refY="4"
+              markerWidth="7"
+              markerHeight="7"
+              orient="auto-start-reverse"
+            >
+              <path d="M0 0 L8 4 L0 8 Z" class="head back" />
+            </marker>
+          </defs>
+          {graph.boxes.map((box) => (
+            <g>
+              <rect
+                x="1"
+                y={box.y}
+                width={WIDTH}
+                height={box.height}
+                rx="6"
+                class="block"
+              />
+              {box.lines.map((line, i) => (
+                <text
+                  x={line.label ? 8 : 18}
+                  y={box.y + PAD + LINE * i + 12}
+                  class:list={{ label: line.label }}
+                >
+                  {line.text}
+                </text>
+              ))}
+              {box.block.fallthrough !== undefined && (
+                <line
+                  x1={WIDTH / 2}
+                  x2={WIDTH / 2}
+                  y1={box.y + box.height}
+                  y2={box.y + box.height + GAP - 2}
+                  class="edge"
+                  marker-end={`url(#cfg-${g}-arrow)`}
+                />
+              )}
+            </g>
+          ))}
+          {graph.jumps.map((jump) => (
+            <g>
+              <path
+                d={jump.d}
+                class:list={['edge', 'jump', { back: jump.back }]}
+                marker-end={`url(#cfg-${g}-${jump.back ? 'back' : 'arrow'})`}
+              />
+            </g>
+          ))}
+        </svg>
+        <figcaption>{graph.title}</figcaption>
+      </figure>
+    ))}
+  </div>
+</DiagramFrame>
+<style>
+  .graphs {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+    gap: var(--space-5);
+    align-items: start;
+  }
+  .graph {
+    margin: 0;
+  }
+  .graph figcaption {
+    margin-top: var(--space-2);
+    color: var(--muted);
+    font-size: var(--text-sm);
+    text-align: center;
+  }
+  svg {
+    display: block;
+    width: 100%;
+    max-width: 22rem;
+    height: auto;
+    margin: 0 auto;
+  }
+  .block {
+    fill: var(--diagram-cell);
+    stroke: var(--border-strong);
+  }
+  text {
+    fill: var(--text);
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+  }
+  text.label {
+    fill: var(--accent);
+    font-weight: 700;
+  }
+  .edge {
+    fill: none;
+    stroke: var(--diagram-edge);
+    stroke-width: 1.5;
+  }
+  .edge.back {
+    stroke: var(--accent);
+    stroke-width: 2.5;
+  }
+  .head {
+    fill: var(--diagram-edge);
+  }
+  .head.back {
+    fill: var(--accent);
+  }
+</style>

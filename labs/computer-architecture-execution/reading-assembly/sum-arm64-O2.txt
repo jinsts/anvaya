@@ -1,0 +1,22 @@
+sum_to:
+.LFB0:
+	.cfi_startproc
+	cmp	w1, 0
+	ble	.L4
+	mov	x2, x0
+	add	x1, x0, w1, uxtw 2
+	mov	w0, 0
+	.p2align 5,,15
+.L3:
+	ldr	w3, [x2], 4
+	add	w0, w0, w3
+	cmp	x2, x1
+	bne	.L3
+	ret
+	.p2align 2,,3
+.L4:
+	mov	w0, 0
+	ret
+	.cfi_endproc
+.LFE0:
+	.size	sum_to, .-sum_to

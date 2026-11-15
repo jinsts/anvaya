@@ -4,7 +4,8 @@
 // regenerates every deterministic artifact (assembly listings, symbol tables,
 // program output) and compares it with the committed copy, then runs the
 // measurements and validates their checksums. `--record` rewrites the
-// artifacts and measurement files instead of comparing them.
+// artifacts instead of comparing them; `--record-measurements` rewrites the
+// measurement files.
 //
 // Artifacts depend on the compiler, so the drift check runs only when the
 // compiler reports the recorded version (toolchain.json); otherwise it is
@@ -24,15 +25,26 @@ import { fileURLToPath } from 'node:url';
 const directory = dirname(fileURLToPath(import.meta.url));
 const subject = resolve(directory, '../..');
 const compiler = process.env.ANVAYA_CC || 'cc';
+// Optional: a GCC targeting aarch64, used only for -S listings.
+const arm64 = process.env.ANVAYA_CC_ARM64 || null;
+// --record rewrites the deterministic artifacts and toolchain.json;
+// --record-measurements also rewrites the measurement files.
 const record = process.argv.includes('--record');
+const recordMeasurements = process.argv.includes('--record-measurements');
 const run = (file, args, options = {}) =>
   execFileSync(file, args, { encoding: 'utf8', ...options });
 
 /** Version text without the program name, e.g. "(Ubuntu 15.2.0-16ubuntu1) 15.2.0". */
 const versionLine = run(compiler, ['--version']).split('\n')[0];
+const describe = (cc) => ({
+  version: run(cc, ['--version'])
+    .split('\n')[0]
+    .replace(/^\S+\s+/, ''),
+  target: run(cc, ['-dumpmachine']).trim(),
+});
 const toolchain = {
-  version: versionLine.replace(/^\S+\s+/, ''),
-  target: run(compiler, ['-dumpmachine']).trim(),
+  ...describe(compiler),
+  ...(arm64 ? { arm64: describe(arm64) } : {}),
 };
 const toolchainFile = join(directory, 'toolchain.json');
 const recordedToolchain = existsSync(toolchainFile)
@@ -41,9 +53,14 @@ const recordedToolchain = existsSync(toolchainFile)
 const sameToolchain =
   recordedToolchain?.version === toolchain.version &&
   recordedToolchain?.target === toolchain.target;
+const sameArm64 =
+  !!toolchain.arm64 &&
+  recordedToolchain?.arm64?.version === toolchain.arm64.version &&
+  recordedToolchain?.arm64?.target === toolchain.arm64.target;
 
 /** Lines of one function from GCC's assembly output, through its .size directive. */
 function functionListing(assembly, symbol) {
+  // Both GCC targets end a function with a .size directive.
   const pattern = new RegExp(
     `^${symbol}:\\n[\\s\\S]*?^\\s*\\.size\\s+${symbol}[^\\n]*`,
     'm',
@@ -51,7 +68,7 @@ function functionListing(assembly, symbol) {
   const match = assembly.match(pattern);
   if (!match)
     throw new Error(
-      `Expected an x86-64 GCC listing for ${symbol}; use the recorded target.`,
+      `Expected a GCC listing for ${symbol}; use the recorded targets.`,
     );
   return match[0] + '\n';
 }
@@ -80,6 +97,33 @@ export const ARTIFACTS = [
     flags: ['-O2', '-fno-inline'],
     file: `${native}/object-symbols.txt`,
   },
+  ...['-O0', '-O2'].flatMap((level) => [
+    {
+      kind: 'asm',
+      source: 'reading-assembly/sum.c',
+      flags: [level],
+      symbol: 'sum_to',
+      file: `reading-assembly/sum${level}.txt`,
+    },
+    {
+      kind: 'asm',
+      source: 'reading-assembly/scale.c',
+      flags: [level],
+      symbol: 'scale_sum',
+      file: `reading-assembly/scale${level}.txt`,
+    },
+  ]),
+  ...['sum.c:sum_to', 'scale.c:scale_sum'].map((entry) => {
+    const [file, symbol] = entry.split(':');
+    return {
+      kind: 'asm',
+      compiler: 'arm64',
+      source: `reading-assembly/${file}`,
+      flags: ['-O2'],
+      symbol,
+      file: `reading-assembly/${file.replace('.c', '')}-arm64-O2.txt`,
+    };
+  }),
   {
     kind: 'output',
     source: 'text-encoding-and-memory-layout/representation.c',
@@ -89,7 +133,13 @@ export const ARTIFACTS = [
 ];
 
 // Programs whose assertions must pass at each listed optimization level.
-const CHECKED = [{ source: `${native}/program.c`, levels: ['-O0', '-O2'] }];
+const CHECKED = [
+  { sources: [`${native}/program.c`], levels: ['-O0', '-O2'] },
+  {
+    sources: ['main.c', 'sum.c', 'scale.c'].map((f) => `reading-assembly/${f}`),
+    levels: ['-O0', '-O2'],
+  },
+];
 
 export const MEASUREMENTS = [
   {
@@ -134,19 +184,36 @@ try {
   const build = (source, flags, output, extra = []) =>
     run(compiler, [...flags, ...extra, join(subject, source), '-o', output]);
 
-  for (const { source, levels } of CHECKED)
+  for (const { sources, levels } of CHECKED)
     for (const level of levels) {
       const executable = join(temporary, `checked${report.checked.length}`);
-      build(source, [level, '-fno-inline'], executable);
+      run(compiler, [
+        level,
+        '-fno-inline',
+        ...sources.map((s) => join(subject, s)),
+        '-o',
+        executable,
+      ]);
       run(executable, []);
-      report.checked.push(`${source} ${level}`);
+      report.checked.push(`${sources.join(' + ')} ${level}`);
     }
 
   for (const [index, artifact] of ARTIFACTS.entries()) {
+    const file = join(subject, artifact.file);
+    if (artifact.compiler === 'arm64' && !arm64) {
+      report.drift.push({ file: artifact.file, status: 'skipped' });
+      continue;
+    }
     let text;
     if (artifact.kind === 'asm') {
       const output = join(temporary, `artifact${index}.s`);
-      build(artifact.source, artifact.flags, output, ['-S']);
+      run(artifact.compiler === 'arm64' ? arm64 : compiler, [
+        ...artifact.flags,
+        '-S',
+        join(subject, artifact.source),
+        '-o',
+        output,
+      ]);
       text = functionListing(readFileSync(output, 'utf8'), artifact.symbol);
     } else if (artifact.kind === 'undefined-symbols') {
       const output = join(temporary, `artifact${index}.o`);
@@ -158,9 +225,9 @@ try {
       text = run(output, []);
     } else throw new Error(`Unknown artifact kind ${artifact.kind}`);
 
-    const file = join(subject, artifact.file);
+    const matches = artifact.compiler === 'arm64' ? sameArm64 : sameToolchain;
     if (record) writeFileSync(file, text);
-    else if (!sameToolchain)
+    else if (!matches)
       report.drift.push({ file: artifact.file, status: 'skipped' });
     else {
       const committed = readFileSync(file, 'utf8');
@@ -186,7 +253,7 @@ try {
       flags: measurement.flags,
       ...data,
     };
-    if (record)
+    if (recordMeasurements)
       writeFileSync(
         join(subject, measurement.file),
         JSON.stringify(result, null, 2) + '\n',

@@ -1,0 +1,8 @@
+name: Arm Architecture ABIs (AAPCS64)
+kind: specification
+by: Arm Limited
+url: https://github.com/ARM-software/abi-aa
+description: >-
+  Arm's official application binary interface specifications, including the
+  AArch64 procedure call standard: link register, callee-saved registers and
+  stack alignment.

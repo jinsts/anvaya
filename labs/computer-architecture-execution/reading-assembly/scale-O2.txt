@@ -1,0 +1,16 @@
+scale_sum:
+.LFB0:
+	.cfi_startproc
+	endbr64
+	pushq	%rbx
+	.cfi_def_cfa_offset 16
+	.cfi_offset 3, -16
+	movl	%edx, %ebx
+	call	sum_to@PLT
+	imull	%ebx, %eax
+	popq	%rbx
+	.cfi_def_cfa_offset 8
+	ret
+	.cfi_endproc
+.LFE0:
+	.size	scale_sum, .-scale_sum

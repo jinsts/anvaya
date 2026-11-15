@@ -1,0 +1,20 @@
+scale_sum:
+.LFB0:
+	.cfi_startproc
+	stp	x29, x30, [sp, -32]!
+	.cfi_def_cfa_offset 32
+	.cfi_offset 29, -32
+	.cfi_offset 30, -24
+	mov	x29, sp
+	str	w2, [sp, 28]
+	bl	sum_to
+	ldr	w2, [sp, 28]
+	ldp	x29, x30, [sp], 32
+	.cfi_restore 30
+	.cfi_restore 29
+	.cfi_def_cfa_offset 0
+	mul	w0, w0, w2
+	ret
+	.cfi_endproc
+.LFE0:
+	.size	scale_sum, .-scale_sum

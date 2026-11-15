@@ -7,6 +7,7 @@ const slugs = [
   'floating-point-representation',
   'text-encoding-and-memory-layout',
   'cpu-registers-and-instructions',
+  'reading-assembly',
   'compilation-and-execution',
   'memory-hierarchy-and-caches',
   'cache-organization',
@@ -232,4 +233,34 @@ test('the datapath stepper predicts and steps by keyboard', async ({
   ).toBeFocused();
   await page.keyboard.press('Enter');
   await expect(status).toContainText('Next: add R0, R0, 1.');
+});
+
+test('the assembly stepper asks for jump predictions by keyboard', async ({
+  page,
+}) => {
+  await page.goto(`/learn/${subject}/reading-assembly/`);
+  const stepper = page.getByRole('region', {
+    name: 'Interactive assembly stepper',
+  });
+  await stepper.scrollIntoViewIfNeeded();
+  await expect(
+    page.locator('astro-island[component-export="default"]'),
+  ).not.toHaveAttribute('ssr', '');
+  const status = stepper.getByRole('status');
+  const step = stepper.getByRole('button', { name: 'Step', exact: true });
+  await step.focus();
+  await page.keyboard.press('Enter'); // endbr64
+  await page.keyboard.press('Enter'); // testl
+  await expect(status).toContainText('Next: jle .L4');
+  await stepper
+    .getByRole('button', { name: 'Predict: it falls through' })
+    .focus();
+  await page.keyboard.press('Enter');
+  await expect(status).toContainText('Your prediction was correct.');
+  await expect(step).toBeFocused();
+  await stepper
+    .getByRole('combobox', { name: 'Program' })
+    .selectOption('scale-o2');
+  await stepper.getByRole('button', { name: 'Run to the end' }).click();
+  await expect(status).toContainText('Returned 48 in eax');
 });
