@@ -737,3 +737,26 @@ formatting and lint passed; 298 tests in 48 files; 34 pages; 82 browser tests.
 Screenshots of all three figures at 1280 px and 390 px in both themes were
 inspected; no layout fixes were needed beyond giving a labelled slot group an
 explicit group role.
+
+## Pipelining and hazards lesson — 2026-11-16
+
+Draft of the planned page "Pipelining and hazards", the first lesson of the
+"Inside the processor" chapter. A new tested model schedules a five-stage
+in-order pipeline with optional forwarding, load-use bubbles and taken-branch
+flushes, with its assumptions stated in its source. All six program and
+forwarding combinations were traced by hand; that review found and fixed a bug
+before commit, in which a branch stalled in ID kept fetching wrong-path
+instructions instead of holding fetch. Tests check complete timelines, that no
+two instructions occupy one stage in a cycle, and that completed instructions
+visit all five stages in order. A static figure shows the load-use program
+with forwarding off and on; a stepper island reveals the timeline one cycle at
+a time, asks for a prediction of lost cycles, explains each cycle, and keeps the
+newest column in view when the table scrolls. The attempt lab counts bubbles in
+straight-line code against hidden contracts.
+
+Same command as the previous entry. The first full run failed one browser test
+whose expected sidebar chapters did not yet include "Inside the processor";
+after updating it, the gate passed: zero type errors, warnings or hints;
+formatting and lint; 315 tests in 51 files; 35 pages; 86 browser tests.
+Screenshots at 1280 px and 390 px in both themes were inspected; review fixed a
+323 px overflow from a grid item that grew to its table's width.

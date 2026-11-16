@@ -985,3 +985,103 @@
 .callstack-head {
   fill: var(--accent);
 }
+/* Pipeline stepper: stage colors match the static pipeline table. The new
+   column fades in; reduced motion removes the animation. */
+.pipeline-stepper .operation-controls label {
+  flex: 1 1 12rem;
+}
+.pipeline-stepper .operation-controls .pipeline-check {
+  flex: 0 0 auto;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 44px;
+  color: var(--text);
+}
+.pipeline-check input {
+  width: 20px;
+  height: 20px;
+}
+.pipeline-grid table {
+  border-collapse: separate;
+  border-spacing: 2px;
+  font-size: var(--text-xs);
+}
+.pipeline-grid th,
+.pipeline-grid td {
+  padding: var(--space-1) var(--space-2);
+  border: 0;
+  text-align: center;
+  white-space: nowrap;
+}
+.pipeline-grid thead th {
+  background: none;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-weight: 400;
+}
+.pipeline-grid thead th.now {
+  color: var(--accent);
+  font-weight: 700;
+}
+.pipeline-grid tbody th {
+  position: sticky;
+  left: 0;
+  background: var(--surface);
+  text-align: left;
+}
+.pipeline-grid code {
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: var(--text-xs);
+}
+.pipeline-grid .cell {
+  min-width: 2.75rem;
+  height: 1.75rem;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-weight: 600;
+}
+.pipeline-grid .cell.empty {
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+.pipeline-grid .cell.now:not(.empty) {
+  animation: cell-in 0.3s ease-out;
+}
+@keyframes cell-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+.pipeline-grid .s-if {
+  background: var(--tone-blue-soft);
+}
+.pipeline-grid .s-id {
+  background: var(--tone-violet-soft);
+}
+.pipeline-grid .s-ex {
+  background: var(--tone-amber-soft);
+}
+.pipeline-grid .s-mem {
+  background: var(--tone-teal-soft);
+}
+.pipeline-grid .s-wb {
+  background: var(--tone-green-soft);
+}
+.pipeline-grid .s-stall {
+  background: repeating-linear-gradient(
+    135deg,
+    var(--surface) 0 4px,
+    var(--subtle) 4px 8px
+  );
+  color: var(--muted);
+  font-weight: 400;
+  box-shadow: inset 0 0 0 1px var(--border-strong);
+}
+.pipeline-grid .s-flushed {
+  background: var(--error-soft);
+  color: var(--error);
+  text-decoration: line-through;
+}

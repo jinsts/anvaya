@@ -74,8 +74,9 @@ sections:
     # threads and NUMA. It takes the coherence material from
     # hardware-software-interaction. Locks, condition variables and deadlock
     # stay with the OS subject's concurrency topics.
+    lessons:
+      - computer-architecture-execution/pipelining-and-hazards
     planned:
-      - Pipelining and hazards
       - Branch prediction, speculation, and out-of-order execution
       - SIMD and data-level parallelism
       - Multicore coherence, memory ordering, and atomics

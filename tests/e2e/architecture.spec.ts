@@ -13,6 +13,7 @@ const slugs = [
   'cache-organization',
   'dram-ssd-and-disks',
   'stack-and-heap',
+  'pipelining-and-hazards',
   'hardware-software-interaction',
   'io-mechanisms',
   'architecture-and-performance',
@@ -287,4 +288,25 @@ test('the call stack stepper asks before each lifetime question by keyboard', as
   await expect(status).toContainText('Your prediction was correct.');
   // The next event asks its own question rather than being skipped.
   await expect(status).toContainText('After free(data), what does data hold?');
+});
+
+test('the pipeline stepper advances cycles by keyboard and explains a bubble', async ({
+  page,
+}) => {
+  await page.goto(`/learn/${subject}/pipelining-and-hazards/`);
+  const stepper = page.getByRole('region', {
+    name: 'Interactive pipeline stepper',
+  });
+  await stepper.scrollIntoViewIfNeeded();
+  await expect(
+    page.locator('astro-island[component-export="default"]'),
+  ).not.toHaveAttribute('ssr', '');
+  const status = stepper.getByRole('status');
+  await stepper.getByLabel('Your prediction: cycles lost').selectOption('1');
+  const next = stepper.getByRole('button', { name: 'Next cycle' });
+  await next.focus();
+  for (let i = 0; i < 4; i++) await page.keyboard.press('Enter');
+  await expect(status).toContainText('add r3, r1, r4 waits in ID for r1');
+  await stepper.getByRole('button', { name: 'Run to the end' }).click();
+  await expect(status).toContainText('Your prediction was correct.');
 });

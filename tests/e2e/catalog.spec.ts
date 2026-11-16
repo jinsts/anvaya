@@ -284,6 +284,7 @@ test('a subject with several chapters is grouped on path, subject and lesson pag
     'Machine state and data representation',
     'From source to running process',
     chapter,
+    'Inside the processor',
     'Devices and the hardware–software boundary',
     'Performance on real hardware',
   ]);
