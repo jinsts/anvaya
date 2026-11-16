@@ -958,3 +958,15 @@ Same command as the previous entry: zero type errors, warnings or hints;
 formatting and lint passed; 405 tests in 64 files; 39 pages; 102 browser tests.
 The native drift check, run on its own afterwards, reported all 28 artifacts
 unchanged and 8 checked programs passing.
+
+## I/O lab contract fix — 2026-11-16
+
+Two of the I/O attempt lab's nine contract cases expected only "throws an
+Error", which the unimplemented starter also satisfied. The contract now
+requires the error message to name the refused event and the request's phase,
+as the reference model's messages already do. `pnpm lab
+computer-architecture-execution/io-mechanisms` now fails all nine cases before
+an attempt (it failed seven), and the reference passes them.
+
+Same command as the previous entry: zero type errors, warnings or hints;
+formatting and lint passed; 405 tests in 64 files; 39 pages; 102 browser tests.
