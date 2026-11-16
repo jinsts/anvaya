@@ -14,6 +14,7 @@ const slugs = [
   'dram-ssd-and-disks',
   'stack-and-heap',
   'pipelining-and-hazards',
+  'branch-prediction-and-speculation',
   'hardware-software-interaction',
   'io-mechanisms',
   'architecture-and-performance',
@@ -309,4 +310,26 @@ test('the pipeline stepper advances cycles by keyboard and explains a bubble', a
   await expect(status).toContainText('add r3, r1, r4 waits in ID for r1');
   await stepper.getByRole('button', { name: 'Run to the end' }).click();
   await expect(status).toContainText('Your prediction was correct.');
+});
+
+test('the branch predictor takes calls and reports accuracy by keyboard', async ({
+  page,
+}) => {
+  await page.goto(`/learn/${subject}/branch-prediction-and-speculation/`);
+  const explorer = page.getByRole('region', {
+    name: 'Interactive branch predictor',
+  });
+  await explorer.scrollIntoViewIfNeeded();
+  await expect(
+    page.locator('astro-island[component-export="default"]'),
+  ).not.toHaveAttribute('ssr', '');
+  const status = explorer.getByRole('status');
+  await explorer.getByRole('button', { name: 'It will mispredict' }).focus();
+  await page.keyboard.press('Enter');
+  await expect(status).toContainText('mispredicted');
+  await expect(status).toContainText('Your call was right.');
+  await explorer
+    .getByRole('combobox', { name: 'Branch outcomes' })
+    .selectOption('alternating');
+  await expect(status).toContainText('starts in "weakly not taken"');
 });

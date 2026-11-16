@@ -91,6 +91,22 @@ function objdumpBlock(text, symbol) {
 // Each artifact is regenerated on every run. `file` is relative to the
 // subject folder so lessons and labs can keep their own artifacts.
 const native = 'compilation-and-execution/native';
+// One kernel, three builds: vectorized, branch-free with a conditional move,
+// and with if-conversion and vectorization disabled so a branch remains.
+export const BRANCH_VARIANTS = [
+  { label: 'vector', flags: ['-O2'] },
+  { label: 'cmov', flags: ['-O1'] },
+  {
+    label: 'branch',
+    flags: [
+      '-O2',
+      '-fno-tree-vectorize',
+      '-fno-if-conversion',
+      '-fno-if-conversion2',
+    ],
+  },
+];
+
 /**
  * @typedef {{
  *   kind: string; file: string; flags: string[]; compiler?: string;
@@ -146,6 +162,13 @@ export const ARTIFACTS = [
       file: `reading-assembly/${file.replace('.c', '')}-arm64-O2.txt`,
     };
   }),
+  ...BRANCH_VARIANTS.map((variant) => ({
+    kind: 'asm',
+    source: 'branch-prediction/kernel.c',
+    flags: variant.flags,
+    symbol: 'sum_large',
+    file: `branch-prediction/kernel-${variant.label}.txt`,
+  })),
   {
     kind: 'object-disassembly',
     source: 'reading-assembly/scale.c',
@@ -178,6 +201,29 @@ const CHECKED = [
 ];
 
 export const MEASUREMENTS = [
+  {
+    // The harness is built at -O2; only the kernel's flags vary.
+    variants: BRANCH_VARIANTS,
+    kernel: 'branch-prediction/kernel.c',
+    harness: 'branch-prediction/harness.c',
+    file: 'branch-prediction/sorted-random.json',
+    args: { quick: ['quick'], full: [] },
+    parse(csv) {
+      const records = csv
+        .trim()
+        .split('\n')
+        .map((line) => {
+          const [order, rep, ns, sum] = line.split(',');
+          return { order, rep: Number(rep), nsPerElement: Number(ns), sum };
+        });
+      if (
+        new Set(records.map((r) => r.sum)).size !== 1 ||
+        records.some((r) => !(r.nsPerElement > 0))
+      )
+        throw new Error('Invalid sorted/random measurement');
+      return records;
+    },
+  },
   {
     source: 'dram-ssd-and-disks/sweep.c',
     flags: ['-std=c17', '-O2'],
@@ -327,7 +373,6 @@ try {
 
   for (const measurement of MEASUREMENTS) {
     const executable = join(temporary, 'measurement');
-    build(measurement.source, measurement.flags, executable);
     const recordThis =
       recordMeasurements && (!only || measurement.file.includes(only));
     const args = measurement.args
@@ -335,7 +380,37 @@ try {
         ? measurement.args.full
         : measurement.args.quick
       : [];
-    const data = measurement.parse(run(executable, args));
+    let data;
+    if (measurement.variants) {
+      const harness = join(temporary, 'harness.o');
+      run(compiler, [
+        '-O2',
+        '-c',
+        join(subject, measurement.harness),
+        '-o',
+        harness,
+      ]);
+      const variants = [];
+      for (const variant of measurement.variants) {
+        const kernel = join(temporary, `kernel-${variant.label}.o`);
+        run(compiler, [
+          ...variant.flags,
+          '-c',
+          join(subject, measurement.kernel),
+          '-o',
+          kernel,
+        ]);
+        run(compiler, [harness, kernel, '-o', executable]);
+        variants.push({
+          ...variant,
+          records: measurement.parse(run(executable, args)),
+        });
+      }
+      data = { variants };
+    } else {
+      build(measurement.source, measurement.flags, executable);
+      data = measurement.parse(run(executable, args));
+    }
     const result = {
       date: new Date().toISOString(),
       compiler: versionLine,
@@ -344,7 +419,7 @@ try {
       arch: arch(),
       cpu: cpus()[0]?.model,
       caches: caches(),
-      flags: measurement.flags,
+      flags: measurement.flags ?? ['-O2 (harness)'],
       ...data,
     };
     if (recordThis)

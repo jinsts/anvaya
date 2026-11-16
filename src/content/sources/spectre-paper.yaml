@@ -1,0 +1,8 @@
+name: 'Spectre Attacks: Exploiting Speculative Execution'
+kind: reference
+by: Paul Kocher, Jann Horn, Anders Fogh and others (IEEE Symposium on Security and Privacy, 2019)
+url: https://spectreattack.com/spectre.pdf
+description: >-
+  The paper that introduced Spectre, describing how mistrained branch
+  prediction and a cache covert channel leak data through speculative
+  execution that is later rolled back.

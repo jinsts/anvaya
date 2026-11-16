@@ -1,0 +1,31 @@
+sum_large:
+.LFB0:
+	.cfi_startproc
+	endbr64
+	testq	%rsi, %rsi
+	je	.L5
+	addq	%rdi, %rsi
+	xorl	%edx, %edx
+	.p2align 5
+	.p2align 4
+	.p2align 3
+.L4:
+	movzbl	(%rdi), %eax
+	testb	%al, %al
+	jns	.L3
+	addq	%rax, %rdx
+.L3:
+	addq	$1, %rdi
+	cmpq	%rsi, %rdi
+	jne	.L4
+	movq	%rdx, %rax
+	ret
+	.p2align 4,,10
+	.p2align 3
+.L5:
+	xorl	%edx, %edx
+	movq	%rdx, %rax
+	ret
+	.cfi_endproc
+.LFE0:
+	.size	sum_large, .-sum_large

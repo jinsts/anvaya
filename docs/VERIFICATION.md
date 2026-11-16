@@ -760,3 +760,31 @@ after updating it, the gate passed: zero type errors, warnings or hints;
 formatting and lint; 315 tests in 51 files; 35 pages; 86 browser tests.
 Screenshots at 1280 px and 390 px in both themes were inspected; review fixed a
 323 px overflow from a grid item that grew to its table's width.
+
+## Branch prediction and speculation lesson — 2026-11-16
+
+Draft of the planned page "Branch prediction, speculation, and out-of-order
+execution". A new native measurement compiles one C kernel, which sums bytes at
+or above 128, three ways: `-O2` (vectorized), `-O1` (conditional move) and `-O2`
+with vectorization and if-conversion off (a real branch). Each listing is a
+drift-checked artifact; a fixed-seed harness, built at `-O2`, times random and
+sorted copies of the same bytes in seven alternating rounds and checks every
+sum. The recorded run (`sorted-random.json`) shows only the branch build
+depending on order (about 6.2 ns per element random, 0.48 sorted); tests assert
+that relationship and that only that listing contains the data-dependent jump.
+The native verification gained build variants for this, and `--record` rewrote
+no existing artifact.
+
+Tested models cover one- and two-bit predictors (every counter state on the loop
+stream, saturation, the alternating pattern) and a reorder buffer with in-order
+or out-of-order issue and in-order commit; the attempt contracts were checked
+with an independent Python implementation. Sources registered after reading:
+Utah CS 6810 lecture notes (two-bit counters, reorder buffer and commit) and the
+Spectre paper (variant 1 and countermeasures). The Spectre figure is conceptual
+and contains no attack code.
+
+Same command as the previous entry: zero type errors, warnings or hints;
+formatting and lint passed; 329 tests in 54 files; 36 pages; 90 browser tests.
+The first build failed because the navigation title exceeded the schema's 40
+characters; it was shortened. Screenshots of all five visuals at 1280 px and
+390 px in both themes were inspected; no layout fixes were needed.

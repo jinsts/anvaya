@@ -76,8 +76,8 @@ sections:
     # stay with the OS subject's concurrency topics.
     lessons:
       - computer-architecture-execution/pipelining-and-hazards
+      - computer-architecture-execution/branch-prediction-and-speculation
     planned:
-      - Branch prediction, speculation, and out-of-order execution
       - SIMD and data-level parallelism
       - Multicore coherence, memory ordering, and atomics
   - id: architecture-devices

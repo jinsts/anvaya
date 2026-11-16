@@ -1,0 +1,164 @@
+---
+import DiagramFrame from '../learning/DiagramFrame.astro';
+import { summarizeVariants } from '../../../labs/computer-architecture-execution/branch-prediction/measurement';
+import raw from '../../../labs/computer-architecture-execution/branch-prediction/sorted-random.json?raw';
+// Measured: nanoseconds per element for one C kernel built three ways, on
+// random and sorted copies of the same bytes. Every value is from the JSON.
+const data = JSON.parse(raw);
+const summary = summarizeVariants(data.variants);
+const names: Record<string, string> = {
+  vector: 'Vectorized (-O2)',
+  cmov: 'Conditional move (-O1)',
+  branch: 'Branch kept (-O2, if-conversion and vectorization off)',
+};
+const max = Math.ceil(
+  Math.max(...summary.flatMap((s) => [...s.random.values, ...s.sorted.values])),
+);
+const at = (ns: number) => (ns / max) * 100;
+const fmt = (ns: number) => ns.toFixed(2);
+const ticks = Array.from({ length: max + 1 }, (_, i) => i).filter(
+  (t) => t % 2 === 0 || max <= 4,
+);
+---
+
+<DiagramFrame
+  caption={`Measured: time per element to sum the bytes ≥ 128 in ${data.variants[0].records.length / 2} alternating runs each (dots) and their median (bar). Only the build that kept a conditional branch cares whether the data is sorted. ${data.cpu}, ${data.compiler}, recorded ${data.date.slice(0, 10)}.`}
+>
+  <div class="sorted-random">
+    <ul class="legend" aria-hidden="true">
+      <li>
+        <span class="swatch random"></span>random order
+      </li>
+      <li>
+        <span class="swatch sorted"></span>sorted order
+      </li>
+    </ul>
+    {summary.map((s) => (
+      <div
+        class="variant"
+        role="group"
+        aria-label={`${names[s.label]}: random ${fmt(s.random.median)} ns, sorted ${fmt(s.sorted.median)} ns per element`}
+      >
+        <p class="name">
+          <strong>{names[s.label]}</strong>
+        </p>
+        {(['random', 'sorted'] as const).map((order) => (
+          <div class="strip" aria-hidden="true">
+            <span class="track">
+              <span
+                class={`median ${order}`}
+                style={`width: ${at(s[order].median)}%`}
+              />
+              {s[order].values.map((v) => (
+                <span
+                  class={`dot ${order}`}
+                  style={`left: ${at(v)}%`}
+                  title={`${order}: ${fmt(v)} ns`}
+                />
+              ))}
+            </span>
+            <span class="value">{fmt(s[order].median)} ns</span>
+          </div>
+        ))}
+      </div>
+    ))}
+    <div class="axis" aria-hidden="true">
+      <span class="track">
+        {ticks.map((t) => (
+          <span style={`left: ${at(t)}%`}>{t}</span>
+        ))}
+      </span>
+      <span class="value">ns per element</span>
+    </div>
+  </div>
+</DiagramFrame>
+<style>
+  .sorted-random {
+    display: grid;
+    gap: var(--space-3);
+  }
+  .legend {
+    display: flex;
+    gap: var(--space-4);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: var(--text-xs);
+  }
+  .sorted-random .legend li {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    margin: 0;
+  }
+  .swatch {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+  }
+  .swatch.random,
+  .median.random,
+  .dot.random {
+    background: var(--chart-2);
+  }
+  .swatch.sorted,
+  .median.sorted,
+  .dot.sorted {
+    background: var(--chart-1);
+  }
+  .name {
+    margin: 0 0 var(--space-1);
+    font-size: var(--text-sm);
+  }
+  .strip,
+  .axis {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 4.5rem;
+    gap: var(--space-2);
+    align-items: center;
+  }
+  .track {
+    position: relative;
+    height: 14px;
+    border-left: 1px solid var(--border-strong);
+  }
+  .median {
+    position: absolute;
+    top: 3px;
+    left: 0;
+    height: 8px;
+    border-radius: 0 4px 4px 0;
+    opacity: 0.35;
+  }
+  .dot {
+    position: absolute;
+    top: 3px;
+    width: 8px;
+    height: 8px;
+    margin-left: -4px;
+    border-radius: 50%;
+    box-shadow: 0 0 0 2px var(--surface);
+  }
+  .value {
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    font-variant-numeric: tabular-nums;
+  }
+  .axis .track {
+    height: var(--space-4);
+    border-left: 0;
+    border-top: 1px solid var(--border-strong);
+  }
+  .axis .track span {
+    position: absolute;
+    top: 2px;
+    transform: translateX(-50%);
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+  }
+  .axis .value {
+    color: var(--muted);
+    font-family: var(--font-body);
+  }
+</style>
