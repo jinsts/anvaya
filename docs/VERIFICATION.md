@@ -788,3 +788,22 @@ formatting and lint passed; 329 tests in 54 files; 36 pages; 90 browser tests.
 The first build failed because the navigation title exceeded the schema's 40
 characters; it was shortened. Screenshots of all five visuals at 1280 px and
 390 px in both themes were inspected; no layout fixes were needed.
+
+## SIMD lesson — 2026-11-16
+
+Draft of the planned page "SIMD and data-level parallelism". The native lab
+gained `simd.c` (an integer array add and a float sum) with checks in `main.c`,
+run at `-O2` and `-O3`, and seven drift-checked artifacts: four listings
+(vectorized and scalar add; the float sum at `-O3` with and without
+`-fassociative-math`) and GCC's `-fopt-info-vec-optimized` reports, captured
+from the subject folder so they name sources by relative path. The recorded
+listings show the lesson's point exactly: `-O3` loads four floats per iteration
+but adds them with scalar `addss` in source order, and only the reassociated
+build uses packed `addps`. Tests check those instructions, the reports, vector
+plans, and lane-wise binary32 sums; the attempt contracts were cross-checked with
+Python, which caught one wrong expected value of mine before commit.
+
+Same command as the previous entry: zero type errors, warnings or hints;
+formatting and lint passed; 341 tests in 57 files; 37 pages; 94 browser tests.
+Screenshots at 1280 px and 390 px in both themes were inspected; review moved a
+line break in the lane labels to before the plus sign.

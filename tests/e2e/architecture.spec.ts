@@ -15,6 +15,7 @@ const slugs = [
   'stack-and-heap',
   'pipelining-and-hazards',
   'branch-prediction-and-speculation',
+  'simd-and-data-parallelism',
   'hardware-software-interaction',
   'io-mechanisms',
   'architecture-and-performance',
@@ -332,4 +333,24 @@ test('the branch predictor takes calls and reports accuracy by keyboard', async 
     .getByRole('combobox', { name: 'Branch outcomes' })
     .selectOption('alternating');
   await expect(status).toContainText('starts in "weakly not taken"');
+});
+
+test('the vector loop stepper splits a loop by keyboard', async ({ page }) => {
+  await page.goto(`/learn/${subject}/simd-and-data-parallelism/`);
+  const stepper = page.getByRole('region', {
+    name: 'Interactive vector loop stepper',
+  });
+  await stepper.scrollIntoViewIfNeeded();
+  await expect(
+    page.locator('astro-island[component-export="default"]'),
+  ).not.toHaveAttribute('ssr', '');
+  const status = stepper.getByRole('status');
+  await stepper.getByLabel('Predict: vector iterations').selectOption('2');
+  await stepper.getByLabel('Predict: remainder').selectOption('2');
+  const next = stepper.getByRole('button', { name: 'Next iteration' });
+  await next.focus();
+  await page.keyboard.press('Enter');
+  await expect(status).toContainText('adds elements 0–3');
+  for (let i = 0; i < 3; i++) await page.keyboard.press('Enter');
+  await expect(status).toContainText('Your prediction was correct.');
 });

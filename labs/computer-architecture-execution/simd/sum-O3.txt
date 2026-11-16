@@ -1,0 +1,54 @@
+sum_floats:
+.LFB1:
+	.cfi_startproc
+	endbr64
+	testq	%rsi, %rsi
+	je	.L29
+	leaq	-1(%rsi), %rax
+	cmpq	$2, %rax
+	jbe	.L30
+	movq	%rsi, %rdx
+	movq	%rdi, %rax
+	pxor	%xmm0, %xmm0
+	shrq	$2, %rdx
+	salq	$4, %rdx
+	addq	%rdi, %rdx
+	.p2align 5
+	.p2align 4
+	.p2align 3
+.L26:
+	addss	(%rax), %xmm0
+	addq	$16, %rax
+	addss	-12(%rax), %xmm0
+	addss	-8(%rax), %xmm0
+	addss	-4(%rax), %xmm0
+	cmpq	%rdx, %rax
+	jne	.L26
+	testb	$3, %sil
+	je	.L23
+	movq	%rsi, %rax
+	andq	$-4, %rax
+.L25:
+	leaq	1(%rax), %rdx
+	addss	(%rdi,%rax,4), %xmm0
+	cmpq	%rsi, %rdx
+	jnb	.L23
+	leaq	2(%rax), %rdx
+	addss	4(%rdi,%rax,4), %xmm0
+	cmpq	%rsi, %rdx
+	jnb	.L23
+	addss	8(%rdi,%rax,4), %xmm0
+	ret
+	.p2align 4,,10
+	.p2align 3
+.L29:
+	pxor	%xmm0, %xmm0
+.L23:
+	ret
+.L30:
+	xorl	%eax, %eax
+	pxor	%xmm0, %xmm0
+	jmp	.L25
+	.cfi_endproc
+.LFE1:
+	.size	sum_floats, .-sum_floats

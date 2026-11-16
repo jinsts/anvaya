@@ -10,7 +10,7 @@
 // Artifacts depend on the compiler, so the drift check runs only when the
 // compiler reports the recorded version (toolchain.json); otherwise it is
 // reported as skipped. Timings are never compared or thresholded.
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import {
   existsSync,
   mkdtempSync,
@@ -91,6 +91,27 @@ function objdumpBlock(text, symbol) {
 // Each artifact is regenerated on every run. `file` is relative to the
 // subject folder so lessons and labs can keep their own artifacts.
 const native = 'compilation-and-execution/native';
+// Flags that let GCC reorder floating-point additions in a reduction.
+const REASSOCIATE = [
+  '-fassociative-math',
+  '-fno-signed-zeros',
+  '-fno-trapping-math',
+];
+export const SIMD_ARTIFACTS = [
+  { symbol: 'add_arrays', name: 'add-O2', flags: ['-O2'] },
+  {
+    symbol: 'add_arrays',
+    name: 'add-scalar',
+    flags: ['-O2', '-fno-tree-vectorize'],
+  },
+  { symbol: 'sum_floats', name: 'sum-O3', flags: ['-O3'] },
+  {
+    symbol: 'sum_floats',
+    name: 'sum-O3-reassociate',
+    flags: ['-O3', ...REASSOCIATE],
+  },
+];
+
 // One kernel, three builds: vectorized, branch-free with a conditional move,
 // and with if-conversion and vectorization disabled so a branch remains.
 export const BRANCH_VARIANTS = [
@@ -162,6 +183,19 @@ export const ARTIFACTS = [
       file: `reading-assembly/${file.replace('.c', '')}-arm64-O2.txt`,
     };
   }),
+  ...SIMD_ARTIFACTS.map((a) => ({
+    kind: 'asm',
+    source: 'simd/simd.c',
+    flags: a.flags,
+    symbol: a.symbol,
+    file: `simd/${a.name}.txt`,
+  })),
+  ...[['-O2'], ['-O3'], ['-O3', ...REASSOCIATE]].map((flags) => ({
+    kind: 'vec-report',
+    source: 'simd/simd.c',
+    flags,
+    file: `simd/report${flags.length > 1 ? '-O3-reassociate' : flags[0]}.txt`,
+  })),
   ...BRANCH_VARIANTS.map((variant) => ({
     kind: 'asm',
     source: 'branch-prediction/kernel.c',
@@ -194,6 +228,10 @@ export const ARTIFACTS = [
 // Programs whose assertions must pass at each listed optimization level.
 const CHECKED = [
   { sources: [`${native}/program.c`], levels: ['-O0', '-O2'] },
+  {
+    sources: ['simd/main.c', 'simd/simd.c'],
+    levels: ['-O2', '-O3'],
+  },
   {
     sources: ['main.c', 'sum.c', 'scale.c'].map((f) => `reading-assembly/${f}`),
     levels: ['-O0', '-O2'],
@@ -326,6 +364,23 @@ try {
       const output = join(temporary, `artifact${index}.o`);
       build(artifact.source, artifact.flags, output, ['-c']);
       text = run('nm', ['-u', output]);
+    } else if (artifact.kind === 'vec-report') {
+      // GCC's own account of which loops it vectorized. Run from the subject
+      // folder so the report names the source by a relative path.
+      const result = spawnSync(
+        compiler,
+        [
+          ...artifact.flags,
+          '-fopt-info-vec-optimized',
+          '-c',
+          artifact.source ?? '',
+          '-o',
+          join(temporary, `artifact${index}.o`),
+        ],
+        { cwd: subject, encoding: 'utf8' },
+      );
+      if (result.status !== 0) throw new Error(result.stderr);
+      text = result.stderr;
     } else if (artifact.kind === 'object-disassembly') {
       const output = join(temporary, `artifact${index}.o`);
       build(artifact.source, artifact.flags, output, ['-c']);

@@ -1,0 +1,1 @@
+simd/simd.c:7:24: optimized: loop vectorized using 16 byte vectors

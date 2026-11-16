@@ -1145,3 +1145,45 @@
 .predictor-explorer .outcome-strip li.next {
   border: 2px solid var(--accent);
 }
+/* Vector loop stepper. */
+.simd-stepper .operation-controls label {
+  flex: 1 1 9rem;
+}
+.simd-stepper .simd-elements {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(3rem, 1fr));
+  gap: 3px;
+  margin: var(--space-3) 0;
+  padding: 0;
+  list-style: none;
+}
+.simd-stepper .simd-elements li {
+  display: grid;
+  justify-items: center;
+  margin: 0;
+  padding: var(--space-1);
+  border: 1px dashed var(--border-strong);
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+.simd-stepper .simd-elements li.vector {
+  border-style: solid;
+  border-color: var(--chart-1);
+}
+.simd-stepper .simd-elements li.done {
+  background: var(--tone-blue-soft);
+}
+.simd-stepper .simd-elements li.scalar.done {
+  background: var(--subtle);
+}
+.simd-stepper .simd-elements li.active {
+  box-shadow: inset 0 0 0 2px var(--accent);
+  animation: cell-in 0.3s ease-out;
+}
+.simd-elements .index {
+  color: var(--muted);
+}
+.simd-elements .value {
+  font-weight: 700;
+}
