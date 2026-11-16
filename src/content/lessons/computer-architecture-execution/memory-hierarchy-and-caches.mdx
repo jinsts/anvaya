@@ -69,7 +69,9 @@ sources:
     url: https://pages.cs.wisc.edu/~remzi/OSTEP/vm-tlbs.pdf
 ---
 
-import ArchitectureFlow from '../../../components/diagrams/ArchitectureFlow.astro';
+import CacheSlots from '../../../components/diagrams/CacheSlots.astro';
+import MemoryLevels from '../../../components/diagrams/MemoryLevels.astro';
+import TraversalLines from '../../../components/diagrams/TraversalLines.astro';
 
 import source from '../../../../labs/computer-architecture-execution/memory-hierarchy-and-caches/example.ts?raw';
 
@@ -87,8 +89,9 @@ fixed blocks, follows placement rules and can overlap requests. A cache does not
 understand which application values you consider useful.
 
 This lesson follows the [representation model](/learn/computer-architecture-execution/binary-and-data-representation/)
-from values to explicit byte addresses. Cache-line sizes and timings below are
-chosen examples, not measurements of the machine running the website.
+from values to explicit byte addresses. The cache trace and timing arithmetic
+below use small chosen numbers; the hierarchy figure uses measurements of one
+recorded machine, not of the machine reading this page.
 
 ## The layers serve different purposes
 
@@ -99,9 +102,12 @@ chosen examples, not measurements of the machine running the website.
 | RAM                | Main memory behind ordinary cacheable accesses                      | Is the workload limited by latency or bandwidth?              |
 | Persistent storage | File and device data that can survive power loss under its contract | Are requests waiting on device work or durability operations? |
 
-Capacity generally grows as we move away from the core, while access latency
-tends to increase. There is no timeless table of exact cycle counts: processor,
-frequency, contention and access pattern matter. **Latency** is delay for a
+<MemoryLevels />
+
+Capacity grows as we move away from the core, and so does latency. The
+[DRAM, SSD and disk lesson](/learn/computer-architecture-execution/dram-ssd-and-disks/)
+explains how the measured cache and DRAM numbers above were taken, and why
+another machine, or another run, gives different ones. **Latency** is delay for a
 request; **bandwidth** is data transferred per unit time. Many independent
 requests can achieve high bandwidth while each still has substantial latency.
 
@@ -113,30 +119,7 @@ lower in a hierarchy diagram.
 
 ## A cache moves lines, not individual variables
 
-<ArchitectureFlow
-  caption="A cold two-slot cache with 16-byte lines: unused capacity does not prevent a mapping conflict."
-  nodes={[
-    {
-      label: 'Registers \u2192 SRAM caches \u2192 DRAM RAM \u2192 storage',
-      detail:
-        'Caches favor low latency; DRAM favors capacity. SSD/HDD storage persists under its contract and uses device I/O. These are qualitative roles, not universal timings.',
-    },
-    {
-      label: 'Address = tag | index | offset',
-      detail:
-        'For this two-slot cache: four offset bits select a byte; one index bit selects the slot; remaining bits distinguish blocks.',
-    },
-    {
-      label: '0, 4, 8, 12 \u2192 block 0 in slot 0',
-      detail: 'First access misses; the next three hit. Slot 1 is empty.',
-    },
-    {
-      label: '32 \u2192 block 2 in slot 0; then 0',
-      detail:
-        'Block 2 evicts block 0. Reading 0 misses again. With the same total capacity arranged as one two-way set, blocks 0 and 2 coexist: miss, miss, hit, hit for 0,32,0,32.',
-    },
-  ]}
-/>
+<CacheSlots />
 
 A **cache line** is the transfer and bookkeeping unit for this model. With
 16-byte lines, addresses 0 through 15 belong to memory block 0, addresses 16
@@ -169,8 +152,12 @@ locality. The **working set** is the data actively needed over a relevant period
 not necessarily the entire allocated data structure.
 
 A row-major matrix stores neighboring columns of a row next to one another.
-Walking rows can therefore use more of each line than walking columns with a
-large stride. Blocking a computation into tiles can retain useful rows or
+Walking rows therefore uses all of each line it fetches, while walking columns
+with a large stride uses one element per line before moving on:
+
+<TraversalLines />
+
+Blocking a computation into tiles can retain useful rows or
 columns long enough for reuse. These are predictions to test, not speedup
 promises: prefetchers, cache geometry and compiler transformations can alter the
 result.
@@ -230,10 +217,17 @@ line, each miss fills the line, and no prefetch or overlapping execution occurs.
 
 </details>
 
+<details>
+<summary>Model contract and simulator costs</summary>
+
 The simulator processes n accesses in expected O(n) time under constant-cost map
 operations. It retains at most the lesser of n and the number of cache slots in
 its map, plus O(n) output records. That is a software simulation bound, not a
-statement about hardware lookup taking a JavaScript map operation.
+statement about hardware lookup taking a JavaScript map operation. The traversal
+figure uses a separate tested function that lists the line each element of a
+row-major matrix occupies.
+
+</details>
 
 ## Predict unfamiliar accesses
 

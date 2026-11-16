@@ -721,3 +721,19 @@ errors, warnings or hints; formatting and lint; 297 tests in 47 files; 34 pages;
 82 browser tests. Screenshots of all five figures at 1280 px and 390 px in both
 themes were inspected; review moved the sweep's axis title out of the tick
 labels and hid alternate size ticks on phones.
+
+## Memory hierarchy figures — 2026-11-16
+
+The memory-hierarchy lesson's text card is replaced by three figures: a
+hierarchy that reads cache sizes and medians from the recorded sweep and storage
+rows from the sourced ladder, labelling each value measured or textbook; the
+two-slot direct-mapped trace replayed from the tested cache model, showing block
+2 evicting block 0 while slot 1 stays empty; and a row-versus-column walk of a
+row-major matrix from a new tested traversal function (first 8 reads: 2 lines
+by rows, 4 by columns). The simulator's cost paragraph moved into a disclosure.
+
+Same command as the previous entry: zero type errors, warnings or hints;
+formatting and lint passed; 298 tests in 48 files; 34 pages; 82 browser tests.
+Screenshots of all three figures at 1280 px and 390 px in both themes were
+inspected; no layout fixes were needed beyond giving a labelled slot group an
+explicit group role.
