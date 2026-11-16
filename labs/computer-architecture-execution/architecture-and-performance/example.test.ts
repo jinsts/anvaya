@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { amdahl, cpuSeconds, performanceExample } from './example';
 
@@ -50,4 +51,21 @@ describe('fixed-work performance estimates', () => {
   it('rejects an overflowing estimate', () => {
     expect(() => cpuSeconds(2, Number.MAX_VALUE, 1)).toThrow(RangeError);
   });
+});
+
+it('records every column-order sum slower than every row-order sum', () => {
+  const data = JSON.parse(
+    readFileSync(
+      'labs/computer-architecture-execution/architecture-and-performance/measurement.json',
+      'utf8',
+    ),
+  ) as { size: number; records: { order: string; seconds: number }[] };
+  const times = (order: string) =>
+    data.records.filter((r) => r.order === order).map((r) => r.seconds);
+  expect(times('rows')).toHaveLength(6);
+  expect(Math.min(...times('columns'))).toBeGreaterThan(
+    Math.max(...times('rows')),
+  );
+  // 2048 × 2048 four-byte values: 16 MiB.
+  expect((data.size * data.size * 4) / 2 ** 20).toBe(16);
 });

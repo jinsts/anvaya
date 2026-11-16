@@ -884,3 +884,30 @@ keyboard test of the stepper. The first run failed the formatting check after a
 late class rename. Screenshots of both visuals at 1280 px and 390 px in both
 themes, and of the stepper after four events, were inspected; review gave
 interrupts their own marker instead of the polling check dot.
+
+## Architecture and performance revision — 2026-11-16
+
+`architecture-and-performance` no longer repeats chapter 4: the pipeline,
+hazard, speculation, SIMD and false-sharing sections and the pipeline-schedule
+table are replaced by a table mapping each mechanism (with links to its lesson)
+to the CPU-time term it mainly changes. Two figures were added: the worked
+CPU-time comparison as a table with bars, every value and the caption's
+percentages computed by `cpuSeconds`, and a strip plot of all twelve locality
+observations, read from `measurement.json` with a table equivalent. The prose
+no longer hand-copies timings. Two interview questions that duplicated other
+lessons were replaced, and the first exercise became an attempt lab with nine
+contract cases.
+
+The locality measurement was re-recorded on an idle machine (`--record-measurements
+--only architecture-and-performance`), which now stores `lscpu --caches`. The
+16 MiB matrix is smaller than the 24 MiB L3 it reports, so the lesson no longer
+implies the column walk reaches DRAM; it names L1/L2 and TLB misses as an
+untested hypothesis, since no counters were collected. A new test asserts the
+recorded relationship the prose states: every column-order run slower than
+every row-order run. The recorder's JSON needed Prettier before the gate passed.
+
+Same command as the previous entry: zero type errors, warnings or hints;
+formatting and lint passed; 388 tests in 62 files; 38 pages; 100 browser tests.
+Screenshots of both figures at 1280 px and 390 px in both themes were
+inspected; review compacted the CPU-time table, which scrolled sideways at
+390 px.

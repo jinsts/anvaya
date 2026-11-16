@@ -1,14 +1,14 @@
 ---
 title: 'Architecture and performance: Explain where the time goes'
 shortTitle: Architecture and performance
-summary: Relate instructions, pipelines, locality, and parallel limits to a performance hypothesis you can measure.
+summary: Relate instruction count, CPI and frequency, the chapter's hardware mechanisms and parallel limits to a performance hypothesis you can measure.
 subject: computer-architecture-execution
 path: engineering-fundamentals
 difficulty: intermediate
-estimatedMinutes: 60
+estimatedMinutes: 40
 learningObjectives:
   - Calculate a CPU-time estimate from instruction count, average CPI, and frequency
-  - Explain how dependencies, speculation, and memory stalls limit instruction overlap
+  - Name which term of the CPU-time equation a hardware mechanism changes, as a hypothesis to test
   - Apply Amdahl's law to a fixed workload with an explicit serial fraction
   - Design a benchmark that distinguishes correctness, timing, and a proposed hardware cause
 prerequisites:
@@ -33,14 +33,6 @@ interviewQuestions:
       workloads. Memory stalls, throttling, and available parallelism also
       change the observed result. Compare completion time for the same correct
       workload rather than ranking programs or machines by frequency alone.
-  - prompt: Why does pipelining improve throughput without guaranteeing lower latency for one instruction?
-    answer: >-
-      Pipelining overlaps stages from several instructions so the machine can
-      finish work more frequently once the pipeline is filled. One instruction
-      still passes through its required stages, which also have pipeline-register
-      overhead. Data dependencies, resource conflicts, and unresolved control
-      flow can introduce stalls or discarded work. The benefit depends on the
-      available instruction-level parallelism and the workload's hazards.
   - prompt: A quarter of baseline runtime is serial. What is the speedup if the remaining work becomes four times faster?
     answer: >-
       For fixed work with no added overhead, normalized time becomes 0.25 plus
@@ -48,14 +40,15 @@ interviewQuestions:
       2.286, rather than four. Even an arbitrarily fast parallel portion leaves
       the serial quarter, giving a limiting speedup of four. Synchronization,
       bandwidth limits, and changed workloads can invalidate the simple model.
-  - prompt: Why can independent per-thread counters become slow without a data race?
+  - prompt: Two loops do the same O(n) work, but one takes four times as long. How do you find out why?
     answer: >-
-      Distinct counters can occupy the same cache line, so writes by different
-      cores repeatedly transfer ownership or invalidate cached copies of that
-      line. This is false sharing: the coherence unit is larger than the
-      independently updated variables. Keeping updates local and combining them
-      later can reduce traffic, while padding trades memory for separation.
-      Confirm the layout and measure before choosing either change.
+      First check that both produce the same result on the same input, built
+      with the same compiler and flags. Then ask which term of CPU time
+      differs: more executed instructions, a higher CPI from cache misses,
+      mispredicted branches or dependences, or something outside the CPU such
+      as I/O. Read the generated code, repeat the timing to see its spread, and
+      use hardware counters where available. Treat the first explanation as a
+      hypothesis and change one thing at a time to test it.
   - prompt: What evidence would you want before claiming a rewrite is faster because of branch prediction?
     answer: >-
       First verify identical required results and comparable inputs, compiler
@@ -65,22 +58,18 @@ interviewQuestions:
       replace the branch entirely. A timing improvement alone does not identify
       its cause, and a small synthetic input need not represent production.
 sources:
-  - label: MIT Computation Structures — Pipeline dependencies and hazards
-    url: https://computationstructures.org/lectures/pbeta/pbeta.html
   - label: 'MIT Computation Structures, lecture 21 — CPU time, instruction overlap, and parallel execution'
     url: https://computationstructures.org/lectures/parallel/parallel.html
   - label: 'Dive into Systems, section 14.4.1 — Speedup and Amdahl’s law'
     url: https://diveintosystems.org/book/C14-SharedMemory/performance_basics.html
-  - label: 'Dive into Systems, section 14.5 — Cache coherence and false sharing'
-    url: https://diveintosystems.org/book/C14-SharedMemory/cache_coherence.html
-  - label: 'Dive into Systems, chapter 15 — Instruction streams and SIMD'
-    url: https://diveintosystems.org/book/C15-Parallel/index.html
 ---
 
 import localitySource from '../../../../labs/computer-architecture-execution/architecture-and-performance/locality.c?raw';
 import measurement from '../../../../labs/computer-architecture-execution/architecture-and-performance/measurement.json?raw';
 
 import AmdahlBars from '../../../components/diagrams/AmdahlBars.astro';
+import CpuTimeEquation from '../../../components/diagrams/CpuTimeEquation.astro';
+import LocalityStrip from '../../../components/diagrams/LocalityStrip.astro';
 
 import example from '../../../../labs/computer-architecture-execution/architecture-and-performance/example.ts?raw';
 
@@ -123,35 +112,30 @@ Suppose a hypothetical run executes two billion instructions at CPI 1.5 and
 at CPI 1.8 and the same frequency: its estimate is 0.9 seconds. CPI gets worse,
 yet total estimated time improves because the instruction reduction is larger.
 
-## Overlap helps until dependencies or resources intervene
+<CpuTimeEquation />
 
-A **pipeline** divides work into stages and overlaps different instructions at
-different stages. It primarily improves throughput and can enable a shorter
-clock period; it does not promise that one instruction finishes sooner.
+## Map each mechanism to a term
 
-Three kinds of hazards limit overlap:
+The earlier lessons in this subject each change one term of the equation. Use
+the map to turn a timing difference into a hypothesis you can test:
 
-- A **data hazard** occurs when an instruction needs a result that is not ready.
-- A **structural hazard** occurs when operations compete for a limited resource.
-- A **control hazard** occurs when the next useful instruction depends on unresolved control flow.
+<div className="table-scroll" tabIndex={0} role="region" aria-label="Mechanisms and the CPU-time term each changes">
 
-Forwarding and scheduling can resolve some dependencies without waiting for
-every earlier instruction to finish, but a dependent chain still has a critical
-path. Multiple execution units cannot compute a sum before its required inputs
-exist.
+| Mechanism                                                                                          | Term it mainly changes | What to check                                         |
+| -------------------------------------------------------------------------------------------------- | ---------------------- | ----------------------------------------------------- |
+| [Pipeline hazards](/learn/computer-architecture-execution/pipelining-and-hazards/)                 | CPI                    | dependent chains and stalls in the generated code     |
+| [Branch mispredictions](/learn/computer-architecture-execution/branch-prediction-and-speculation/) | CPI                    | data-dependent branches; branch counters              |
+| [Cache and DRAM misses](/learn/computer-architecture-execution/dram-ssd-and-disks/)                | CPI                    | working-set size and access order                     |
+| [SIMD](/learn/computer-architecture-execution/simd-and-data-parallelism/)                          | instructions           | packed instructions and the remainder loop            |
+| [False sharing](/learn/computer-architecture-execution/multicore-coherence-and-atomics/)           | CPI                    | which threads write which cache lines                 |
+| [Compiler optimization](/learn/computer-architecture-execution/compilation-and-execution/)         | instructions           | the listing at the flags you ship                     |
+| Frequency scaling                                                                                  | frequency              | sustained clock during the run, not the nominal value |
 
-**Superscalar execution** uses multiple issue or execution opportunities per
-cycle. **Out-of-order execution** finds ready independent work beyond a stalled
-instruction while preserving the required architectural behavior. A common
-implementation commits completed instructions in program order, even when their
-execution overlapped or occurred in another order.
+</div>
 
-**Branch prediction** chooses a likely control-flow path before the branch is
-resolved. **Speculation** executes work on that assumption. A wrong prediction
-discards the affected speculative architectural results and redirects execution;
-it can waste work and leave observable microarchitectural effects such as cache
-changes. It does not give software permission to depend on an incorrect path's
-architectural results.
+The terms interact. Vector code runs fewer instructions but can raise CPI, and
+removing a branch can add instructions while lowering CPI. That is why a
+change is judged by measured time, with the terms as explanations.
 
 ## Make useful bytes easy to reach
 
@@ -166,18 +150,6 @@ temperature storage may fetch fewer unused bytes than records containing many
 other fields. The alternative can be worse when every operation needs all
 fields together. Compare the repeated accesses rather than declaring one layout
 universally superior.
-
-**SIMD**, single instruction multiple data, applies one operation to several data
-lanes. Regular contiguous data and independent iterations can help a compiler
-vectorize a loop. Aliasing, dependencies, control flow, alignment requirements,
-and numeric semantics can limit that transformation. Vector width alone does
-not establish speedup when memory bandwidth is already saturated.
-
-On multicore systems, two threads can update distinct counters that occupy one
-cache line. Coherence then coordinates writes to the shared line even though the
-logical variables are independent. This is **false sharing**. Local accumulation
-followed by a merge can reduce traffic. Padding may help if it actually separates
-the counters for the target layout, but consumes space and can harm locality.
 
 ## Bound an optimization with Amdahl's law
 
@@ -237,30 +209,6 @@ does not distinguish those explanations. Likewise, fewer cache misses can
 coexist with a slower program if extra instructions or synchronization outweigh
 the benefit. Report the observed outcome separately from the causal inference.
 
-## Work a pipeline schedule
-
-Assume an illustrative five-stage pipeline: F fetch, D decode, E execute,
-M memory, W write-back. With forwarding, a load's value becomes available after
-M; an immediately dependent add needs one bubble before E. These assumptions
-are not a cycle count for the native x86 example.
-
-<div className="table-scroll" tabIndex={0} role="region" aria-label="Illustrative dependency timeline">
-
-| Instruction                            | 1   | 2   | 3   | 4    | 5   | 6   | 7   |
-| -------------------------------------- | --- | --- | --- | ---- | --- | --- | --- |
-| Load R0                                | F   | D   | E   | M    | W   |     |     |
-| Add using R0                           |     | F   | D   | wait | E   | M   | W   |
-| Independent add without the dependency |     | F   | D   | E    | M   | W   |     |
-
-</div>
-
-The last row is an alternative second instruction, not a third instruction issued
-alongside it. Removing a dependency removes the shown bubble under this model.
-For a branch resolved at E with sequential prediction, a taken branch discards
-the two younger instructions in D/F and restarts fetch at the target next cycle.
-Prediction and resolution policy determine the penalty; a universal branch cost
-cannot be inferred from this diagram.
-
 ## Observe one actual locality experiment
 
 The shared native verification command compiles `locality.c` at `-O2
@@ -269,25 +217,25 @@ and column order, alternates which comes first, and checks identical checksums
 outside the timed region. Allocation and initialization are outside timing.
 Six observations per order are recorded, with no speed threshold in the tests.
 
-The recorded run used x86_64-linux-gnu-gcc-15 (Ubuntu 15.2.0-16ubuntu1) 15.2.0 on linux/x64, CPU
-Intel(R) Core(TM) Ultra 9 285H. Row times ranged from 0.000764 to 0.002028 seconds
-(median 0.000887); column times ranged from 0.003348
-to 0.004405 (median 0.003436). These are observations
-of this small local experiment, not expected results on another machine.
+<LocalityStrip />
+
+Every column-order run was slower than every row-order run. The matrix is 16 MiB,
+smaller than this processor's 24 MiB shared L3 cache as `lscpu` reports it
+(recorded in the JSON), so the gap does not show that column order reaches
+DRAM. Each column step moves 8 KiB, landing on a different cache line and a
+different 4 KiB page every time; L1 and L2 misses and TLB misses are the likely
+causes, but no counters were collected, so they remain a hypothesis. These are
+observations of one local run, not expected results on another machine.
 
 <details>
-<summary>Inspect the tested workload and full recorded observations</summary>
+<summary>Inspect the tested workload and the recorded environment</summary>
 
 <CodeExample
   title="Equivalent matrix sums with checked results"
   code={localitySource}
   language="c"
 />
-<CodeExample
-  title="Recorded environment and all twelve observations"
-  code={measurement}
-  language="text"
-/>
+<CodeExample title="measurement.json" code={measurement} language="text" />
 
 </details>
 
@@ -316,19 +264,20 @@ still matters, but the experiment no longer tests it. The recorded build passes
 
 <LabCard
   title="01 / Fewer instructions, higher CPI"
-  command="pnpm exec vitest run labs/computer-architecture-execution/architecture-and-performance/"
+  command="pnpm lab computer-architecture-execution/architecture-and-performance"
 >
-  Compare a baseline of 1,000 instructions at CPI 1 with a candidate of 500
-  instructions at CPI 3, both at 1,000 cycles per second. Predict time and
-  speedup, add assertions, and explain why instruction count alone misleads.
+  Implement `solve(baseline, candidate)` in `starter.ts`: return how many times
+  faster the candidate is by CPU time. Before running the tests, predict a
+  baseline of 1,000 instructions at CPI 1 against 500 instructions at CPI 3,
+  both at the same frequency.
 </LabCard>
 
 <details>
-  <summary>Hint after an attempt</summary>
+  <summary>Check after attempting</summary>
 
-The estimates are one and 1.5 seconds. Baseline divided by candidate time is
-two-thirds, so the candidate is slower. These deliberately small frequencies
-are arithmetic inputs, not a claim about a modern CPU.
+The baseline needs 1,000 cycles and the candidate 1,500, so the result is
+two-thirds: the candidate is slower although it runs half the instructions.
+Instruction count alone misleads whenever CPI changes with it.
 
 </details>
 
@@ -355,20 +304,19 @@ always exceeds one-half for finite positive improvement of the other half.
   command="pnpm exec vitest run labs/computer-architecture-execution/architecture-and-performance/"
 >
   Review the claim “padded counters are twice as fast” without running a
-  hardware experiment. List the missing layout, workload, correctness, and
-  measurement details. Write a prediction and identify observations that could
-  distinguish false sharing from a change in instruction count or allocation
-  cost.
+  hardware experiment. List the missing layout, workload, correctness and
+  measurement details, then compare it with how the multicore lesson's
+  false-sharing measurement was recorded.
 </LabCard>
 
 <details>
   <summary>Hint after an attempt</summary>
 
-Ask which cores run the threads, which bytes share a line, how often counters
-are written, and whether allocation is timed. Hold useful work constant and
-check output first. A runtime improvement plus suitable coherence-traffic
-evidence is stronger than a timing ratio alone, but available counters and their
-interpretation depend on the machine.
+Ask which bytes share a line, which cores run the threads, how many writes each
+makes and whether thread start-up is timed. The multicore measurement states
+the offsets (8 and 64 bytes), alternates the layouts over seven rounds, checks
+every counter and records the machine and compiler, and still says the threads
+were not pinned.
 
 </details>
 
@@ -400,8 +348,8 @@ interpretation depend on the machine.
 ## Two-minute recap
 
 - CPU time depends on instruction count, average CPI, and cycle duration together.
-- Pipelines and multiple execution units exploit overlap; dependencies and hazards limit it.
-- Locality, SIMD, and false sharing depend on actual accesses and data layout.
+- Each hardware mechanism mainly changes one term: instructions, CPI or frequency.
+- Locality depends on actual accesses and data layout, not on Big-O.
 - Amdahl's law bounds a fixed-work improvement using baseline time fractions.
 - Elapsed time, CPU time, throughput, and hardware counters describe different things.
 - Verify correctness, measure repeatably, and test the proposed cause separately from the timing result.

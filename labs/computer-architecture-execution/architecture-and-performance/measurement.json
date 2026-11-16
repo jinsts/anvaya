@@ -1,82 +1,84 @@
 {
-  "date": "2026-11-13T06:04:04.709Z",
-  "compiler": "x86_64-linux-gnu-gcc-15 (Ubuntu 15.2.0-16ubuntu1) 15.2.0",
+  "date": "2026-11-16T09:53:49.603Z",
+  "compiler": "gcc-15 (Ubuntu 15.2.0-16ubuntu1) 15.2.0",
+  "target": "x86_64-linux-gnu",
   "platform": "linux",
   "arch": "x64",
   "cpu": "Intel(R) Core(TM) Ultra 9 285H",
+  "caches": "NAME ONE-SIZE ALL-SIZE WAYS TYPE        LEVEL  SETS PHY-LINE COHERENCY-SIZE\nL1d       48K     192K   12 Data            1    64        1             64\nL1i       64K     256K   16 Instruction     1    64        1             64\nL2         3M      12M   12 Unified         2  4096        1             64\nL3        24M      24M   12 Unified         3 32768        1             64\n",
   "flags": ["-O2", "-fno-loop-interchange"],
   "size": 2048,
   "records": [
     {
       "trial": 0,
       "order": "rows",
-      "seconds": 0.00202769,
+      "seconds": 0.001151173,
       "checksum": "524280621"
     },
     {
       "trial": 0,
       "order": "columns",
-      "seconds": 0.004405219,
+      "seconds": 0.0038656,
       "checksum": "524280621"
     },
     {
       "trial": 1,
       "order": "columns",
-      "seconds": 0.003610596,
+      "seconds": 0.003393117,
       "checksum": "524280621"
     },
     {
       "trial": 1,
       "order": "rows",
-      "seconds": 0.000906192,
+      "seconds": 0.000871713,
       "checksum": "524280621"
     },
     {
       "trial": 2,
       "order": "rows",
-      "seconds": 0.00089998,
+      "seconds": 0.000841837,
       "checksum": "524280621"
     },
     {
       "trial": 2,
       "order": "columns",
-      "seconds": 0.0033478,
+      "seconds": 0.003213495,
       "checksum": "524280621"
     },
     {
       "trial": 3,
       "order": "columns",
-      "seconds": 0.003464411,
+      "seconds": 0.003409867,
       "checksum": "524280621"
     },
     {
       "trial": 3,
       "order": "rows",
-      "seconds": 0.000874637,
+      "seconds": 0.001302704,
       "checksum": "524280621"
     },
     {
       "trial": 4,
       "order": "rows",
-      "seconds": 0.000856866,
+      "seconds": 0.001532216,
       "checksum": "524280621"
     },
     {
       "trial": 4,
       "order": "columns",
-      "seconds": 0.003388235,
+      "seconds": 0.003638484,
       "checksum": "524280621"
     },
     {
       "trial": 5,
       "order": "columns",
-      "seconds": 0.003406666,
+      "seconds": 0.003299683,
       "checksum": "524280621"
     },
     {
       "trial": 5,
       "order": "rows",
-      "seconds": 0.000763597,
+      "seconds": 0.000766405,
       "checksum": "524280621"
     }
   ]
