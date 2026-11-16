@@ -20,6 +20,7 @@ const slugs = [
   'hardware-software-interaction',
   'io-mechanisms',
   'architecture-and-performance',
+  'measuring-performance',
 ];
 test.use({ reducedMotion: 'reduce' });
 for (const slug of slugs) {

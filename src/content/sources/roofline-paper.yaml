@@ -1,0 +1,8 @@
+name: 'Roofline: An Insightful Visual Performance Model'
+kind: reference
+by: Samuel Williams, Andrew Waterman and David Patterson (UC Berkeley, 2008)
+url: https://www2.eecs.berkeley.edu/Pubs/TechRpts/2008/EECS-2008-134.pdf
+description: >-
+  The authors' technical report, later published in Communications of the ACM,
+  that defines attainable performance as the minimum of peak compute and memory
+  bandwidth times operational intensity.

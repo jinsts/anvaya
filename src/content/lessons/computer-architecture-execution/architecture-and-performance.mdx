@@ -197,11 +197,9 @@ Before optimizing, state a falsifiable prediction: “This layout reduces memory
 traffic for a scan that reads only temperatures.” Then define what a correct
 result is and which evidence would support or weaken that explanation.
 
-1. **Fix the workload.** Record inputs, output requirements, sizes, and the timed boundary. Separate startup from steady state when that distinction matters.
-2. **Fix the environment.** Record machine, runtime or compiler, optimization options, thread count, and relevant background load.
-3. **Validate results.** Check outputs outside the timed region where possible, while ensuring the optimizer cannot eliminate the work being studied.
-4. **Repeat and alternate.** Collect a distribution and compare candidates under comparable cache and warmup policies. Avoid treating one short run as a stable result.
-5. **Inspect causes.** Use available profiler samples, counters, and generated code to test the proposed mechanism. State counter definitions and measurement limitations.
+The [measuring performance lesson](/learn/computer-architecture-execution/measuring-performance/)
+turns that into a repeatable loop: fix the workload and environment, check the
+result, repeat and alternate, summarize the spread, then test the cause.
 
 An input sorted by a branch condition might improve prediction, change cache
 behavior, or let optimization change the generated loop. A faster timing alone

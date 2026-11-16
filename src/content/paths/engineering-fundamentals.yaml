@@ -90,8 +90,7 @@ sections:
     subject: computer-architecture-execution
     lessons:
       - computer-architecture-execution/architecture-and-performance
-    planned:
-      - Measuring performance with benchmarks and hardware counters
+      - computer-architecture-execution/measuring-performance
   - id: operating-systems-runtime-internals
     title: Operating Systems & Runtime Internals
     subject: operating-systems-runtime-internals

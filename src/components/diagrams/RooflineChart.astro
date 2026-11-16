@@ -1,0 +1,247 @@
+---
+import DiagramFrame from '../learning/DiagramFrame.astro';
+import {
+  KERNELS,
+  ridgePoint,
+  roofline,
+} from '../../../labs/computer-architecture-execution/measuring-performance/stats';
+// A roofline for an illustrative machine (not this computer), with three
+// float kernels placed by their exact operational intensity.
+const PEAK = 100;
+const BW = 50;
+const X0 = -4; // log2 of the smallest intensity shown, 1/16
+const X1 = 8; // log2 256
+const Y0 = 1; // log2 2 GFLOP/s
+const Y1 = 7; // log2 128 GFLOP/s
+const px = (i: number) => ((Math.log2(i) - X0) / (X1 - X0)) * 100;
+const py = (g: number) => (1 - (Math.log2(g) - Y0) / (Y1 - Y0)) * 100;
+const ridge = ridgePoint(PEAK, BW);
+const roof = [2 ** X0, ridge, 2 ** X1]
+  .map((i) => `${px(i)},${py(roofline(PEAK, BW, i))}`)
+  .join(' ');
+const kernels = KERNELS.map((k) => ({
+  ...k,
+  bound: roofline(PEAK, BW, k.flopsPerByte),
+}));
+const xTicks = [1 / 16, 1 / 4, 1, 4, 16, 64, 256];
+const yTicks = [2, 8, 32, 128];
+const label = (i: number) => (i < 1 ? `1/${1 / i}` : `${i}`);
+---
+
+<DiagramFrame
+  caption={`Roofline for an illustrative machine with a ${PEAK} GFLOP/s compute peak and ${BW} GB/s memory bandwidth, both axes logarithmic. Attainable performance is the lower of the two roofs; they meet at ${ridge} flops per byte. Each kernel sits at its exact intensity, at the bound the model allows, not at a measured speed.`}
+>
+  <div class="roofline">
+    <div class="plot" aria-hidden="true">
+      <svg viewBox="0 0 100 100" preserveAspectRatio="none">
+        {xTicks.map((t) => (
+          <line class="grid" x1={px(t)} x2={px(t)} y1="0" y2="100" />
+        ))}
+        {yTicks.map((t) => (
+          <line class="grid" x1="0" x2="100" y1={py(t)} y2={py(t)} />
+        ))}
+        {kernels.map((k) => (
+          <line
+            class="drop"
+            x1={px(k.flopsPerByte)}
+            x2={px(k.flopsPerByte)}
+            y1={py(k.bound)}
+            y2="100"
+          />
+        ))}
+        <polyline class="roof" points={roof} />
+      </svg>
+      {kernels.map((k, i) => (
+        <>
+          <span
+            class="point"
+            style={`left: ${px(k.flopsPerByte)}%; top: ${py(k.bound)}%`}
+            title={`${k.name}: ${k.flopsPerByte.toFixed(3)} flops/byte, bound ${k.bound.toFixed(1)} GFLOP/s`}
+          />
+          <span
+            class={`kernel k${i}`}
+            style={`left: ${px(k.flopsPerByte)}%; top: ${py(k.bound)}%`}
+          >
+            {k.name}
+          </span>
+        </>
+      ))}
+      <span class="yname">GFLOP/s</span>
+      {xTicks.map((t) => (
+        <span class="xtick" style={`left: ${px(t)}%`}>
+          {label(t)}
+        </span>
+      ))}
+      {yTicks.map((t) => (
+        <span class="ytick" style={`top: ${py(t)}%`}>
+          {t}
+        </span>
+      ))}
+    </div>
+    <p class="axis-name x" aria-hidden="true">
+      operational intensity (flops per byte)
+    </p>
+    <p class="key" aria-hidden="true">
+      <i class="roof-key"></i>
+      {`roof: ${BW} GB/s × intensity until the ridge at ${ridge} flops/byte, then ${PEAK} GFLOP/s`}
+      <i class="point-key"></i> kernel at its bound
+    </p>
+    <div
+      class="table-scroll"
+      tabindex="0"
+      role="region"
+      aria-label="Kernels on the roofline"
+    >
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">Kernel</th>
+            <th scope="col">Flops/byte</th>
+            <th scope="col">GFLOP/s</th>
+            <th scope="col">Limit</th>
+          </tr>
+        </thead>
+        <tbody>
+          {kernels.map((k) => (
+            <tr>
+              <th scope="row">{k.name}</th>
+              <td>{k.flopsPerByte.toFixed(3)}</td>
+              <td>{k.bound.toFixed(1)}</td>
+              <td>{k.flopsPerByte < ridge ? 'memory' : 'compute'}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</DiagramFrame>
+<style>
+  .roofline {
+    display: grid;
+    gap: var(--space-2);
+  }
+  .plot {
+    position: relative;
+    height: 15rem;
+    margin: var(--space-2) var(--space-2) var(--space-5) 2rem;
+    border-bottom: 1px solid var(--border-strong);
+    border-left: 1px solid var(--border-strong);
+  }
+  svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+  }
+  .grid {
+    stroke: var(--border);
+    stroke-width: 1;
+    vector-effect: non-scaling-stroke;
+  }
+  .drop {
+    stroke: var(--muted);
+    stroke-dasharray: 3 3;
+    stroke-width: 1;
+    vector-effect: non-scaling-stroke;
+  }
+  .roof {
+    fill: none;
+    stroke: var(--chart-1);
+    stroke-width: 2.5;
+    vector-effect: non-scaling-stroke;
+  }
+  .point {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--chart-2);
+    box-shadow: 0 0 0 2px var(--surface);
+    transform: translate(-50%, -50%);
+  }
+  .kernel {
+    position: absolute;
+    font-size: var(--text-xs);
+    white-space: nowrap;
+  }
+  .kernel {
+    padding: 0 var(--space-1);
+    border-radius: 4px;
+    background: var(--surface);
+    font-weight: 600;
+    transform: translate(-50%, -150%);
+  }
+  .kernel.k0 {
+    transform: translate(-10%, 50%);
+  }
+  .kernel.k1 {
+    transform: translate(-10%, 50%);
+  }
+  .kernel.k2 {
+    transform: translate(-100%, 50%);
+  }
+  .xtick,
+  .ytick {
+    position: absolute;
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+  }
+  .xtick {
+    top: 100%;
+    margin-top: 2px;
+    transform: translateX(-50%);
+  }
+  .ytick {
+    right: 100%;
+    margin-right: 4px;
+    transform: translateY(-50%);
+  }
+  .yname {
+    position: absolute;
+    bottom: 100%;
+    left: 0;
+    margin-bottom: 2px;
+    color: var(--muted);
+    font-size: var(--text-xs);
+    transform: translateX(-50%);
+  }
+  .key {
+    margin: 0;
+    color: var(--muted);
+    font-size: var(--text-xs);
+    text-align: center;
+  }
+  .roof-key {
+    display: inline-block;
+    width: 1.25rem;
+    height: 0;
+    border-top: 2.5px solid var(--chart-1);
+    vertical-align: middle;
+  }
+  .point-key {
+    display: inline-block;
+    width: 9px;
+    height: 9px;
+    margin-left: var(--space-2);
+    border-radius: 50%;
+    background: var(--chart-2);
+  }
+  .roofline table {
+    font-size: var(--text-sm);
+  }
+  .roofline th,
+  .roofline td {
+    padding-inline: var(--space-1);
+  }
+  .axis-name {
+    margin: 0;
+    color: var(--muted);
+    font-size: var(--text-xs);
+    text-align: center;
+  }
+  .roofline .table-scroll {
+    margin: var(--space-2) 0 0;
+  }
+</style>

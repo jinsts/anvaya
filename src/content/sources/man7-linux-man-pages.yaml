@@ -1,0 +1,7 @@
+name: Linux man-pages (man7.org)
+kind: documentation
+by: Michael Kerrisk (maintainer of the Linux man-pages project)
+url: https://man7.org/linux/man-pages/
+description: >-
+  The Linux man-pages project's maintainer publishes current manual pages,
+  including those shipped with the kernel's perf tool, such as perf-stat(1).

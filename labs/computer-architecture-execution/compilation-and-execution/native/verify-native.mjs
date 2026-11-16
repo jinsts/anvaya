@@ -331,6 +331,32 @@ export const MEASUREMENTS = [
     },
   },
   {
+    source: 'measuring-performance/timing.c',
+    flags: ['-std=c17', '-O2'],
+    file: 'measuring-performance/timing.json',
+    args: { quick: ['quick'], full: [] },
+    parse(csv) {
+      const records = csv
+        .trim()
+        .split('\n')
+        .map((line) => {
+          const [state, round, ns, checksum] = line.split(',');
+          return {
+            state,
+            round: Number(round),
+            nsPerElement: Number(ns),
+            checksum,
+          };
+        });
+      if (
+        new Set(records.map((r) => r.checksum)).size !== 1 ||
+        records.some((r) => !(r.nsPerElement > 0))
+      )
+        throw new Error('Invalid timing measurement');
+      return { elements: 1 << 20, sweepBytes: 64 << 20, records };
+    },
+  },
+  {
     source: 'architecture-and-performance/locality.c',
     flags: ['-O2', '-fno-loop-interchange'],
     file: 'architecture-and-performance/measurement.json',

@@ -911,3 +911,35 @@ formatting and lint passed; 388 tests in 62 files; 38 pages; 100 browser tests.
 Screenshots of both figures at 1280 px and 390 px in both themes were
 inspected; review compacted the CPU-time table, which scrolled sideways at
 390 px.
+
+## Measuring performance lesson — 2026-11-16
+
+Draft of the planned page "Measuring performance with benchmarks and hardware
+counters", the last planned page in this subject. It takes the benchmark
+checklist from `architecture-and-performance`, which now links to it.
+
+`timing.c` (new, in the native lab's measurements) sums one 4 MiB array sixty
+times, alternating runs after a 64 MiB eviction sweep with runs that find the
+array just read, and checks every sum. Recorded on an idle machine: warm median
+0.240 ns per element, cold 0.294, with overlapping ranges; tests assert the
+relationships the prose states (medians ordered, ranges overlapping, each
+series' slowest run over 1.5 times its fastest, the pairing share strictly
+between one half and one). The figure renders the runs, p10–p90 bands and
+medians from the JSON.
+
+The roofline chart uses an illustrative machine (100 GFLOP/s, 50 GB/s), labelled
+as such, with three float kernels at exact intensities. Counters are taught with
+one labelled illustrative IPC calculation and no counter output: `perf` is not
+installed here (`which perf` found nothing). `perf-counters.sh` is for the owner
+to run on native Linux; only its missing-`perf` exit is tested, with an empty
+search path. Its `perf stat` options (`-e`, `-r`, `-o`, `--append`) were checked
+against the manual page. Sources registered after reading: the perf-stat(1)
+page on man7.org and the Roofline technical report (UCB/EECS-2008-134); the old
+perf wiki now redirects elsewhere and is not cited. Find Median from Data Stream
+is linked; NeetCode's data marks it Blind 75 and NeetCode 150.
+
+Same command as the previous entry: zero type errors, warnings or hints;
+formatting and lint passed; 405 tests in 64 files; 39 pages; 102 browser tests.
+Screenshots of the three figures at 1280 px and 390 px in both themes were
+inspected; review moved the roofline's line labels into a key and compacted its
+table, which collided and overflowed at 390 px.

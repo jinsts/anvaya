@@ -1,0 +1,10 @@
+title: Find Median from Data Stream
+url: https://leetcode.com/problems/find-median-from-data-stream/
+difficulty: hard
+lessons: [computer-architecture-execution/measuring-performance]
+topics: [heap, design, statistics]
+lists: [blind-75, neetcode-150]
+hints:
+  - Sorting every time a value arrives is correct but repeats work. The median only needs the boundary between the smaller half and the larger half of the values.
+  - Keep the smaller half in a max-heap and the larger half in a min-heap, with sizes equal or the lower heap one larger. The median is then the lower heap's top, or the mean of both tops.
+  - Each insertion is O(log n) to push and rebalance, and reading the median is O(1). A benchmark harness that reports a running median of its timings can use exactly this structure.
