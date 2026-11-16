@@ -1,0 +1,10 @@
+title: Print FooBar Alternately
+url: https://leetcode.com/problems/print-foobar-alternately/
+difficulty: medium
+lessons: [computer-architecture-execution/multicore-coherence-and-atomics]
+topics: [concurrency]
+lists: []
+hints:
+  - Each thread must wait for its turn and then hand the turn to the other. Write down what each thread waits for and what it signals before writing any code.
+  - Two semaphores, one per thread, give a clean handoff. Start the first thread's at one and the second's at zero; each thread acquires its own and releases the other's after printing.
+  - Every handoff is a release by one thread and an acquire by the other, so the printed text before the handoff is ordered before the next print. Check that n rounds leave both semaphores where they started.

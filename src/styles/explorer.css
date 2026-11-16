@@ -1187,3 +1187,92 @@
 .simd-elements .value {
   font-weight: 700;
 }
+/* MESI coherence stepper. */
+.mesi-stepper .operation-controls label {
+  flex: 1 1 9rem;
+}
+.mesi-cores {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+  margin: var(--space-3) 0;
+}
+.mesi-core {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-1);
+  padding: var(--space-3) var(--space-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  text-align: center;
+}
+.mesi-core.acted {
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+.mesi-name {
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+.mesi-state {
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border: 2px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: var(--text-xl);
+  font-weight: 700;
+  animation: cell-in 0.3s ease-out;
+}
+.mesi-state.s-M {
+  border-color: var(--tone-rose);
+  background: var(--tone-rose-soft);
+}
+.mesi-state.s-E {
+  border-color: var(--tone-blue);
+  background: var(--tone-blue-soft);
+}
+.mesi-state.s-S {
+  border-color: var(--tone-teal);
+  background: var(--tone-teal-soft);
+}
+.mesi-state.s-I {
+  border-style: dashed;
+  color: var(--muted);
+}
+.mesi-desc {
+  color: var(--muted);
+  font-size: var(--text-xs);
+}
+.mesi-bus {
+  margin: 0 0 var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+  text-align: center;
+}
+.mesi-stepper .mesi-script {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.mesi-stepper .mesi-script li {
+  margin: 0;
+  padding: 2px var(--space-2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+.mesi-stepper .mesi-script li.done {
+  background: var(--subtle);
+}
+.mesi-stepper .mesi-script li.next {
+  border: 2px solid var(--accent);
+}

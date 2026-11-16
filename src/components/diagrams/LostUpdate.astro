@@ -1,0 +1,126 @@
+---
+import DiagramFrame from '../learning/DiagramFrame.astro';
+import { lostUpdate } from '../../../labs/computer-architecture-execution/multicore/models';
+// All interleavings of two increments of a counter that starts at 7, from the
+// tested model: three separate steps each, or one atomic read-modify-write.
+const plain = lostUpdate(false);
+const atomic = lostUpdate(true);
+const total = plain.reduce((n, o) => n + o.executions, 0);
+const lost = plain.find((o) => o.final === 8)!;
+// Replays one interleaving to label each step with the value it read or wrote.
+function trace(steps: string[]) {
+  let counter = 7;
+  const local: Record<string, number> = {};
+  return steps.map((step) => {
+    const [thread, kind] = step.split(' ') as [string, string];
+    let note: string;
+    if (kind === 'load') note = `reads ${(local[thread] = counter)}`;
+    else if (kind === 'add')
+      note = `computes ${(local[thread] = local[thread]! + 1)}`;
+    else if (kind === 'store') note = `writes ${(counter = local[thread]!)}`;
+    else note = `${counter} → ${++counter}`;
+    return { thread, kind, note };
+  });
+}
+const cases = [
+  {
+    name: 'Load, add, store',
+    note: 'one interleaving that loses an update',
+    steps: trace(lost.example),
+    result: `Final counter 8: B read 7 before A wrote 8.`,
+  },
+  {
+    name: 'Atomic fetch-and-add',
+    note: 'each increment is one indivisible step',
+    steps: trace(atomic[0]!.example),
+    result: `Final counter 9 in all ${atomic.reduce((n, o) => n + o.executions, 0)} interleavings.`,
+  },
+];
+---
+
+<DiagramFrame
+  caption={`Two threads increment a counter that starts at 7. As separate load, add and store steps, ${lost.executions} of the ${total} possible interleavings lose an update and end at 8. As a single atomic read-modify-write, every interleaving ends at 9. Coherence keeps each step's view of the line consistent; it does not make three steps one.`}
+>
+  <div class="update">
+    {cases.map((c) => (
+      <div class="case">
+        <p class="title">
+          <strong>{c.name}</strong> <span>{c.note}</span>
+        </p>
+        <ol aria-label={`${c.name}: steps in time order`}>
+          {c.steps.map((s) => (
+            <li class={s.thread === 'A' ? 'a' : 'b'}>
+              <span>Thread {s.thread}</span> <code>{s.kind}</code>{' '}
+              <span class="note">{s.note}</span>
+            </li>
+          ))}
+        </ol>
+        <p class="result">{c.result}</p>
+      </div>
+    ))}
+  </div>
+</DiagramFrame>
+<style>
+  .update {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+    gap: var(--space-4);
+  }
+  .case {
+    display: grid;
+    align-content: start;
+    gap: var(--space-2);
+    padding: var(--space-3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg);
+  }
+  .title,
+  .result {
+    margin: 0;
+    font-size: var(--text-sm);
+  }
+  .title {
+    display: grid;
+  }
+  .title span {
+    color: var(--muted);
+    font-size: var(--text-xs);
+  }
+  .update ol {
+    display: grid;
+    gap: 2px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .update ol li {
+    display: grid;
+    grid-template-columns: 4.5rem 1fr auto;
+    align-items: center;
+    gap: var(--space-2);
+    margin: 0;
+    padding: var(--space-1) var(--space-2);
+    border-radius: 4px;
+    font-size: var(--text-xs);
+  }
+  .update li.a {
+    margin-right: var(--space-6);
+    background: var(--tone-blue-soft);
+    box-shadow: inset 3px 0 0 var(--chart-1);
+  }
+  .update li.b {
+    margin-left: var(--space-6);
+    background: var(--tone-amber-soft);
+    box-shadow: inset 3px 0 0 var(--chart-2);
+  }
+  .update li code {
+    padding: 0;
+    border: 0;
+    background: none;
+  }
+  .note {
+    font-family: var(--font-mono);
+    font-weight: 700;
+  }
+</style>

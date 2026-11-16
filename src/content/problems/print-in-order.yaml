@@ -1,0 +1,10 @@
+title: Print in Order
+url: https://leetcode.com/problems/print-in-order/
+difficulty: easy
+lessons: [computer-architecture-execution/multicore-coherence-and-atomics]
+topics: [concurrency]
+lists: []
+hints:
+  - The threads may start in any order, so the second step cannot assume the first has run. It needs a signal that the first step published when it finished.
+  - That signal is the message-passing pattern. Whatever the first step did before raising its flag must be visible to the thread that sees the flag, which is what a release paired with an acquire, or any lock or semaphore, guarantees.
+  - Two one-shot signals suffice, one between each pair of steps. Prefer a primitive that blocks, such as a semaphore or condition variable, over spinning on an atomic flag, which burns a core while it waits.

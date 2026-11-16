@@ -1,0 +1,363 @@
+---
+title: 'Multicore: Coherence, memory ordering and atomics'
+shortTitle: Multicore coherence and atomics
+summary: Follow one cache line between two cores with MESI, measure false sharing, publish data safely with release and acquire, and see why coherent caches still lose a non-atomic increment.
+subject: computer-architecture-execution
+path: engineering-fundamentals
+difficulty: intermediate
+estimatedMinutes: 35
+learningObjectives:
+  - Trace MESI states and coherence messages for reads and writes to one cache line by two cores
+  - Explain false sharing from the cache line as the unit of coherence, and fix it by separating the data
+  - Use release and acquire to publish data across threads, and say which reorderings they forbid
+  - Distinguish coherence, memory ordering and atomicity, and choose an atomic read-modify-write for shared counters
+prerequisites:
+  - computer-architecture-execution/cache-organization
+  - computer-architecture-execution/reading-assembly
+tags: [memory, performance, instructions]
+skills: [debugging, complexity-analysis, ai-assisted-verification]
+status: draft
+drafter: agent
+interviewQuestions:
+  - prompt: What does cache coherence guarantee, and what does it not?
+    answer: >-
+      Coherence keeps the cached copies of each memory location consistent:
+      once a write to a location is visible, no core keeps reading an older
+      value of that location from its own cache. Protocols such as MESI do this
+      per cache line, by giving one cache ownership before it writes and
+      invalidating the other copies. Coherence says nothing about the order in
+      which other cores see writes to different locations, and it does not make
+      a load, an add and a store into one indivisible update. Those need memory
+      ordering and atomic operations.
+  - prompt: What is false sharing, and how do you fix it?
+    answer: >-
+      Coherence works on whole cache lines, so two threads that write
+      different variables in the same line keep taking ownership of the line
+      from each other, although they share no data. Every write becomes a
+      coherence miss and the program slows down. Fix it by putting data written
+      by different threads on different lines, with alignment or padding, or by
+      having each thread accumulate locally and merge once at the end. Measure
+      before and after; the line size and the effect depend on the machine.
+  - prompt: Why is publishing data with an ordinary flag unsafe, and how do release and acquire fix it?
+    answer: >-
+      The compiler and the processor may reorder accesses to different
+      locations, so a reader can see the flag set and still read the old data.
+      In C or C++ an unsynchronized flag is also a data race. Storing the flag
+      with release ordering keeps every earlier access before it; loading it
+      with acquire ordering keeps every later access after it. A reader whose
+      acquire load sees the release store is then guaranteed to see the data.
+    followUps:
+      - Does a release store followed by an acquire load in the same thread act as a full fence?
+  - prompt: If the CPU caches are coherent, why can two increments still lose an update?
+    answer: >-
+      An ordinary increment is three steps: load, add and store. Coherence
+      makes each step see a consistent copy of the line, but both threads can
+      load 7 before either stores, and then both store 8. An atomic
+      read-modify-write, such as a fetch-and-add, holds the line for the whole
+      update, so no other write can come between its load and its store. A lock
+      also works. Flushing caches would not help.
+sources:
+  - label: 'Dive into Systems, section 11.6 — The MSI protocol'
+    url: https://diveintosystems.org/book/C11-MemHierarchy/coherency.html#_the_msi_protocol
+  - label: 'Dive into Systems, section 14.5 — False sharing'
+    url: https://diveintosystems.org/book/C14-SharedMemory/cache_coherence.html#_false_sharing
+  - label: 'Drepper, What Every Programmer Should Know About Memory — sections 3.3.4 (MESI, RFO) and 6.4 (false sharing, atomicity)'
+    url: https://www.akkadia.org/drepper/cpumemory.pdf
+  - label: 'Linux kernel memory barriers — ACQUIRE and RELEASE operations'
+    url: https://docs.kernel.org/core-api/wrappers/memory-barriers.html
+  - label: 'GCC 15.2 manual — __atomic builtins and memory orders'
+    url: https://gcc.gnu.org/onlinedocs/gcc-15.2.0/gcc/_005f_005fatomic-Builtins.html
+  - label: 'MDN — Atomics'
+    url: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Atomics
+---
+
+import FalseSharing from '../../../components/diagrams/FalseSharing.astro';
+import LitmusOutcomes from '../../../components/diagrams/LitmusOutcomes.astro';
+import LostUpdate from '../../../components/diagrams/LostUpdate.astro';
+import MesiTransitions from '../../../components/diagrams/MesiTransitions.astro';
+import MesiStepper from '../../../components/interactive/MesiStepper';
+
+import atomics from '../../../../labs/computer-architecture-execution/multicore/atomics.c?raw';
+import atomicsMain from '../../../../labs/computer-architecture-execution/multicore/atomics_main.c?raw';
+import publish from '../../../../labs/computer-architecture-execution/multicore/publish-O2.txt?raw';
+import consume from '../../../../labs/computer-architecture-execution/multicore/consume-O2.txt?raw';
+import publishArm from '../../../../labs/computer-architecture-execution/multicore/publish-arm64-O2.txt?raw';
+import consumeArm from '../../../../labs/computer-architecture-execution/multicore/consume-arm64-O2.txt?raw';
+import publishSeqCst from '../../../../labs/computer-architecture-execution/multicore/publish_seq_cst-O2.txt?raw';
+import countHit from '../../../../labs/computer-architecture-execution/multicore/count_hit-O2.txt?raw';
+import sharingSource from '../../../../labs/computer-architecture-execution/multicore/false_sharing.c?raw';
+import model from '../../../../labs/computer-architecture-execution/multicore/models.ts?raw';
+
+## Several cores, one memory
+
+Each core has at least its own L1 cache, so two cores can hold copies of the
+same cache line. Three separate questions follow, and mixing them up causes most
+multicore bugs:
+
+- **Coherence:** do the copies of one location agree?
+- **Ordering:** in what order can other cores see writes to _different_
+  locations?
+- **Atomicity:** can a multi-step update, such as load, add, store, happen
+  without another core's write in the middle?
+
+Hardware answers the first for you. The second and third you request with
+atomic operations, and with the locks and other primitives built on them.
+
+## Coherence: one owner before a write
+
+A coherence protocol tracks every cached line's state. In **MESI**, a line in a
+cache is Modified (the only copy, changed), Exclusive (the only copy, clean),
+Shared (clean, other caches may hold it too) or Invalid. A read that misses
+announces itself, and any other copy drops to Shared. A write needs the only
+valid copy, so a cache holding the line Shared or not at all sends a **request
+for ownership** that invalidates every other copy. A line held Exclusive becomes
+Modified silently, since there is no one to tell.
+
+Think of a document that many people may read but only one may edit, after
+collecting everyone else's copy. The analogy stops at granularity: a cache does this
+for every 64-byte line separately, whatever the line holds.
+
+Before each access below, predict both cores' states afterwards.
+
+<MesiStepper client:visible />
+
+<MesiTransitions />
+
+Accesses 3, 5 and 6 each need a request for ownership; access 7 hits on a line
+its core already holds Modified. Real processors add states and optimizations,
+such as letting a cache supply data directly, but the rule that a write first
+needs exclusive ownership is the part that shapes performance.
+
+## False sharing: the line is the unit
+
+Coherence does not know about variables, only lines. Two threads that write
+different counters in one 64-byte line take the line from each other on every
+write, though they share no data. This is **false sharing**. Padding the
+counters onto separate lines leaves each line with one writer, and after the
+first write each core keeps its line Modified:
+
+<FalseSharing />
+
+The measurement ran `false_sharing.c`: two threads, each adding 1 to its own
+`volatile` counter, with the counters either 8 bytes or 64 bytes apart. The
+`volatile` only stops the compiler from keeping the counter in a register; the
+threads never touch each other's counter, so there is no data race. Sharing a
+line made each increment several times slower on this machine. The threads
+were not pinned to particular cores, and the ratio depends on the processor.
+
+Fix false sharing by keeping data written by different threads on different
+lines: align or pad per-thread data, or have each thread accumulate in a local
+variable and write the shared result once. Padding costs memory, so measure
+before applying it everywhere.
+
+<details>
+<summary>Inspect the false-sharing program</summary>
+
+<CodeExample title="false_sharing.c" code={sharingSource} language="c" />
+
+The native lab compiles it with `-O2 -pthread`, alternates the two layouts over
+seven rounds, and records the results in `false-sharing.json`, which the figure
+reads.
+
+</details>
+
+## Ordering: publishing data with a flag
+
+A common pattern publishes data through a flag: the writer stores the data,
+then sets the flag; the reader waits for the flag, then reads the data. With
+ordinary accesses nothing guarantees that the reader sees the data once it sees
+the flag. The compiler may reorder accesses to different locations, and so may
+the processor, which keeps executing while earlier stores and loads are still
+in flight. In C and C++ a plain flag shared between threads is also a data race,
+which is undefined behavior.
+
+**Release** and **acquire** orderings fix the pattern. The Linux kernel's
+memory-barrier documentation calls them one-way barriers: no access before a
+release store may appear after it, and no access after an acquire load may
+appear before it. When the reader's acquire load sees the writer's release
+store, everything the writer did before the release is visible after the
+acquire.
+
+<LitmusOutcomes />
+
+Without ordering, the model allows all four outcomes, including the dangerous
+one: the flag set but the old data. With release and acquire, that outcome is
+gone. The model only reorders each thread's accesses within the rules above and
+then interleaves the two threads; it is a teaching model, not the C memory
+model, and whether a particular processor ever produces the stale outcome varies
+by architecture.
+
+## What release and acquire compile to
+
+`atomics.c` writes the pattern with GCC's `__atomic` builtins; C11's
+`<stdatomic.h>` spells the same store `atomic_store_explicit(&ready, 1,
+memory_order_release)`. GCC 15.2 at `-O2` compiled it for x86-64 and AArch64:
+
+<CodeExample title="publish, x86-64 -O2" code={publish} language="text" />
+<CodeExample title="consume, x86-64 -O2" code={consume} language="text" />
+<CodeExample title="publish, AArch64 -O2" code={publishArm} language="text" />
+<CodeExample title="consume, AArch64 -O2" code={consumeArm} language="text" />
+
+On x86-64 the release store and the acquire load are ordinary `movl`
+instructions: there the ordering costs no extra instruction, but it still stops
+the compiler from moving the data store after the flag store or the data load
+before the flag load. On AArch64 they become `stlr`, a store-release, and
+`ldar`, a load-acquire, while the data accesses stay plain `str` and `ldr`.
+
+The strongest ordering, sequentially consistent, costs more. GCC's manual
+defines it as a total order with all other sequentially consistent operations,
+and on x86-64 the same store becomes an exchange:
+
+<CodeExample
+  title="publish_seq_cst, x86-64 -O2"
+  code={publishSeqCst}
+  language="text"
+/>
+
+Use release and acquire for publication, and sequential consistency when you
+need every thread to agree on one order of several flags; the second lab below
+shows a case that needs it.
+
+## Atomicity: one indivisible update
+
+Two threads incrementing one counter shows that coherence and atomicity are
+different. An ordinary `counter++` is a load, an add and a store, and the other
+thread can run between them:
+
+<LostUpdate />
+
+Coherence was working the whole time: every load read the current value of the
+line. What went wrong is that B's load came between A's load and A's store. An
+**atomic read-modify-write** removes that gap. On x86-64 a relaxed
+`__atomic_fetch_add` compiles to one instruction with a `lock` prefix, which
+makes the load, the add and the store one indivisible operation:
+
+<CodeExample title="count_hit, x86-64 -O2" code={countHit} language="text" />
+
+A racing plain `counter++` in C is undefined behavior, so the figure is a model
+of the steps, not a prediction of what a compiler would emit. The native lab
+does run the atomic version for real: two threads each call `count_hit` a
+million times, and the total is exactly 2,000,000 at `-O0` and `-O2`. In
+JavaScript, `Atomics` provides atomic operations, including add, on shared
+typed arrays.
+
+Relaxed ordering is enough for a counter that is only read after the threads
+finish. If the counter also publishes other data, use release and acquire as
+above.
+
+<details>
+<summary>Inspect the tested model, the C sources and expected output</summary>
+
+<CodeExample title="atomics.c" code={atomics} language="c" />
+<CodeExample title="atomics_main.c" code={atomicsMain} language="c" />
+<CodeExample
+  title="MESI, message passing and lost updates"
+  code={model}
+  verified
+  output={
+    'MESI: EI → SS → MI → SS\n8 alternating writes: 8 ownership requests on one line, 2 padded\nrelaxed: r1=0, r2=0 | r1=0, r2=42 | r1=1, r2=0 | r1=1, r2=42\nrelease/acquire: r1=0, r2=0 | r1=0, r2=42 | r1=1, r2=42\ncounter: plain 8 or 9, atomic 9'
+  }
+/>
+
+</details>
+
+The tests check the MESI transitions, including the silent Exclusive-to-Modified
+write, the ownership-request counts, every message-passing and store-buffering
+outcome with and without release/acquire, all 20 interleavings of two
+increments, and that the recorded listings contain the instructions named
+above. The native lab runs `atomics_main.c`'s checks with real threads and fails
+if a listing drifts.
+
+## Costs beyond one line
+
+- **Hardware threads** on one core share its execution units and caches, so two
+  busy threads on one core do not run twice as fast; Drepper's paper discusses
+  when they help.
+- **NUMA** machines attach memory to each processor socket, and reaching another
+  socket's memory takes longer.
+- Locks, condition variables and deadlock are built on these atomic operations;
+  the operating-systems subject covers them.
+
+Neither cost was measured here.
+
+## Practice
+
+<LabCard
+  title="01 / Run MESI by hand"
+  command="pnpm lab computer-architecture-execution/multicore"
+>
+  Implement `solve(accesses)` in `starter.ts`: given accesses such as `'Ar Bw'`,
+  return both cores' MESI states after each one. Before running the tests, trace
+  `'Aw Br Ar Ar'` and say which accesses send a message.
+</LabCard>
+
+<details>
+<summary>Check after attempting</summary>
+
+A's write from Invalid sends a request for ownership: `MI`. B's read misses and
+announces it; A supplies the modified data and drops to Shared: `SS`. A's two
+reads then hit in Shared without any message: `SS`, `SS`.
+
+</details>
+
+<LabCard
+  title="02 / Store buffering"
+  command="pnpm exec vitest run labs/computer-architecture-execution/multicore/"
+>
+  Each thread stores 1 to its own location and then loads the other's: thread 0
+  stores x and loads y into r1, thread 1 stores y and loads x into r2. Add a
+  test calling `storeBuffering(false)` and `storeBuffering(true)`. First predict
+  whether release stores and acquire loads rule out r1 = 0, r2 = 0.
+</LabCard>
+
+<details>
+<summary>Check after testing</summary>
+
+They do not: all four outcomes remain allowed in both cases. A release store
+keeps earlier accesses before it, and an acquire load keeps later accesses after
+it, but neither stops a load that follows a store from moving ahead of it. Each
+thread can load before its own store is visible, and both read 0. The kernel
+documentation says the same: a release followed by an acquire is not a full
+barrier. Forbidding the outcome needs sequentially consistent operations on all
+four accesses, or a full fence between each thread's store and load, and that
+costs more, as the `xchgl` above shows.
+
+</details>
+
+## Check your reasoning
+
+<ConceptCheck
+  id="multicore-publication"
+  question="A writer stores the data and then sets a flag with a release store. The reader loads the flag with an ordinary relaxed load and, seeing 1, reads the data. Is the reader guaranteed to see the data?"
+  options={[
+    {
+      label: 'No. The release pairs only with an acquire load of the flag.',
+      correct: true,
+      explanation:
+        'Release keeps the data store before the flag store, but a relaxed load lets the reader’s data load move before its flag load. Both sides must order their accesses.',
+    },
+    {
+      label: 'Yes. Coherence makes the flag and the data visible together.',
+      explanation:
+        'Coherence is per location. It does not order the data and the flag, which are different locations.',
+    },
+    {
+      label: 'Yes, because a release store flushes the writer’s cache.',
+      explanation:
+        'Release constrains ordering; it flushes nothing. Caches stay coherent without flushes, and the reader still needs acquire.',
+    },
+  ]}
+/>
+
+## Two-minute recap
+
+- Coherence, ordering and atomicity are three different guarantees; hardware
+  provides only coherence by default.
+- MESI gives one cache ownership before a write and invalidates the other
+  copies; writing a line another core holds costs a request for ownership.
+- Coherence works per line, so threads writing neighboring variables slow each
+  other down: false sharing. Separate their data onto different lines.
+- Publish data with a release store and read it with an acquire load; release
+  and acquire are not a full fence.
+- Coherent caches still lose plain increments; use an atomic read-modify-write
+  or a lock.

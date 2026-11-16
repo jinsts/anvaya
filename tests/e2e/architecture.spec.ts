@@ -16,6 +16,7 @@ const slugs = [
   'pipelining-and-hazards',
   'branch-prediction-and-speculation',
   'simd-and-data-parallelism',
+  'multicore-coherence-and-atomics',
   'hardware-software-interaction',
   'io-mechanisms',
   'architecture-and-performance',
@@ -353,4 +354,30 @@ test('the vector loop stepper splits a loop by keyboard', async ({ page }) => {
   await expect(status).toContainText('adds elements 0–3');
   for (let i = 0; i < 3; i++) await page.keyboard.press('Enter');
   await expect(status).toContainText('Your prediction was correct.');
+});
+
+test('the MESI stepper checks predictions by keyboard', async ({ page }) => {
+  await page.goto(`/learn/${subject}/multicore-coherence-and-atomics/`);
+  const stepper = page.getByRole('region', {
+    name: 'Interactive MESI stepper',
+  });
+  await stepper.scrollIntoViewIfNeeded();
+  await expect(
+    page.locator('astro-island[component-export="default"]'),
+  ).not.toHaveAttribute('ssr', '');
+  const status = stepper.getByRole('status');
+  await stepper.getByLabel('Predict: Core A').selectOption('E');
+  await stepper.getByLabel('Predict: Core B').selectOption('I');
+  const run = stepper.getByRole('button', { name: 'Run this access' });
+  await run.focus();
+  await page.keyboard.press('Enter');
+  await expect(status).toContainText('Your prediction was correct.');
+  await expect(status).toContainText('States: A E, B I.');
+  await page.keyboard.press('Enter');
+  await expect(status).toContainText('drops to Shared');
+  await page.keyboard.press('Enter');
+  await expect(status).toContainText('request for ownership');
+  for (let i = 0; i < 4; i++) await page.keyboard.press('Enter');
+  await expect(status).toContainText('Ownership requests: 3 of 7 accesses.');
+  await expect(status).toContainText('Predictions: 1 of 1.');
 });

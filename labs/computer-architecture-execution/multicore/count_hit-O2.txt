@@ -1,0 +1,9 @@
+count_hit:
+.LFB3:
+	.cfi_startproc
+	endbr64
+	lock addl	$1, hits(%rip)
+	ret
+	.cfi_endproc
+.LFE3:
+	.size	count_hit, .-count_hit

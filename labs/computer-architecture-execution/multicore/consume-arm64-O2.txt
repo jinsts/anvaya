@@ -1,0 +1,15 @@
+consume:
+.LFB1:
+	.cfi_startproc
+	adrp	x2, .LANCHOR0
+	add	x1, x2, :lo12:.LANCHOR0
+	add	x1, x1, 4
+	.p2align 5,,15
+.L4:
+	ldar	w0, [x1]
+	cbz	w0, .L4
+	ldr	w0, [x2, #:lo12:.LANCHOR0]
+	ret
+	.cfi_endproc
+.LFE1:
+	.size	consume, .-consume

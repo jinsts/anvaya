@@ -78,8 +78,7 @@ sections:
       - computer-architecture-execution/pipelining-and-hazards
       - computer-architecture-execution/branch-prediction-and-speculation
       - computer-architecture-execution/simd-and-data-parallelism
-    planned:
-      - Multicore coherence, memory ordering, and atomics
+      - computer-architecture-execution/multicore-coherence-and-atomics
   - id: architecture-devices
     title: Devices and the hardware–software boundary
     subject: computer-architecture-execution

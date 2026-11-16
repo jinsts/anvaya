@@ -203,6 +203,21 @@ export const ARTIFACTS = [
     symbol: 'sum_large',
     file: `branch-prediction/kernel-${variant.label}.txt`,
   })),
+  ...['publish', 'consume', 'publish_seq_cst', 'count_hit'].map((symbol) => ({
+    kind: 'asm',
+    source: 'multicore/atomics.c',
+    flags: ['-O2'],
+    symbol,
+    file: `multicore/${symbol}-O2.txt`,
+  })),
+  ...['publish', 'consume'].map((symbol) => ({
+    kind: 'asm',
+    compiler: 'arm64',
+    source: 'multicore/atomics.c',
+    flags: ['-O2'],
+    symbol,
+    file: `multicore/${symbol}-arm64-O2.txt`,
+  })),
   {
     kind: 'object-disassembly',
     source: 'reading-assembly/scale.c',
@@ -236,9 +251,37 @@ const CHECKED = [
     sources: ['main.c', 'sum.c', 'scale.c'].map((f) => `reading-assembly/${f}`),
     levels: ['-O0', '-O2'],
   },
+  {
+    sources: ['multicore/atomics_main.c', 'multicore/atomics.c'],
+    levels: ['-O0', '-O2'],
+    flags: ['-pthread'],
+  },
 ];
 
 export const MEASUREMENTS = [
+  {
+    source: 'multicore/false_sharing.c',
+    flags: ['-std=c17', '-O2', '-pthread'],
+    file: 'multicore/false-sharing.json',
+    args: { quick: ['quick'], full: [] },
+    parse(csv) {
+      const records = csv
+        .trim()
+        .split('\n')
+        .map((line) => {
+          const [layout, rep, ns, check] = line.split(',');
+          return {
+            layout,
+            rep: Number(rep),
+            nsPerIncrement: Number(ns),
+            iterations: Number(check),
+          };
+        });
+      if (records.some((r) => !(r.nsPerIncrement > 0)))
+        throw new Error('Invalid false-sharing measurement');
+      return { threads: 2, records };
+    },
+  },
   {
     // The harness is built at -O2; only the kernel's flags vary.
     variants: BRANCH_VARIANTS,
@@ -329,12 +372,13 @@ try {
   const build = (source, flags, output, extra = []) =>
     run(compiler, [...flags, ...extra, join(subject, source), '-o', output]);
 
-  for (const { sources, levels } of CHECKED)
+  for (const { sources, levels, flags = [] } of CHECKED)
     for (const level of levels) {
       const executable = join(temporary, `checked${report.checked.length}`);
       run(compiler, [
         level,
         '-fno-inline',
+        ...flags,
         ...sources.map((s) => join(subject, s)),
         '-o',
         executable,

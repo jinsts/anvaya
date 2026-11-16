@@ -1,0 +1,13 @@
+publish:
+.LFB0:
+	.cfi_startproc
+	adrp	x2, .LANCHOR0
+	add	x1, x2, :lo12:.LANCHOR0
+	str	w0, [x2, #:lo12:.LANCHOR0]
+	mov	w0, 1
+	add	x1, x1, 4
+	stlr	w0, [x1]
+	ret
+	.cfi_endproc
+.LFE0:
+	.size	publish, .-publish

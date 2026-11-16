@@ -1,7 +1,7 @@
 ---
 title: 'Hardware and software: Cross the boundary deliberately'
 shortTitle: Hardware and software
-summary: Trace how privilege, address translation, drivers, and synchronization let ordinary programs use shared hardware safely.
+summary: Trace how privilege, saved resume points, address translation and drivers let ordinary programs use shared hardware safely.
 subject: computer-architecture-execution
 path: engineering-fundamentals
 difficulty: intermediate
@@ -10,12 +10,11 @@ learningObjectives:
   - Distinguish a procedure call, a system call, a synchronous exception, and an interrupt
   - Trace entry into the kernel and the saved state required to resume a program
   - Explain why an application pointer is not automatically a device address
-  - Separate cache coherence from atomicity and ordering across memory locations
 prerequisites:
   - computer-architecture-execution/cpu-registers-and-instructions
   - computer-architecture-execution/memory-hierarchy-and-caches
   - computer-architecture-execution/stack-and-heap
-tags: [memory, execution, hardware, synchronization]
+tags: [memory, execution, hardware]
 skills: [debugging, technical-communication, trade-off-analysis]
 status: draft
 drafter: agent
@@ -45,14 +44,6 @@ interviewQuestions:
       must remain valid for the transfer's lifetime. The operating system and
       driver establish suitable mappings and permissions, sometimes through an
       IOMMU. Cache synchronization and ownership rules may also be required.
-  - prompt: If the CPU caches are coherent, why can two increments still lose an update?
-    answer: >-
-      Coherence coordinates copies and writes for a memory location, but an
-      ordinary increment can consist of a load, arithmetic, and a store. Two
-      threads can both load the old value before either stores its result.
-      An atomic read-modify-write operation or a lock protects the combined
-      update. Ordering a protocol across several locations also requires the
-      guarantees of the language's synchronization model.
 sources:
   - label: 'OSTEP, chapter 6 — Limited direct execution and protected kernel entry'
     url: https://pages.cs.wisc.edu/~remzi/OSTEP/cpu-mechanisms.pdf
@@ -60,14 +51,8 @@ sources:
     url: https://pages.cs.wisc.edu/~remzi/OSTEP/vm-mechanism.pdf
   - label: 'OSTEP, chapter 36 — Device interfaces, drivers, and memory-mapped I/O'
     url: https://pages.cs.wisc.edu/~remzi/OSTEP/file-devices.pdf
-  - label: 'Dive into Systems, section 11.6 — Multicore cache coherence'
-    url: https://diveintosystems.org/book/C11-MemHierarchy/coherency.html
   - label: 'Linux kernel DMA guide — CPU addresses, device addresses, and IOMMU mappings'
     url: https://docs.kernel.org/core-api/dma-api-howto.html
-  - label: 'Linux kernel memory barriers — Ordering, coherence, and device access'
-    url: https://docs.kernel.org/core-api/wrappers/memory-barriers.html
-  - label: 'MDN — Atomics and JavaScript shared-memory operations'
-    url: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Atomics
 ---
 
 import ArchitectureFlow from '../../../components/diagrams/ArchitectureFlow.astro';
@@ -197,59 +182,10 @@ The next lesson follows [I/O submission and completion](/learn/computer-architec
 The boundary matters even when an API hides every register: a call that returned
 success may only have copied data into an operating-system buffer.
 
-## Coherent does not mean synchronized
-
-**Cache coherence** coordinates cached copies of the same memory location.
-Protocols such as MESI describe states including modified, exclusive, shared,
-and invalid. Coherence does not turn a sequence of instructions into one atomic
-operation, nor does it by itself establish the ordering of a protocol spanning
-several locations.
-
-For example, imagine two threads both load counter value 7, each computes 8, and
-each stores 8. A coherent memory system can carry out that sequence faithfully:
-one increment is still lost. This is a reasoning trace, not runnable concurrent
-code. The language's concurrency rules determine whether ordinary concurrent
-accesses are allowed; the trace is not a promise that arbitrary racy source
-code will compile to these steps.
-
-**Memory consistency** specifies which observations of reads and writes are
-allowed. Store buffers and other optimizations can make cross-location ordering
-less intuitive than source order suggests. Use the language's locks and atomic
-operations to express synchronization; their implementation supplies the
-necessary compiler and hardware constraints.
-
-For JavaScript shared-memory programming, use the specified `Atomics` operations
-on supported shared typed-array views when atomic operations are required.
-This lesson's lab uses no shared memory and tests no concurrency protocol.
-
-## Trace visibility separately from atomicity
-
-Imagine core A holding a cache line containing x in a modified state. Core B
-requests that line: coherence must obtain the current data and appropriate
-permissions rather than read a stale backing-RAM copy. In a MESI-style model,
-shared read copies differ from exclusive write ownership. The exact transition
-protocol is processor-specific.
-
-Now A writes payload at one location and a ready flag at another. A store buffer
-can defer visibility while A continues executing. Coherence of each location
-alone does not establish the cross-location publication order. A correct protocol
-uses the language's release/acquire operations or locks. Acquiring the published
-flag must pair with publication of the payload; ordinary loads/stores are not a
-substitute. This is a conceptual protocol, not tested concurrent C code.
-
-**Diagnosis:** a trace says both cores read counter 7 and later store 8. Is the
-first error necessarily stale caching? Decide which property is missing before
-proposing a cache flush.
-
-<details>
-<summary>Check after diagnosing</summary>
-
-No. Even a coherent order can lose an update when the load, add and store are
-not one atomic read-modify-write. The missing property is atomicity of the whole
-update, which an atomic operation or a lock provides; flushing caches would not
-supply it.
-
-</details>
+Several cores sharing one memory raise separate questions of coherence,
+ordering and atomicity; the
+[multicore lesson](/learn/computer-architecture-execution/multicore-coherence-and-atomics/)
+covers them.
 
 ## Practise the boundary
 
@@ -295,26 +231,25 @@ completion and synchronization contract.
 ## Check your reasoning
 
 <ConceptCheck
-  id="coherence-and-atomicity"
-  question="Two threads each perform a non-atomic load, increment, and store on one counter. What does cache coherence guarantee?"
+  id="hardware-resume-point"
+  question="In this lesson's model, a restartable page fault occurs at instruction index 12. After the handler maps the page, where does the program resume, and why?"
   options={[
     {
-      label: 'Both increments form one indivisible transaction.',
-      explanation:
-        'Coherence does not combine a load, arithmetic, and a store into an atomic read-modify-write operation.',
-    },
-    {
       label:
-        'Cached copies participate in a coherent per-location view, but the update sequence can still lose an increment.',
+        'At 12, so the faulting access runs again now that it can succeed.',
       correct: true,
       explanation:
-        'Atomicity of the whole update requires an appropriate atomic operation or lock; language data-race rules still apply.',
+        'The fault stopped the instruction before it completed, so the saved resume point is the instruction itself. A system call at 12 would resume at 13, because the request was the instruction’s whole purpose.',
     },
     {
-      label:
-        'All accesses to every memory location occur in source order on every core.',
+      label: 'At 13, because the handler already performed the access.',
       explanation:
-        'Ordering across locations is a memory-consistency and synchronization question, not the same guarantee as coherence.',
+        'The handler made the access possible; it did not execute the program’s instruction. Skipping to 13 would lose the access.',
+    },
+    {
+      label: 'At the handler’s own index, because the kernel ran last.',
+      explanation:
+        'The handler’s index controls execution inside the kernel. Return restores the saved user context instead.',
     },
   ]}
 />
@@ -325,5 +260,4 @@ completion and synchronization contract.
 - Syscalls, synchronous exceptions, and interrupts differ in cause and resumption rules.
 - A kernel entry need not change which process is running.
 - Virtual pointers, device addresses, and MMIO registers have distinct contracts.
-- Coherence does not make a multi-instruction update atomic or establish every ordering.
-- Drivers and synchronization primitives make hardware requirements explicit for software.
+- Drivers make device requirements explicit for software.

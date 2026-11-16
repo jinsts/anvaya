@@ -807,3 +807,40 @@ Same command as the previous entry: zero type errors, warnings or hints;
 formatting and lint passed; 341 tests in 57 files; 37 pages; 94 browser tests.
 Screenshots at 1280 px and 390 px in both themes were inspected; review moved a
 line break in the lane labels to before the plus sign.
+
+## Multicore coherence and atomics lesson — 2026-11-16
+
+Draft of the planned page "Multicore coherence, memory ordering, and atomics".
+It takes the coherence, ordering and lost-update material out of
+`hardware-software-interaction`, which keeps a link and a new concept check on
+resume points. Locks, condition variables and deadlock stay with the
+operating-systems subject.
+
+Tested models cover MESI for one line and two cores (Drepper section 3.3.4
+transitions, including the silent Exclusive-to-Modified write), ownership
+requests for alternating writers on one line or padded, release/acquire as
+one-way barriers (kernel memory-barriers documentation) applied to the
+message-passing and store-buffering tests, and all 20 interleavings of two
+increments. The attempt contracts and both litmus tests were cross-checked
+with an independent Python implementation.
+
+The native lab gained `atomics.c` (GCC `__atomic` builtins; the AArch64 cross
+compiler has no `<stdatomic.h>` in this setup) with `atomics_main.c`, which runs
+2,000 publish/consume rounds and two threads of a million atomic increments
+each at `-O0` and `-O2` with `-pthread` (checked programs can now take extra
+flags), and six drift-checked listings. They show release and acquire as plain
+`movl` on x86-64 and `stlr`/`ldar` on AArch64, a sequentially consistent store
+as `xchgl`, and the relaxed fetch-and-add as `lock addl`. AArch64 `count_hit`
+calls an outline-atomics helper and is not shown. `false_sharing.c` was
+recorded (seven alternating rounds, 10⁸ increments per thread, threads not
+pinned): median 1.25 ns per increment with the counters 8 bytes apart and 0.23
+ns 64 bytes apart; tests assert only a ratio above three.
+
+Same command as the previous entry: zero type errors, warnings or hints;
+formatting and lint passed; 356 tests in 59 files; 38 pages; 98 browser tests.
+The first run failed because the lesson had two concept checks and the test
+expects one; the moved coherence check was dropped. Screenshots of the stepper
+(initial and after four accesses) and the three figures at 1280 px and 390 px
+in both themes were inspected; review added per-step values to the lost-update
+trace, kept litmus outcomes on one line, and rewrote the stepper's effect
+sentences.
