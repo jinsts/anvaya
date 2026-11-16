@@ -1,0 +1,168 @@
+---
+import DiagramFrame from '../learning/DiagramFrame.astro';
+import {
+  ROB_PROGRAM,
+  reorderBuffer,
+} from '../../../labs/computer-architecture-execution/branch-prediction/predictor';
+// Cycle timelines from the tested reorder-buffer model: execution may run
+// ahead, but results retire (commit) one at a time in program order.
+const modes = (['in-order', 'out-of-order'] as const).map((mode) => ({
+  mode,
+  ...reorderBuffer(ROB_PROGRAM, mode),
+}));
+const cycles = Math.max(...modes.map((m) => m.cycles));
+const cell = (
+  row: { dispatch: number; start: number; complete: number; commit: number },
+  c: number,
+) =>
+  c === row.commit
+    ? 'commit'
+    : c >= row.start && c <= row.complete
+      ? 'execute'
+      : c > row.complete && c < row.commit
+        ? 'done'
+        : c >= row.dispatch && c < row.start
+          ? 'waiting'
+          : '';
+const text: Record<string, string> = {
+  execute: 'run',
+  done: 'done',
+  waiting: '·',
+  commit: 'C',
+};
+---
+
+<DiagramFrame
+  caption={`A load that misses in the cache, a dependent add and three independent instructions, cycle by cycle. In order, everything queues behind the load. Out of order, the multiply, subtract and and run while the load waits, then wait as "done" in the reorder buffer until every older instruction has committed: ${modes[0]!.cycles} versus ${modes[1]!.cycles} cycles in this model.`}
+>
+  <div class="rob">
+    {modes.map((m) => (
+      <div class="mode">
+        <p class="title">
+          <strong>
+            {m.mode === 'in-order'
+              ? 'In-order issue'
+              : 'Out-of-order issue, in-order commit'}
+          </strong>
+          <span>last commit in cycle {m.cycles}</span>
+        </p>
+        <div
+          class="table-scroll"
+          tabindex="0"
+          role="region"
+          aria-label={`${m.mode} timeline`}
+        >
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Instruction</th>
+                {Array.from({ length: cycles }, (_, c) => (
+                  <th scope="col">{c + 1}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {m.rows.map((row) => (
+                <tr>
+                  <th scope="row">
+                    <code>{row.text}</code>
+                  </th>
+                  {Array.from({ length: cycles }, (_, c) => {
+                    const kind = cell(row, c + 1);
+                    return (
+                      <td class:list={['cell', kind]}>{text[kind] ?? ''}</td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    ))}
+    <p class="key">
+      run: executing · done: finished, waiting to commit · C: commit, the result
+      becomes architectural · ·: dispatched, waiting for operands or its turn
+    </p>
+  </div>
+</DiagramFrame>
+<style>
+  .rob {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-4);
+  }
+  .mode {
+    min-width: 0;
+  }
+  .title {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: var(--space-2);
+    margin: 0 0 var(--space-2);
+    font-size: var(--text-sm);
+  }
+  .title span,
+  .key {
+    color: var(--muted);
+    font-size: var(--text-xs);
+  }
+  .key {
+    margin: 0;
+  }
+  .rob .table-scroll {
+    margin: 0;
+  }
+  table {
+    border-collapse: separate;
+    border-spacing: 2px;
+    font-size: var(--text-xs);
+  }
+  th,
+  td {
+    padding: var(--space-1);
+    border: 0;
+    text-align: center;
+    white-space: nowrap;
+  }
+  thead th {
+    background: none;
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-weight: 400;
+  }
+  tbody th {
+    position: sticky;
+    left: 0;
+    background: var(--surface);
+    text-align: left;
+  }
+  tbody th code {
+    padding: 0;
+    border: 0;
+    background: none;
+    font-size: var(--text-xs);
+  }
+  .cell {
+    min-width: 2rem;
+    border-radius: 4px;
+    font-family: var(--font-mono);
+  }
+  .execute {
+    background: var(--tone-amber-soft);
+    font-weight: 700;
+  }
+  .done {
+    background: var(--tone-teal-soft);
+    color: var(--muted);
+  }
+  .waiting {
+    color: var(--muted);
+  }
+  .commit {
+    background: var(--tone-green-soft);
+    box-shadow: inset 0 0 0 2px var(--success);
+    font-weight: 700;
+  }
+</style>

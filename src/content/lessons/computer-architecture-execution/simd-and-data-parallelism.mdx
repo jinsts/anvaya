@@ -1,0 +1,284 @@
+---
+title: 'SIMD: Do the same operation on many values at once'
+shortTitle: SIMD and data-level parallelism
+summary: Split a loop into vector iterations and a remainder, read the vector instructions GCC generated, and explain why a floating-point sum vectorizes only when its additions may be reordered.
+subject: computer-architecture-execution
+path: engineering-fundamentals
+difficulty: intermediate
+estimatedMinutes: 30
+learningObjectives:
+  - Compute how a vectorized loop divides n elements into vector iterations and a scalar remainder
+  - Identify vector instructions, the vector stride and the remainder loop in a compiler listing
+  - Explain what stops a compiler from vectorizing a loop, including aliasing and floating-point reassociation
+prerequisites:
+  - computer-architecture-execution/reading-assembly
+  - computer-architecture-execution/floating-point-representation
+tags: [instructions, performance, binary]
+skills: [complexity-analysis, ai-assisted-verification, debugging]
+status: draft
+drafter: agent
+interviewQuestions:
+  - prompt: What is SIMD, and what kind of loop benefits from it?
+    answer: >-
+      Single instruction, multiple data: one instruction applies the same
+      operation to several values packed in a wide register, such as four 32-bit
+      integers in a 16-byte register. It suits loops that do the same work on
+      every element of contiguous arrays, with no dependence between
+      iterations, such as adding two arrays. It does not help when the
+      iterations depend on each other, when the data is scattered, or when the
+      loop is already limited by memory bandwidth.
+  - prompt: Why might a compiler refuse to vectorize a loop?
+    answer: >-
+      It must prove that doing several iterations at once gives the same
+      result. Possible overlap between input and output arrays, a dependence
+      from one iteration to the next, calls or control flow it cannot
+      transform, and floating-point reductions, whose result depends on the
+      order of additions, all block it. Compilers can report their decisions,
+      for example GCC's `-fopt-info-vec`, so check the report rather than
+      assume.
+    followUps:
+      - What does `restrict` promise the compiler in C?
+  - prompt: Why can a vectorized floating-point sum give a different answer from a scalar loop?
+    answer: >-
+      A vectorized sum keeps several partial sums, one per lane, and combines
+      them at the end. That reorders the additions, and floating-point addition
+      rounds after every step, so the order changes the result. GCC therefore
+      vectorizes such a sum only under options such as `-fassociative-math`
+      that allow reordering. Integer addition, which does not round, can be
+      reordered freely.
+  - prompt: What is the remainder loop in vectorized code for?
+    answer: >-
+      A vector loop processes a fixed number of elements per iteration, so when
+      the array length is not a multiple of that width, a few elements are left
+      over. A scalar remainder loop, or a narrower vector loop, handles them.
+      For short arrays the remainder can be most of the work, so vectorization
+      helps most on long arrays.
+sources:
+  - label: 'Dive into Systems, chapter 15 — Flynn’s taxonomy and SIMD'
+    url: https://diveintosystems.org/book/C15-Parallel/index.html
+  - label: 'GCC 15.2 manual — -ftree-loop-vectorize and what -O2 enables'
+    url: https://gcc.gnu.org/onlinedocs/gcc-15.2.0/gcc/Optimize-Options.html#index-ftree-loop-vectorize
+  - label: 'GCC 15.2 manual — -fassociative-math'
+    url: https://gcc.gnu.org/onlinedocs/gcc-15.2.0/gcc/Optimize-Options.html#index-fassociative-math
+  - label: 'GCC 15.2 manual — -fopt-info optimization reports'
+    url: https://gcc.gnu.org/onlinedocs/gcc-15.2.0/gcc/Developer-Options.html#index-fopt-info
+---
+
+import LaneSum from '../../../components/diagrams/LaneSum.astro';
+import LanesDiagram from '../../../components/diagrams/LanesDiagram.astro';
+import SimdLoopStepper from '../../../components/interactive/SimdLoopStepper';
+
+import source from '../../../../labs/computer-architecture-execution/simd/simd.c?raw';
+import addO2 from '../../../../labs/computer-architecture-execution/simd/add-O2.txt?raw';
+import addScalar from '../../../../labs/computer-architecture-execution/simd/add-scalar.txt?raw';
+import sumO3 from '../../../../labs/computer-architecture-execution/simd/sum-O3.txt?raw';
+import sumReassociate from '../../../../labs/computer-architecture-execution/simd/sum-O3-reassociate.txt?raw';
+import reportO2 from '../../../../labs/computer-architecture-execution/simd/report-O2.txt?raw';
+import reportO3 from '../../../../labs/computer-architecture-execution/simd/report-O3.txt?raw';
+import model from '../../../../labs/computer-architecture-execution/simd/lanes.ts?raw';
+
+## Same work, wider registers
+
+Adding two arrays of a million integers is a million identical additions with no
+dependence between them. A scalar loop does them one per iteration. Processors
+also have **vector registers**, 16 bytes or wider, and instructions that apply
+one operation to every value packed in them: **SIMD**, single instruction,
+multiple data. One instruction can add four pairs of 32-bit integers.
+
+Think of a cashier who rings up four identical items with one scan and a
+quantity, instead of scanning each. The analogy stops at irregular work: SIMD
+helps only when every lane does exactly the same operation on neighboring data.
+
+## A vector loop and its remainder
+
+<LanesDiagram />
+
+A compiler that **vectorizes** a loop processes one vector's worth of elements
+per iteration and finishes whatever is left over in a scalar **remainder loop**.
+For n elements and w lanes there are ⌊n ÷ w⌋ vector iterations and n mod w
+remainder elements. Before running the stepper, predict both for a length and
+width you choose.
+
+<SimdLoopStepper client:visible />
+
+## Read the compiler's vector code
+
+GCC 15.2 vectorized this `add_arrays` at `-O2`, and its report says so:
+
+<CodeExample
+  title="gcc -O2 -fopt-info-vec-optimized"
+  code={reportO2}
+  language="text"
+/>
+
+<CodeExample title="add_arrays, x86-64 -O2" code={addO2} language="text" />
+
+The loop at `.L4` loads 16 bytes of `a` and of `b` with `movdqu`, adds four pairs
+at once with `paddd`, stores 16 bytes with `movups`, and advances its offset by 16. After it, `testb $3` checks whether n is a multiple of four, and `.L6` is the
+scalar remainder loop. Short arrays, of three or fewer elements, jump straight
+to the remainder. Compiled with `-fno-tree-vectorize`, the same function has
+only the scalar loop.
+
+The `restrict` qualifiers in the source matter: they promise that `out` does
+not overlap `a` or `b`. Without that promise, writing four elements of `out` at
+once could change inputs that later lanes still need, and the compiler would
+have to check for overlap at run time or not vectorize at all.
+
+<details>
+<summary>Inspect the source and the scalar listing</summary>
+
+<CodeExample title="simd.c" code={source} language="c" />
+<CodeExample
+  title="add_arrays, -O2 -fno-tree-vectorize"
+  code={addScalar}
+  language="text"
+/>
+
+</details>
+
+## Floating-point sums need permission
+
+The second function sums floats. At `-O2` GCC leaves it alone. At `-O3` its
+report claims a vectorized loop, but the listing shows what that means:
+
+<CodeExample
+  title="sum_floats, -O3: four addss in source order"
+  code={sumO3}
+  language="text"
+/>
+
+It loads four values per iteration but still adds them one at a time, with the
+scalar `addss`, in source order. A real vector sum keeps one partial sum per
+lane and combines them at the end, which reorders the additions, and the
+[floating-point lesson](/learn/computer-architecture-execution/floating-point-representation/)
+showed that floating-point addition is not associative:
+
+<LaneSum />
+
+Only with `-fassociative-math`, plus flags that set aside signed zeros and
+traps, does GCC use the packed `addps` and combine the lanes:
+
+<CodeExample
+  title="sum_floats, -O3 -fassociative-math -fno-signed-zeros -fno-trapping-math"
+  code={sumReassociate}
+  language="text"
+/>
+
+Integer addition does not round, so an integer sum can be reordered freely and
+vectorizes without such flags.
+
+<details>
+<summary>Inspect the tested model, the -O3 report and expected output</summary>
+
+<CodeExample
+  title="gcc -O3 -fopt-info-vec-optimized"
+  code={reportO3}
+  language="text"
+/>
+<CodeExample
+  title="Vector plans and lane-wise binary32 sums"
+  code={model}
+  verified
+  output={
+    'n = 10, 4 lanes: 2 vector iterations + 2 scalar\nin order: 16777216; by lanes: 16777222; exact: 16777223'
+  }
+/>
+
+</details>
+
+The tests check vector plans at and below the vector width, lane-wise addition
+against the native program's expected results, both summation orders, and that
+the recorded listings and reports show what the lesson says: `paddd` in the
+vectorized add, no vector registers in the scalar build, only `addss` in the
+`-O3` sum and `addps` once reassociation is allowed. The native lab runs the
+program's checks at `-O2` and `-O3` and fails if a listing or report drifts.
+
+## When vectors do not help
+
+- **Dependences:** if iteration i needs iteration i − 1's result, as in a prefix
+  sum, lanes cannot work independently without restructuring the algorithm.
+- **Scattered data:** gathering elements from unrelated addresses costs much of
+  the gain; contiguous arrays, such as a structure of arrays, vectorize best.
+- **Memory bandwidth:** when a loop is already waiting on memory, as in the
+  [DRAM lesson](/learn/computer-architecture-execution/dram-ssd-and-disks/)'s
+  large working sets, doing arithmetic faster does not speed it up.
+- **Short loops:** the remainder and setup can outweigh the vector part.
+
+## Practice
+
+<LabCard
+  title="01 / Sum in lanes"
+  command="pnpm lab computer-architecture-execution/simd"
+>
+  Implement `solve(values)` in `starter.ts`: compute the binary32 sum in the
+  order GCC's reassociated four-lane loop uses. Before running the tests,
+  compute 2²⁴ followed by eight ones both in lanes and in source order.
+</LabCard>
+
+<details>
+<summary>Check after attempting</summary>
+
+Lane 0 gets 2²⁴ + 1, which rounds back to 2²⁴; lanes 1–3 each reach 2. The pairs
+are 2²⁴ + 2 and 4, so the first eight sum to 2²⁴ + 6. The ninth value, 1, is a
+remainder: 2²⁴ + 7 is halfway between neighbors, and ties to even gives
+2²⁴ + 8. In source order every 1 is lost: 2²⁴.
+
+</details>
+
+<LabCard
+  title="02 / Predict the vector split"
+  command="pnpm exec vitest run labs/computer-architecture-execution/simd/"
+>
+  With `vectorPlan`, add tests for an array of 1,000,003 ints with 16-byte
+  vectors and with 32-byte vectors. Predict the vector iterations and the
+  remainder first, then explain what fraction of the work the remainder is.
+</LabCard>
+
+<details>
+<summary>Check after testing</summary>
+
+16-byte vectors hold four ints: 250,000 vector iterations and a remainder of 3.
+32-byte vectors hold eight: 125,000 iterations and a remainder of 3. The
+remainder is three elements in a million, so it does not matter here; for an
+array of 7 ints with 8 lanes it would be all of the work.
+
+</details>
+
+## Check your reasoning
+
+<ConceptCheck
+  id="simd-float-sum"
+  question="GCC vectorizes a loop that adds two int arrays at -O2, but a loop that sums a float array uses scalar adds even at -O3. Why?"
+  options={[
+    {
+      label:
+        'Reordering floating-point additions can change the result, and a vector sum reorders them.',
+      correct: true,
+      explanation:
+        'Lanes keep separate partial sums that are combined at the end. Floating-point addition rounds at every step, so GCC needs -fassociative-math or similar permission. Integer addition is exact modulo 2ⁿ, so any order gives the same result.',
+    },
+    {
+      label: 'Vector registers cannot hold floating-point values.',
+      explanation:
+        'They can: the reassociated build uses addps, which adds four packed floats in a 16-byte register.',
+    },
+    {
+      label:
+        'A sum has a dependence between iterations that no compiler can remove.',
+      explanation:
+        'The dependence through the running sum can be split into independent lane sums, as the reassociated build does. The barrier is the changed result, not the dependence itself.',
+    },
+  ]}
+/>
+
+## Two-minute recap
+
+- SIMD applies one instruction to every lane of a wide register: four 32-bit
+  values in 16 bytes.
+- A vectorized loop does ⌊n ÷ w⌋ vector iterations and a scalar remainder of
+  n mod w elements.
+- Read the listing: packed instructions such as `paddd` and `addps`, a stride of
+  one vector, and a remainder loop after it.
+- Compilers vectorize only what they can prove equivalent: `restrict` rules out
+  overlap, and float sums need permission to reorder.
+- Vectors do not help dependent, scattered, short or memory-bound loops.

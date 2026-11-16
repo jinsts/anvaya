@@ -1,0 +1,292 @@
+---
+import DiagramFrame from '../learning/DiagramFrame.astro';
+import {
+  byLevel,
+  formatBytes,
+  levelFor,
+  parseCaches,
+  summarize,
+} from '../../../labs/computer-architecture-execution/dram-ssd-and-disks/sweep';
+import raw from '../../../labs/computer-architecture-execution/dram-ssd-and-disks/sweep.json?raw';
+// Measured on the recorded machine: every number is read from sweep.json.
+// x is log2 of the working set; y is log10 of nanoseconds per dependent load.
+const data = JSON.parse(raw);
+const summary = summarize(data.records);
+const caches = parseCaches(data.caches);
+const levels = byLevel(summary, caches);
+const xMin = Math.log2(summary[0]!.size);
+const xMax = Math.log2(summary.at(-1)!.size);
+const yMin = Math.log10(0.5);
+const yMax = Math.log10(500);
+const x = (size: number) => ((Math.log2(size) - xMin) / (xMax - xMin)) * 100;
+const y = (ns: number) => 100 - ((Math.log10(ns) - yMin) / (yMax - yMin)) * 100;
+const line = summary
+  .map((s) => `${x(s.size).toFixed(2)},${y(s.median).toFixed(2)}`)
+  .join(' ');
+const band = [
+  ...summary.map((s) => `${x(s.size).toFixed(2)},${y(s.max).toFixed(2)}`),
+  ...[...summary]
+    .reverse()
+    .map((s) => `${x(s.size).toFixed(2)},${y(s.min).toFixed(2)}`),
+].join(' ');
+const yTicks = [1, 10, 100];
+const xTicks = [
+  4 * 1024,
+  64 * 1024,
+  1024 ** 2,
+  16 * 1024 ** 2,
+  256 * 1024 ** 2,
+];
+const fmt = (ns: number) => (ns < 10 ? ns.toFixed(2) : ns.toFixed(1));
+const date = data.date.slice(0, 10);
+---
+
+<DiagramFrame
+  caption={`Measured: median time per dependent load (line) and the range of ${summary[0]!.reps} interleaved runs (band) as the working set grows, both axes logarithmic. Dashed lines are the cache sizes lscpu reported. ${data.cpu}, ${data.compiler}, -O2, Linux under WSL2, 4 KiB pages, recorded ${date}.`}
+>
+  <div class="sweep">
+    <div
+      class="plot"
+      role="img"
+      aria-label={`Working-set sweep. ${levels.map((l) => `${l.level === 'DRAM' ? 'Beyond the last cache' : `Within ${l.level}`}: median ${fmt(l.median)} ns per load`).join('. ')}.`}
+    >
+      <div class="y-label" aria-hidden="true">
+        ns per load
+      </div>
+      <div class="area" aria-hidden="true">
+        {yTicks.map((t) => (
+          <span class="gridline" style={`top: ${y(t)}%`}>
+            <span>{t}</span>
+          </span>
+        ))}
+        {caches.map((c) => (
+          <span class="cache" style={`left: ${x(c.bytes)}%`}>
+            <span>
+              {c.name} {formatBytes(c.bytes)}
+            </span>
+          </span>
+        ))}
+        <svg viewBox="0 0 100 100" preserveAspectRatio="none">
+          <polygon points={band} class="band" />
+          <polyline
+            points={line}
+            class="line"
+            vector-effect="non-scaling-stroke"
+          />
+        </svg>
+        {summary.map((s) => (
+          <span
+            class="point"
+            style={`left: ${x(s.size)}%; top: ${y(s.median)}%`}
+            title={`${formatBytes(s.size)}: median ${fmt(s.median)} ns (${fmt(s.min)}–${fmt(s.max)})`}
+          />
+        ))}
+        {xTicks.map((t, i) => (
+          <span
+            class:list={['xtick', { minor: i % 2 === 1 }]}
+            style={`left: ${x(t)}%`}
+          >
+            {formatBytes(t)}
+          </span>
+        ))}
+      </div>
+      <div class="x-label" aria-hidden="true">
+        working set
+      </div>
+    </div>
+    <div
+      class="table-scroll"
+      tabindex="0"
+      role="region"
+      aria-label="Median by level"
+    >
+      <table>
+        <caption>
+          Median of the per-size medians, grouped by the smallest cache that
+          holds the working set
+        </caption>
+        <thead>
+          <tr>
+            <th scope="col">Level</th>
+            <th scope="col">Sizes</th>
+            <th scope="col">Median ns per load</th>
+          </tr>
+        </thead>
+        <tbody>
+          {levels.map((l) => (
+            <tr>
+              <th scope="row">
+                {l.level === 'DRAM' ? 'Larger than L3' : l.level}
+              </th>
+              <td>{l.sizes}</td>
+              <td>{fmt(l.median)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+    <details class="all">
+      <summary>All {summary.length} measured sizes</summary>
+      <div
+        class="table-scroll"
+        tabindex="0"
+        role="region"
+        aria-label="Measured time per load by working set"
+      >
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Working set</th>
+              <th scope="col">Fits in</th>
+              <th scope="col">Median</th>
+              <th scope="col">Min</th>
+              <th scope="col">Max</th>
+            </tr>
+          </thead>
+          <tbody>
+            {summary.map((s) => (
+              <tr>
+                <th scope="row">{formatBytes(s.size)}</th>
+                <td>{levelFor(s.size, caches)}</td>
+                <td>{fmt(s.median)}</td>
+                <td>{fmt(s.min)}</td>
+                <td>{fmt(s.max)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </details>
+  </div>
+</DiagramFrame>
+<style>
+  .sweep {
+    display: grid;
+    gap: var(--space-4);
+  }
+  .plot {
+    display: grid;
+    grid-template-columns: var(--space-8) minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    gap: var(--space-2);
+  }
+  .y-label {
+    grid-column: 1 / -1;
+    color: var(--muted);
+    font-size: var(--text-xs);
+  }
+  .area {
+    grid-column: 2;
+    position: relative;
+    height: 18rem;
+    margin-bottom: var(--space-6);
+    border-bottom: 1px solid var(--border-strong);
+    border-left: 1px solid var(--border-strong);
+  }
+  .x-label {
+    grid-column: 2;
+    color: var(--muted);
+    font-size: var(--text-xs);
+    text-align: center;
+  }
+  svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+  }
+  .band {
+    fill: var(--chart-1);
+    opacity: 0.12;
+  }
+  .line {
+    fill: none;
+    stroke: var(--chart-1);
+    stroke-width: 2;
+    stroke-linejoin: round;
+  }
+  .point {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    margin: -4px 0 0 -4px;
+    border-radius: 50%;
+    background: var(--chart-1);
+    box-shadow: 0 0 0 2px var(--surface);
+  }
+  .gridline {
+    position: absolute;
+    right: 0;
+    left: 0;
+    height: 1px;
+    background: var(--border);
+  }
+  .gridline span {
+    position: absolute;
+    left: calc(-1 * var(--space-2));
+    transform: translate(-100%, -50%);
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+  }
+  .cache {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    border-left: 1px dashed var(--diagram-edge);
+  }
+  .cache span {
+    position: absolute;
+    top: var(--space-1);
+    left: var(--space-1);
+    padding: 0 2px;
+    background: var(--surface);
+    color: var(--text);
+    font-size: var(--text-xs);
+    white-space: nowrap;
+  }
+  .xtick {
+    position: absolute;
+    bottom: calc(-1 * var(--space-5));
+    transform: translateX(-50%);
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    white-space: nowrap;
+  }
+  .xtick:first-of-type {
+    transform: none;
+  }
+  .xtick:last-of-type {
+    transform: translateX(-100%);
+  }
+  .sweep .table-scroll {
+    margin: 0;
+  }
+  .sweep td,
+  .sweep tbody th {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-weight: 400;
+  }
+  .all summary {
+    cursor: pointer;
+    font-size: var(--text-sm);
+    font-weight: 600;
+  }
+  .all[open] summary {
+    margin-bottom: var(--space-2);
+  }
+  @media (max-width: 560px) {
+    .area {
+      height: 15rem;
+    }
+    .xtick.minor {
+      display: none;
+    }
+    .cache span {
+      writing-mode: vertical-rl;
+    }
+  }
+</style>

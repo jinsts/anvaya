@@ -1,0 +1,329 @@
+---
+title: 'Floating point: Trade exactness for range'
+shortTitle: Floating-point representation
+summary: Decode binary32 bit patterns into sign, exponent and fraction, explain why the gap between neighboring values doubles at each power of two, and predict when rounding changes a sum.
+subject: computer-architecture-execution
+path: engineering-fundamentals
+difficulty: foundation
+estimatedMinutes: 30
+learningObjectives:
+  - Decode a binary32 pattern into sign, exponent and fraction, and reconstruct the exact value it stores
+  - Explain how the gap between representable values grows with magnitude and where integers stop being exact
+  - Apply round to nearest, ties to even, to a value halfway between two neighbors
+  - Predict how summation order changes a floating-point total and choose a way to reduce the error
+prerequisites:
+  - computer-architecture-execution/binary-and-data-representation
+tags: [binary, representation, debugging]
+skills: [debugging, implementation, trade-off-analysis]
+status: draft
+drafter: agent
+interviewQuestions:
+  - prompt: Why does `0.1 + 0.2 === 0.3` evaluate to false in JavaScript?
+    answer: >-
+      JavaScript numbers are IEEE 754 binary64 values. One tenth has no finite
+      binary expansion, so the literals 0.1, 0.2 and 0.3 are each stored as the
+      nearest representable value. The sum of the first two is rounded again
+      and lands on a different neighbor from the one chosen for 0.3:
+      `0.30000000000000004` when printed. Compare with a tolerance suited to
+      the magnitudes involved, or use integers or decimal arithmetic when the
+      quantity is exact by definition, such as money in minor units.
+  - prompt: A metrics service counts events in a 32-bit float. Why does the count stop growing?
+    answer: >-
+      binary32 has 24 bits of significand precision, so between 2^24 and 2^25
+      neighboring values are 2 apart. At 16,777,216, adding 1 gives a value
+      exactly halfway to the next neighbor, and ties to even rounds it back to
+      16,777,216. Every later increment of 1 is lost. Use an integer counter,
+      or binary64, whose integers are exact up to 2^53.
+    followUps:
+      - What is the largest integer below which every integer is exact in binary64, and how does JavaScript name it?
+  - prompt: Is floating-point addition associative? What does that mean for summing a large array?
+    answer: >-
+      No. Each addition rounds its result to the format, so `(a + b) + c` and
+      `a + (b + c)` can round at different points and differ. When a large
+      total absorbs small addends, adding the small values first, summing
+      pairwise, accumulating in a wider format or using compensated (Kahan)
+      summation reduces the error. Reordering changes the result, so compilers
+      keep source order unless told the program does not depend on it.
+    followUps:
+      - Why might a parallel sum give a different answer on each run?
+  - prompt: When would you store values as float32 rather than float64?
+    answer: >-
+      float32 halves memory and bandwidth and fits twice as many values in a
+      vector register, which helps large arrays such as graphics data, sensor
+      streams or model weights. It keeps about seven significant decimal digits
+      and integers are exact only up to 2^24. Choose it when the data's own
+      precision is lower than that and errors do not accumulate over long
+      computations; otherwise accumulate or store in float64.
+  - prompt: How should code compare two floating-point results?
+    answer: >-
+      Decide what difference matters to the application. A relative tolerance
+      scales with the magnitude, which suits values far from zero; an absolute
+      tolerance is needed near zero, where relative error is meaningless. NaN is
+      not equal to anything, including itself, so test it with `Number.isNaN`.
+      Negative zero compares equal to zero but can change a later division's sign.
+sources:
+  - label: 'Dive into Systems, section 4.8.2 — Floating-point representation'
+    url: https://diveintosystems.org/book/C4-Binary/floating_point.html#_floating_point_representation
+  - label: 'Dive into Systems, section 4.8.3 — Rounding consequences'
+    url: https://diveintosystems.org/book/C4-Binary/floating_point.html#_rounding_consequences
+  - label: 'Goldberg — Relative error and ulps'
+    url: https://docs.oracle.com/cd/E19957-01/806-3568/ncg_goldberg.html#689
+  - label: 'Goldberg — Exactly rounded operations and round to even'
+    url: https://docs.oracle.com/cd/E19957-01/806-3568/ncg_goldberg.html#704
+  - label: 'Goldberg — Special quantities: NaN, infinity and signed zero'
+    url: https://docs.oracle.com/cd/E19957-01/806-3568/ncg_goldberg.html#875
+  - label: 'Goldberg — Denormalized numbers and gradual underflow'
+    url: https://docs.oracle.com/cd/E19957-01/806-3568/ncg_goldberg.html#929
+  - label: 'Goldberg — Associativity, parentheses and compilers'
+    url: https://docs.oracle.com/cd/E19957-01/806-3568/ncg_goldberg.html#1045
+  - label: 'Goldberg — Theorem 8, the Kahan summation formula'
+    url: https://docs.oracle.com/cd/E19957-01/806-3568/ncg_goldberg.html#1076
+  - label: 'GCC 15.2 manual — -fassociative-math and the default floating-point rules'
+    url: https://gcc.gnu.org/onlinedocs/gcc-15.2.0/gcc/Optimize-Options.html#index-fassociative-math
+  - label: 'ECMA-262 — The Number type is IEEE 754 binary64'
+    url: https://tc39.es/ecma262/multipage/ecmascript-data-types-and-values.html#sec-ecmascript-language-types-number-type
+  - label: 'ECMA-262 — Math.fround rounds to binary32, ties to even'
+    url: https://tc39.es/ecma262/multipage/numbers-and-dates.html#sec-math.fround
+---
+
+import Float32Anatomy from '../../../components/diagrams/Float32Anatomy.astro';
+import FloatSpacing from '../../../components/diagrams/FloatSpacing.astro';
+import RoundingTies from '../../../components/diagrams/RoundingTies.astro';
+import SummationOrder from '../../../components/diagrams/SummationOrder.astro';
+import Float32Explorer from '../../../components/interactive/Float32Explorer';
+
+import source from '../../../../labs/computer-architecture-execution/floating-point-representation/example.ts?raw';
+
+## A counter that stops counting
+
+A service counts events in a 32-bit floating-point variable. For months the
+count grows normally. At 16,777,216 it stops: every `count += 1` leaves it
+unchanged, and no error is reported. In the same codebase, `0.1 + 0.2` prints
+`0.30000000000000004`. Both surprises have one cause. A floating-point format
+stores a fixed number of significant bits, and every result is rounded to fit.
+
+Scientific notation is the right picture. Writing 6.02 × 10²³ keeps three
+significant digits whatever the exponent, so the next value you can write,
+6.03 × 10²³, is far away, while 6.02 × 10⁻³ has very close neighbors. The
+analogy stops at the base: floating point uses powers of two, so a decimal
+fraction such as 0.1 has no finite form and is rounded the moment it is stored.
+
+The [representation lesson](/learn/computer-architecture-execution/binary-and-data-representation/)
+gave integers their meaning. This page does the same for the IEEE 754 binary32
+format, C's `float`. JavaScript numbers use binary64, C's `double`, which
+follows the same rules with wider fields.
+
+## Three fields, one formula
+
+<Float32Anatomy />
+
+A binary32 value has three fields. The **sign** bit gives the sign. The 8-bit
+**exponent** field stores the power of two plus a **bias** of 127, so stored 123
+means 2⁻⁴; the bias lets one unsigned field cover both large and small scales.
+The 23-bit **fraction** gives the digits after the binary point. For normal
+values the digit before the point is always 1, so it is not stored:
+
+**value = (−1)^sign × (1 + fraction ÷ 2²³) × 2^(exponent − 127)**
+
+The implicit 1 gives 24 bits of precision from 23 stored bits, about seven
+significant decimal digits. In binary, one tenth repeats `0011` forever, so the
+fraction keeps 23 bits and rounds the rest. The stored value is slightly more
+than 0.1, as the figure's last line shows exactly. binary64 uses an 11-bit
+exponent with bias 1023 and a 52-bit fraction: 53 bits of precision, about 16
+decimal digits, and the same rounding.
+
+## The exponent field also marks special values
+
+The smallest and largest exponent fields do not follow the formula:
+
+| Exponent field | Fraction 0                | Fraction not 0               |
+| -------------- | ------------------------- | ---------------------------- |
+| 0              | Zero, with a sign: ±0     | **Subnormal**: ± 0.f × 2⁻¹²⁶ |
+| 1–254          | Normal: ± 1.f × 2^(e−127) | Normal: ± 1.f × 2^(e−127)    |
+| 255            | ±Infinity                 | **NaN**, "not a number"      |
+
+**Subnormal** values drop the implicit 1, so they fill the gap between zero and
+the smallest normal value, 2⁻¹²⁶, in even steps of 2⁻¹⁴⁹. Results shrink toward
+zero gradually instead of jumping to it. Infinity is the result of an overflow
+or of dividing a nonzero value by zero. NaN marks an invalid result such as
+0 ÷ 0 and is unequal to everything, itself included. The two zeros compare
+equal, yet `1 / -0` is −Infinity.
+
+## Flip the bits yourself
+
+Before each change, predict the new value: does it double, halve, change sign
+or move by one tiny step? The explorer runs the lesson's tested model. Its
+challenges ask for a prediction before revealing the answer.
+
+<Float32Explorer client:visible />
+
+Without JavaScript, the explorer shows the pattern of 1: sign 0, exponent 127
+and fraction 0. The figures on this page show the same fields, gaps and rounding
+statically.
+
+## The gap doubles at every power of two
+
+<FloatSpacing />
+
+Between 2ᵏ and 2ᵏ⁺¹ the fraction offers 2²³ evenly spaced values, so the gap
+between neighbors is 2ᵏ⁻²³. Moving up one power of two doubles the interval and
+doubles the gap. The relative gap, the step divided by the value, stays near
+2⁻²³ everywhere: the format keeps the same number of significant bits at every
+scale, not the same number of decimal places.
+
+That explains the counter. From 2²⁴ upward the gap is 2, so binary32 can no
+longer store every integer. binary64 reaches the same point at 2⁵³, which is why
+JavaScript's `Number.MAX_SAFE_INTEGER` is 2⁵³ − 1. It also explains why one
+fixed tolerance cannot suit every comparison: 10⁻⁶ is far wider than the gap
+near 1, and much narrower than the gap near 10¹⁰.
+
+## Halfway values round to even
+
+<RoundingTies />
+
+A result that falls between two neighbors is rounded to the nearer one. The
+default IEEE 754 rule breaks a tie by choosing the neighbor whose last fraction
+bit is 0, called **round to nearest, ties to even**. Always rounding ties up
+would push long computations upward on average; choosing the even neighbor
+rounds ties down about as often as up. JavaScript's `Math.fround` performs this
+rounding from binary64 to binary32, and the tests check both cases in the figure.
+
+## Every addition rounds
+
+<SummationOrder />
+
+Rounding happens after every operation, not once at the end. When a large total
+meets a small addend, the exact sum can fall between neighbors and round back to
+the total: the addend disappears. Adding the small values first lets them build
+up to something the large total can absorb.
+
+So floating-point addition is not associative. In binary64,
+`(0.1 + 0.2) + 0.3` gives `0.6000000000000001` while `0.1 + (0.2 + 0.3)` gives
+`0.6`. Because reordering can change a result, C compilers keep the written
+order of floating-point operations by default; GCC reassociates them only under
+options such as `-fassociative-math`, which its manual notes can change results.
+A parallel sum that combines partial results in a different order can likewise
+return a slightly different total.
+
+To reduce summation error:
+
+- **Accumulate in a wider format**, for example sum binary32 data in binary64.
+- **Sum pairwise or small-first** when magnitudes differ widely.
+- **Use compensated summation.** Kahan's method carries each addition's rounding
+  error into the next one; in the figure it recovers the exact 16,777,220.
+
+<details>
+<summary>Inspect the tested model and expected output</summary>
+
+<CodeExample
+  title="Decode binary32, find neighbors and sum with explicit rounding"
+  code={source}
+  verified
+  output={
+    '0.1 as binary32: 3dcccccd = 0.100000001490116119384765625\nnext after 16777216: 16777218\n16777217 is stored as 16777216\nlarge first: 16777216\nsmall first: 16777220\ncompensated: 16777220\n(0.1 + 0.2) + 0.3 = 0.6000000000000001; 0.1 + (0.2 + 0.3) = 0.6'
+  }
+/>
+
+</details>
+
+The tests check fields and classes at every exponent boundary, exact decimal
+values against independent binary64 expansions, neighbors and gaps at four
+magnitudes, both tie cases, summation in both orders, compensated summation and
+invalid input. Every figure on this page is computed from the same functions
+when the site is built.
+
+## Choose a representation for the job
+
+- **Exact quantities.** Money, counts and identifiers are exact by definition.
+  Store money as integer minor units with a checked range, or use a decimal
+  type with an explicit rounding rule.
+- **Comparisons.** Compare within a tolerance derived from the calculation's
+  magnitude and error, use an absolute tolerance near zero, and test NaN with
+  `Number.isNaN`.
+- **Width.** binary32 halves memory and bandwidth, which matters for large
+  arrays, but keeps about seven digits and exact integers only up to 2²⁴.
+  binary64 is the safer default for accumulation.
+- **Display is not storage.** Printing fewer digits changes the text, not the
+  stored value. Round when you produce output, and keep full precision in
+  between.
+
+## Practice
+
+<LabCard
+  title="01 / Decode a pattern by hand"
+  command="pnpm lab computer-architecture-execution/floating-point-representation"
+>
+  Implement `solve(bits)` in `starter.ts`: return the number a binary32 pattern
+  stores, built from its sign, exponent and fraction fields with arithmetic and
+  without `DataView` or typed arrays. Before running the tests, predict the
+  values of `0xc0a80000` and `0x00400000`, and name the exponent rule each one
+  uses.
+</LabCard>
+
+<details>
+<summary>Check after attempting</summary>
+
+`0xc0a80000` has sign 1, exponent 129 and fraction `0x280000`, which is
+0.3125 × 2²³: −1.3125 × 2² = −5.25. `0x00400000` has exponent field 0 and a
+nonzero fraction, so it is subnormal: 0.5 × 2⁻¹²⁶ = 2⁻¹²⁷. Your decoder needs
+four branches: zero or subnormal, normal, infinity and NaN. Apply the sign to
+zero too, so `0x80000000` returns −0.
+
+</details>
+
+<LabCard
+  title="02 / Predict a sum before running it"
+  command="pnpm exec vitest run labs/computer-architecture-execution/floating-point-representation/"
+>
+  Add a test that adds 0.1 ten times in binary64 and compares the total with 1.
+  Then use `sumFloat32` to add 2²⁵ and four ones in both orders. Predict each
+  result first, using the gap at 2²⁵.
+</LabCard>
+
+<details>
+<summary>Check after testing</summary>
+
+Ten binary64 additions of 0.1 give `0.9999999999999999`. At 2²⁵ the binary32
+gap is 4, so 2²⁵ + 1 rounds back to 2²⁵ (it is nearer than 2²⁵ + 4) and the
+large-first total stays 33,554,432. Small first, the ones sum to 4, and
+2²⁵ + 4 is representable: 33,554,436.
+
+</details>
+
+## Check your reasoning
+
+<ConceptCheck
+  id="floating-point-counter"
+  question="A binary32 accumulator holds 16,777,216 (2²⁴). A loop adds 1.0 to it one million times. What does it hold afterwards?"
+  options={[
+    {
+      label: '16,777,216',
+      correct: true,
+      explanation:
+        'Above 2²⁴ the gap between binary32 values is 2. Each exact sum, 16,777,217, is halfway between neighbors and ties to even rounds it back to 16,777,216, so every increment is lost.',
+    },
+    {
+      label: '17,777,216',
+      explanation:
+        'That is the exact result, which needs integers above 2²⁴ to be representable one apart. binary32 has only 24 bits of precision, so they are 2 apart there.',
+    },
+    {
+      label: 'Infinity, because the loop overflows the format',
+      explanation:
+        'Overflow needs a magnitude above about 3.4 × 10³⁸. The problem here is precision, not range: the value cannot move at all.',
+    },
+  ]}
+/>
+
+## Two-minute recap
+
+- binary32 stores sign, an exponent biased by 127, and 23 fraction bits after
+  an implicit 1: 24 bits of precision.
+- Exponent fields 0 and 255 encode zeros, subnormals, infinities and NaN.
+- Each power-of-two interval holds the same number of values, so the gap
+  doubles with the interval; integers stop being exact at 2²⁴ (2⁵³ in binary64).
+- Halfway results round to the neighbor whose last bit is 0.
+- Every operation rounds, so addition is not associative and summation order
+  matters; wider accumulators, pairwise sums and Kahan summation reduce error.
+- Store exact quantities as integers or decimals; compare floats with
+  tolerances chosen for the problem.

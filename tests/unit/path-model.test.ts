@@ -10,6 +10,7 @@ import {
   plannedCount,
   sectionSubject,
   sourceForUrl,
+  subjectGroups,
   subjectsInCategory,
   validateCatalog,
   validateTaxonomy,
@@ -478,6 +479,73 @@ it('supports a path of sections that each name a subject, in prerequisite order'
       sections: [section('plain')],
     }),
   ).toEqual(['dsa']);
+});
+
+it('groups a subject’s adjacent chapters and rejects separated or duplicated outlines', () => {
+  const chapter = (id: string, subject: string) => ({
+    id,
+    title: id,
+    subject,
+    lessons: [],
+    planned: ['A planned topic'],
+  });
+  const spanning = (...sections: ReturnType<typeof chapter>[]) =>
+    ({
+      id: 'spanning',
+      title: 'Spanning',
+      description: 'Spans subjects',
+      sections,
+    }) as LearningPath;
+  const run = (paths: LearningPath[], known = subjects) =>
+    validateCatalog({ lessons: [], paths, subjects: known, categories });
+
+  const chaptered = spanning(
+    chapter('french-basics', 'french'),
+    chapter('dsa-arrays', 'dsa'),
+    chapter('dsa-graphs', 'dsa'),
+  );
+  expect(() => run([chaptered])).not.toThrow();
+  expect(
+    subjectGroups(chaptered).map((group) => ({
+      subject: group.subject,
+      chapters: group.sections.map((section) => section.id),
+    })),
+  ).toEqual([
+    { subject: 'french', chapters: ['french-basics'] },
+    { subject: 'dsa', chapters: ['dsa-arrays', 'dsa-graphs'] },
+  ]);
+  // A single-subject path is one group whose sections are its chapters.
+  expect(
+    subjectGroups({
+      ...path,
+      lessons: undefined,
+      sections: [chapter('a', 'dsa'), chapter('b', 'dsa')],
+    } as LearningPath),
+  ).toHaveLength(1);
+
+  expect(() =>
+    run([
+      spanning(
+        chapter('dsa-arrays', 'dsa'),
+        chapter('french-basics', 'french'),
+        chapter('dsa-graphs', 'dsa'),
+      ),
+    ]),
+  ).toThrow('separates the chapters of dsa');
+
+  const sketched = subjects.map((subject) =>
+    subject.id === 'dsa'
+      ? { ...subject, overview: { chapters: ['A provisional chapter'] } }
+      : subject,
+  );
+  // A sketch is allowed while one section teaches the subject...
+  expect(() =>
+    run([spanning(chapter('dsa-all', 'dsa'))], sketched),
+  ).not.toThrow();
+  // ...and rejected once sections divide it into chapters.
+  expect(() => run([chaptered], sketched)).toThrow(
+    'Subject dsa has chapter sections; remove overview.chapters',
+  );
 });
 
 it('requires known, unrepeated skill references on subjects and lessons', () => {

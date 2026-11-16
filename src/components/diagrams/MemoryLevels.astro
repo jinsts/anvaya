@@ -1,0 +1,131 @@
+---
+import DiagramFrame from '../learning/DiagramFrame.astro';
+import { LADDER } from '../../../labs/computer-architecture-execution/dram-ssd-and-disks/devices';
+import {
+  byLevel,
+  formatBytes,
+  parseCaches,
+  summarize,
+} from '../../../labs/computer-architecture-execution/dram-ssd-and-disks/sweep';
+import raw from '../../../labs/computer-architecture-execution/dram-ssd-and-disks/sweep.json?raw';
+// The hierarchy of the recorded machine: cache sizes from lscpu and latencies
+// from its working-set sweep, then storage levels from a textbook table.
+const data = JSON.parse(raw);
+const caches = parseCaches(data.caches);
+const levels = byLevel(summarize(data.records), caches);
+const fmt = (ns: number) =>
+  ns < 10 ? ns.toFixed(1) : Math.round(ns).toString();
+const measured = levels.map((l) => {
+  const cache = caches.find((c) => c.name === l.level);
+  return {
+    name: cache ? `${l.level} cache` : 'DRAM',
+    capacity: cache ? formatBytes(cache.bytes) : 'gigabytes',
+    latency: `${fmt(l.median)} ns`,
+    source: 'measured',
+  };
+});
+const storage = LADDER.filter(
+  (l) => l.level === 'Flash disk (SSD)' || l.level === 'Hard disk',
+).map((l) => ({
+  name: l.level,
+  capacity: l.capacity,
+  latency: l.bound,
+  source: 'textbook',
+}));
+const rows = [
+  {
+    name: 'Registers',
+    capacity: `${LADDER[0].capacity} each`,
+    latency: LADDER[0].bound,
+    source: 'textbook',
+  },
+  ...measured,
+  ...storage,
+];
+---
+
+<DiagramFrame
+  caption={`Each level holds more and answers more slowly. Cache sizes and latencies are this subject's recorded machine (${data.cpu}): lscpu sizes and medians of a dependent-load sweep, explained in the DRAM, SSD and disk lesson. Storage rows are Dive into Systems' typical figures.`}
+>
+  <ol class="levels">
+    {rows.map((row, i) => (
+      <li style={`--depth: ${i}`}>
+        <span class="bar">
+          <strong>{row.name}</strong>
+          <span>{row.capacity}</span>
+        </span>
+        <span class="latency">
+          {row.latency}
+          <span class:list={['source', row.source]}>{row.source}</span>
+        </span>
+      </li>
+    ))}
+  </ol>
+</DiagramFrame>
+<style>
+  .levels {
+    display: grid;
+    gap: var(--space-1);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .levels li {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(8rem, auto);
+    gap: var(--space-3);
+    align-items: center;
+    margin: 0;
+  }
+  .diagram-frame .levels li + li {
+    margin-top: 0;
+  }
+  .bar {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0 var(--space-3);
+    width: calc(40% + var(--depth) * 9%);
+    min-width: min(100%, 12rem);
+    max-width: 100%;
+    padding: var(--space-2) var(--space-3);
+    border-left: 4px solid var(--chart-1);
+    border-radius: var(--radius-sm);
+    background: var(--tone-blue-soft);
+    font-size: var(--text-sm);
+  }
+  .bar span {
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+  }
+  .latency {
+    display: grid;
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    text-align: right;
+  }
+  .source {
+    color: var(--muted);
+    font-family: var(--font-body);
+    font-size: var(--text-xs);
+  }
+  .source.measured {
+    color: var(--success);
+    font-weight: 700;
+  }
+  @media (max-width: 480px) {
+    .levels li {
+      grid-template-columns: 1fr;
+      gap: 2px;
+    }
+    .bar {
+      width: 100%;
+    }
+    .latency {
+      text-align: left;
+      grid-template-columns: max-content max-content;
+      gap: var(--space-2);
+    }
+  }
+</style>

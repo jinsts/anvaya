@@ -1,0 +1,117 @@
+---
+import DiagramFrame from '../learning/DiagramFrame.astro';
+import {
+  linesTouched,
+  traversal,
+} from '../../../labs/computer-architecture-execution/memory-hierarchy-and-caches/traversal';
+// A row-major 4 × 8 matrix of 4-byte values with 16-byte lines: each row
+// spans two lines. Visit numbers and lines come from the tested model.
+const ROWS = 4;
+const COLUMNS = 8;
+const SIZE = 4;
+const LINE = 16;
+const SHOWN = 8;
+const orders = (['rows', 'columns'] as const).map((order) => {
+  const visits = traversal(ROWS, COLUMNS, SIZE, LINE, order);
+  const step = new Map(
+    visits.slice(0, SHOWN).map((v, i) => [`${v.row},${v.column}`, i + 1]),
+  );
+  return { order, visits, step, touched: linesTouched(visits, SHOWN) };
+});
+const lineOf = (row: number, column: number) =>
+  Math.floor(((row * COLUMNS + column) * SIZE) / LINE);
+---
+
+<DiagramFrame
+  caption={`The same matrix walked two ways. Numbers are the first ${SHOWN} reads; outlines group the elements that share a 16-byte cache line. Row order uses ${orders[0]!.touched} lines for those reads, each fully; column order needs ${orders[1]!.touched}, using one element from each line before moving on.`}
+>
+  <div class="walks">
+    {orders.map((o) => (
+      <div
+        class="walk"
+        role="group"
+        aria-label={`${o.order === 'rows' ? 'Row' : 'Column'} order: the first ${SHOWN} reads touch ${o.touched} cache lines`}
+      >
+        <p class="title">
+          <strong>
+            {o.order === 'rows' ? 'Row by row' : 'Column by column'}
+          </strong>
+          <span>
+            {SHOWN} reads · {o.touched} lines
+          </span>
+        </p>
+        <div class="matrix" aria-hidden="true">
+          {Array.from({ length: ROWS }, (_, r) =>
+            Array.from({ length: COLUMNS }, (_, c) => {
+              const n = o.step.get(`${r},${c}`);
+              const line = lineOf(r, c);
+              return (
+                <span
+                  class:list={[
+                    'cell',
+                    `line-${line % 2}`,
+                    {
+                      start: (c * SIZE) % LINE === 0,
+                      end: ((c + 1) * SIZE) % LINE === 0,
+                      visited: n !== undefined,
+                    },
+                  ]}
+                >
+                  {n ?? ''}
+                </span>
+              );
+            }),
+          )}
+        </div>
+      </div>
+    ))}
+  </div>
+</DiagramFrame>
+<style>
+  .walks {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+    gap: var(--space-5);
+  }
+  .title {
+    display: flex;
+    justify-content: space-between;
+    margin: 0 0 var(--space-2);
+    font-size: var(--text-sm);
+  }
+  .title span {
+    color: var(--muted);
+  }
+  .matrix {
+    display: grid;
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+    row-gap: var(--space-2);
+  }
+  .cell {
+    display: grid;
+    place-items: center;
+    min-height: 2.25rem;
+    border-top: 2px solid var(--diagram-edge);
+    border-bottom: 2px solid var(--diagram-edge);
+    background: var(--diagram-cell);
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    font-weight: 700;
+  }
+  .cell.line-1 {
+    background: var(--subtle);
+  }
+  .cell.start {
+    margin-left: 3px;
+    border-left: 2px solid var(--diagram-edge);
+    border-radius: 6px 0 0 6px;
+  }
+  .cell.end {
+    border-right: 2px solid var(--diagram-edge);
+    border-radius: 0 6px 6px 0;
+  }
+  .cell.visited {
+    background: var(--tone-blue-soft);
+    box-shadow: inset 0 -3px 0 var(--chart-1);
+  }
+</style>

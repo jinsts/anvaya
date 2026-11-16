@@ -61,8 +61,12 @@ overview:
       cost of an access at each level.
     - Explain how stack frames, the heap and calling conventions support
       function calls and object lifetimes.
-    - Predict how pipelining, branch prediction, caches and memory layout affect
-      the speed of real code.
+    - Predict how pipelining, branch prediction, caches, vector instructions and
+      memory layout affect the speed of real code.
+    - Explain cache coherence, memory ordering and atomic operations on
+      multicore processors, and when each is needed.
+    - Measure performance as a repeatable experiment and test its cause with
+      generated code and hardware counters.
   mechanisms:
     - The fetch–decode–execute cycle, pipelining, superscalar and out-of-order
       execution, and speculative execution.
@@ -94,8 +98,11 @@ overview:
       separate cache lines and compare throughput.
     - Sum the values above a threshold in a sorted and an unsorted array,
       compare timings, and check whether the compiler removed the branch.
-    - Use `perf stat` to count cycles, instructions, cache misses and branch
-      misses for the experiments above.
+    - On native Linux, use `perf stat` to count cycles, instructions, cache
+      misses and branch misses for the experiments above; the subject provides
+      a script, and no counter output has been recorded yet.
+    - Time the same work many times with the cache warm and cold, and compare
+      the distributions rather than single runs.
     - Print the bytes of integers and floating-point values to observe
       endianness and the IEEE 754 encoding.
   architecture:
@@ -124,12 +131,4 @@ overview:
       program runs, cache behaviour and integer overflow.
     - Grounds latency estimates in system design interviews with realistic
       costs for memory, SSD and network access.
-  chapters:
-    - 'From source to running process: compilation, linking, loading and the
-      instruction cycle'
-    - 'Data representation: integers, floating point, text and memory layout'
-    - 'The memory hierarchy: registers, caches, RAM and storage'
-    - 'Inside the processor: pipelines, branch prediction, speculation and
-      multicore coherence'
-    - 'Devices and I/O: interrupts, DMA and the hardware–software boundary'
-    - 'Performance on real hardware: measuring and applying the cost model'
+  # Chapters are the path sections that teach this subject (ADR 0008).

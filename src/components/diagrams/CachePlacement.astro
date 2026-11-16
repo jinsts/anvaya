@@ -1,0 +1,174 @@
+---
+import DiagramFrame from '../learning/DiagramFrame.astro';
+// One 8-bit address, 64, in three organizations of the same four 16-byte
+// lines. Fields and candidate lines are computed, not typed by hand.
+const address = 64;
+const lineBytes = 16;
+const block = address / lineBytes;
+const panels = [
+  { name: 'Direct-mapped', sets: 4, ways: 1 },
+  { name: '2-way set-associative', sets: 2, ways: 2 },
+  { name: 'Fully associative', sets: 1, ways: 4 },
+].map(({ name, sets, ways }) => {
+  const offsetBits = Math.log2(lineBytes);
+  const setBits = Math.log2(sets);
+  const tagBits = 8 - offsetBits - setBits;
+  const bits = address.toString(2).padStart(8, '0');
+  const set = block % sets;
+  const fields = [
+    { label: 'tag', bits: bits.slice(0, tagBits), value: block >> setBits },
+    ...(setBits
+      ? [
+          {
+            label: 'set',
+            bits: bits.slice(tagBits, 8 - offsetBits),
+            value: set,
+          },
+        ]
+      : []),
+    { label: 'offset', bits: bits.slice(8 - offsetBits), value: address % 16 },
+  ];
+  const candidates = ways;
+  const shape = `${sets} ${sets === 1 ? 'set' : 'sets'} × ${ways} ${ways === 1 ? 'way' : 'ways'}`;
+  // Name a line by whatever varies: the set, the way, or both.
+  const lineName = (s: number, w: number) =>
+    sets === 1 ? `way ${w}` : ways === 1 ? `set ${s}` : `set ${s} · way ${w}`;
+  return { name, sets, ways, set, fields, candidates, shape, lineName };
+});
+---
+
+<DiagramFrame caption="The same four 16-byte lines arranged three ways. Address 64 is in block 4; only the lines marked “candidate” can store it.">
+  <div class="placement">
+    {panels.map((panel) => (
+      <div
+        class:list={['placement-panel', { wide: panel.sets === 1 }]}
+        role="group"
+        aria-label={`${panel.name}, ${panel.shape}`}
+      >
+        <p class="panel-title">
+          <strong>{panel.name}</strong>
+          <span>{panel.shape}</span>
+        </p>
+        <ol class="fields" aria-label="Address 64 as 8 bits">
+          {panel.fields.map((field) => (
+            <li style={`flex-grow: ${field.bits.length}`}>
+              <code>{field.bits}</code>
+              <span>
+                {field.label} {field.value}
+              </span>
+            </li>
+          ))}
+        </ol>
+        <div
+          class="sets"
+          style={`grid-template-columns: repeat(${panel.ways}, minmax(0, 1fr))`}
+          aria-hidden="true"
+        >
+          {Array.from({ length: panel.sets }, (_, set) =>
+            Array.from({ length: panel.ways }, (_, way) => (
+              <span class={set === panel.set ? 'line candidate' : 'line'}>
+                <span>{panel.lineName(set, way)}</span>
+                {set === panel.set && <strong>candidate</strong>}
+              </span>
+            )),
+          )}
+        </div>
+        <p class="panel-summary">
+          {panel.sets === 1
+            ? `Any of the ${panel.candidates} lines. Every lookup compares ${panel.candidates} tags.`
+            : panel.ways === 1
+              ? `Only set ${panel.set}: one line, one tag comparison.`
+              : `Either way of set ${panel.set}: ${panel.candidates} lines, ${panel.candidates} tag comparisons.`}
+        </p>
+      </div>
+    ))}
+  </div>
+</DiagramFrame>
+<style>
+  .placement {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+    gap: var(--space-4);
+  }
+  .placement-panel.wide {
+    grid-column: 1 / -1;
+  }
+  .placement-panel {
+    display: grid;
+    align-content: start;
+    gap: var(--space-3);
+    padding: var(--space-3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+  }
+  .panel-title {
+    display: grid;
+    margin: 0;
+    font-size: var(--text-sm);
+  }
+  .panel-title span,
+  .panel-summary {
+    color: var(--muted);
+    font-size: var(--text-xs);
+  }
+  .panel-summary {
+    margin: 0;
+    line-height: var(--leading);
+  }
+  .fields {
+    display: flex;
+    gap: var(--space-1);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  /* Lesson prose spaces list items; these are bit fields, not prose. */
+  .placement .fields li {
+    margin-top: 0;
+  }
+  .fields li {
+    display: grid;
+    min-width: 0;
+    padding: var(--space-1);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    background: var(--diagram-cell);
+    text-align: center;
+  }
+  .fields code {
+    padding: 0;
+    border: 0;
+    background: none;
+    font-size: var(--text-sm);
+    overflow-wrap: anywhere;
+  }
+  .fields span {
+    color: var(--muted);
+    font-size: var(--text-xs);
+  }
+  .sets {
+    display: grid;
+    gap: var(--space-1);
+  }
+  .line {
+    display: grid;
+    gap: var(--space-1);
+    min-height: var(--space-12);
+    padding: var(--space-2) var(--space-1);
+    border: 1px dashed var(--border-strong);
+    border-radius: var(--radius-sm);
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    text-align: center;
+  }
+  .line.candidate {
+    border: 2px solid var(--accent);
+    background: var(--accent-soft);
+    color: var(--text);
+  }
+  .line strong {
+    font-family: var(--font-body);
+  }
+</style>

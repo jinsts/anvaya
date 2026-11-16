@@ -1,0 +1,133 @@
+---
+import DiagramFrame from '../learning/DiagramFrame.astro';
+import { traceCache } from '../../../labs/computer-architecture-execution/memory-hierarchy-and-caches/example';
+// The lesson's trace through a cold direct-mapped cache of two 16-byte lines.
+// Slot contents are replayed from the tested trace's block and slot fields.
+const LINE = 16;
+const SLOTS = 2;
+const addresses = [0, 4, 8, 12, 32, 0];
+const trace = traceCache(addresses, LINE, SLOTS);
+const contents: (number | null)[] = Array(SLOTS).fill(null);
+const steps = trace.map((access) => {
+  const evicted =
+    contents[access.slot] !== null && contents[access.slot] !== access.block
+      ? contents[access.slot]
+      : null;
+  contents[access.slot] = access.block;
+  return { ...access, slots: [...contents], evicted };
+});
+const misses = trace.filter((t) => t.result === 'miss').length;
+---
+
+<DiagramFrame
+  caption={`Reads of addresses ${addresses.join(', ')} through a cold direct-mapped cache with two 16-byte lines: ${misses} misses. Blocks 0 and 2 both map to slot 0, so block 2 evicts block 0 while slot 1 stays empty, and the last read misses again.`}
+>
+  <ol class="trace">
+    {steps.map((s, i) => (
+      <li class:list={{ miss: s.result === 'miss' }}>
+        <span class="access">
+          <strong>read {s.address}</strong>
+          <span>
+            block {s.block} → slot {s.slot}
+          </span>
+        </span>
+        <span class="result">
+          {s.result}
+          {s.evicted !== null && <span> · evicts block {s.evicted}</span>}
+        </span>
+        <span
+          class="slots"
+          role="group"
+          aria-label={`After read ${i + 1}: ${s.slots.map((b, k) => `slot ${k} ${b === null ? 'empty' : `block ${b}`}`).join(', ')}`}
+        >
+          {s.slots.map((block, k) => (
+            <span
+              class:list={[
+                'slot',
+                {
+                  changed: k === s.slot && s.result === 'miss',
+                  empty: block === null,
+                },
+              ]}
+            >
+              <span class="slot-name">slot {k}</span>
+              {block === null ? 'empty' : `block ${block}`}
+            </span>
+          ))}
+        </span>
+      </li>
+    ))}
+  </ol>
+</DiagramFrame>
+<style>
+  .trace {
+    display: grid;
+    gap: var(--space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .trace li {
+    display: grid;
+    grid-template-columns: 9rem 8rem minmax(0, 1fr);
+    gap: var(--space-3);
+    align-items: center;
+    margin: 0;
+    padding: var(--space-2) var(--space-3);
+    border-left: 4px solid var(--success);
+    border-radius: var(--radius-sm);
+    background: var(--bg);
+    font-size: var(--text-sm);
+  }
+  .diagram-frame .trace li + li {
+    margin-top: 0;
+  }
+  .trace li.miss {
+    border-left-color: var(--warning);
+  }
+  .access {
+    display: grid;
+  }
+  .access span,
+  .result span {
+    color: var(--muted);
+    font-size: var(--text-xs);
+  }
+  .result {
+    font-weight: 700;
+  }
+  .slots {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-2);
+  }
+  .slot {
+    display: grid;
+    padding: var(--space-1) var(--space-2);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+  }
+  .slot.empty {
+    border-style: dashed;
+    color: var(--muted);
+  }
+  .slot.changed {
+    border: 2px solid var(--accent);
+    background: var(--accent-soft);
+  }
+  .slot-name {
+    color: var(--muted);
+    font-family: var(--font-body);
+  }
+  @media (max-width: 600px) {
+    .trace li {
+      grid-template-columns: 1fr 1fr;
+    }
+    .slots {
+      grid-column: 1 / -1;
+    }
+  }
+</style>

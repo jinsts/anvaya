@@ -1,0 +1,284 @@
+---
+title: 'Measuring performance: Benchmarks and hardware counters'
+shortTitle: Measuring performance
+summary: Run a benchmark as a repeatable experiment, read a timing distribution instead of one number, bound a kernel with a roofline, and use hardware counters to test a cause.
+subject: computer-architecture-execution
+path: engineering-fundamentals
+difficulty: intermediate
+estimatedMinutes: 30
+learningObjectives:
+  - Design a benchmark that fixes the workload, checks results and alternates candidates
+  - Summarize repeated timings with a median and percentiles, and judge whether two candidates really differ
+  - Place a kernel on a roofline from its operational intensity and say whether memory or compute bounds it
+  - Explain what hardware counters such as cycles, instructions and misses measure, and their main pitfalls
+prerequisites:
+  - computer-architecture-execution/architecture-and-performance
+tags: [performance, memory, execution]
+skills: [profiling-measurement, ai-assisted-verification, debugging]
+status: draft
+drafter: agent
+interviewQuestions:
+  - prompt: How would you benchmark a change to show that it is faster?
+    answer: >-
+      State what should get faster and why. Fix the input, sizes, compiler
+      flags and machine, and decide what is inside the timed region, including
+      whether caches start warm or cold. Check that both versions produce the
+      same result. Run each many times, interleaving the two so drift affects
+      both, and compare distributions, such as medians and percentile ranges,
+      rather than single runs. Then test the proposed cause separately, with
+      the generated code or hardware counters.
+  - prompt: Why report a median and percentiles instead of the mean of the runs?
+    answer: >-
+      Timing noise is lopsided: interrupts, other processes and frequency
+      changes only ever add time, so a few slow runs pull the mean up. The
+      median describes a typical run and is not moved by a handful of
+      outliers, while percentiles such as p10 and p90 show the spread. If two
+      candidates' ranges overlap heavily, more runs are needed before claiming
+      a difference.
+  - prompt: What does a roofline model tell you about a kernel?
+    answer: >-
+      Attainable performance is the lower of the machine's peak compute rate
+      and its memory bandwidth times the kernel's operational intensity, the
+      operations it performs per byte moved from memory. A kernel left of the
+      ridge point is bounded by bandwidth, so faster arithmetic such as SIMD
+      cannot help until it moves fewer bytes; a kernel right of it is bounded
+      by compute. The roofline is an upper bound, not a prediction.
+  - prompt: What do hardware counters add to a timing, and what can mislead you?
+    answer: >-
+      Counters such as cycles, instructions, branch misses and cache misses
+      test why a run took its time: a lower IPC or a higher miss count can
+      support or refute a hypothesis. Pitfalls: event names map to
+      model-specific events, so check their definitions; when more events are
+      requested than the hardware can count at once, the tool multiplexes and
+      scales the counts; hybrid processors count each core type separately;
+      and the counts cover everything in the measured command, not just the
+      loop you care about.
+sources:
+  - label: 'Williams, Waterman and Patterson — Roofline (UC Berkeley EECS-2008-134), sections 2–4'
+    url: https://www2.eecs.berkeley.edu/Pubs/TechRpts/2008/EECS-2008-134.pdf
+  - label: 'perf-stat(1) manual page — events, repeats, scaling and hybrid PMUs'
+    url: https://man7.org/linux/man-pages/man1/perf-stat.1.html
+  - label: 'Linux kernel documentation — Perf events and tool security'
+    url: https://docs.kernel.org/admin-guide/perf-security.html
+---
+
+import MeasureWorkflow from '../../../components/diagrams/MeasureWorkflow.astro';
+import RooflineChart from '../../../components/diagrams/RooflineChart.astro';
+import TimingDistribution from '../../../components/diagrams/TimingDistribution.astro';
+
+import timingSource from '../../../../labs/computer-architecture-execution/measuring-performance/timing.c?raw';
+import timingData from '../../../../labs/computer-architecture-execution/measuring-performance/timing.json?raw';
+import perfScript from '../../../../labs/computer-architecture-execution/measuring-performance/perf-counters.sh?raw';
+import model from '../../../../labs/computer-architecture-execution/measuring-performance/stats.ts?raw';
+
+## One run is not a measurement
+
+Time a sprinter once and you learn about that race: the wind, the start, the
+runner's morning. Time them thirty times and you learn about the runner. A
+program is the same. Caches, the operating system, other processes and the
+clock frequency all change from run to run, so one timing mixes the program
+with its circumstances. The analogy stops at control: unlike a race, you can
+fix most of the circumstances, and you should.
+
+## A loop for every claim
+
+<MeasureWorkflow />
+
+The [architecture and performance lesson](/learn/computer-architecture-execution/architecture-and-performance/)
+mapped mechanisms to the terms of CPU time; this loop is how you check which
+one is at work. Two steps are easy to skip. **Checking the result** outside the
+timed region guards against comparing a fast wrong answer with a slow right
+one, and against a compiler that deleted the work. **Alternating** candidates,
+rather than running all of A and then all of B, spreads slow drifts such as
+heating or a background job across both.
+
+## Read a distribution
+
+`timing.c` sums the same 4 MiB array of integers sixty times. Before every other
+run it reads a 64 MiB buffer to push the array out of the caches; the runs in
+between find the array just read. Every sum is checked against the expected
+total.
+
+<TimingDistribution />
+
+Three things show up even in this simple, checked experiment:
+
+- **Each series spreads widely.** The same code on the same data took more
+  than one and a half times as long in its slowest run as in its fastest. One
+  run of each would have told you almost nothing.
+- **The medians differ but the ranges overlap.** Evicting the array made the
+  typical run slower, but many cold runs were faster than many warm ones. The
+  pairing figure in the caption says how often a single pair of runs would have
+  ranked them the wrong way.
+- **Cache state is part of the workload.** The array is smaller than this
+  machine's L3 cache, and a sequential scan is easy for the hardware to
+  prefetch, so the gap is modest; a random access pattern or a larger array
+  would behave differently. Say which state your benchmark measures.
+
+The runs were not pinned to a core, ran under WSL2, and recorded no clock
+frequency, so the spread includes all of that. Report such limits with the
+numbers.
+
+<details>
+<summary>Inspect the timing program and the recorded runs</summary>
+
+<CodeExample title="timing.c" code={timingSource} language="c" />
+<CodeExample title="timing.json" code={timingData} language="text" />
+
+</details>
+
+## Bound a kernel with a roofline
+
+A timing says how fast a kernel ran, not how fast it could run. The **roofline**
+model gives the bound. A kernel's **operational intensity** is the number of
+operations it does per byte it moves to or from memory. A machine can supply at
+most its memory bandwidth times that intensity, and can compute at most its peak
+rate, so attainable performance is the lower of the two.
+
+<RooflineChart />
+
+The array add does one floating-point addition per 12 bytes moved, far left of
+the ridge: memory bandwidth bounds it, so even perfect
+[SIMD](/learn/computer-architecture-execution/simd-and-data-parallelism/) code
+cannot pass the memory roof. A matrix multiply that reuses each value many times
+sits far to the right, where faster arithmetic does help. The machine in the
+figure is illustrative. To draw a real roofline, measure the machine's peak
+bandwidth and compute rate, and count the bytes a kernel actually moves, which
+caches can make lower than the source suggests.
+
+## Counters test a cause
+
+Hardware **performance counters** count events inside the processor while a
+program runs: cycles, retired instructions, branches and branch misses, cache
+references and misses. On Linux, `perf stat` runs a command and reports such
+counts, `-e` chooses the events and `-r` repeats the command and reports the
+spread. Ratios connect the counts to the CPU-time equation: instructions per
+cycle (IPC) is the reciprocal of CPI. With illustrative numbers, not a recorded
+run, 4.0 billion instructions in 2.5 billion cycles give an IPC of 1.6.
+
+Counters need care:
+
+- **Names are generic, events are not.** `cache-misses` maps to a
+  model-specific event; check what it counts on your processor with `perf list`
+  and the vendor's documentation before comparing machines.
+- **Multiplexing.** A core has only a few counters. Ask for more events than
+  that and the tool time-shares them and scales the counts up, reporting how
+  much of the run each event was counted.
+- **Hybrid processors.** Performance and efficiency cores have separate
+  counters, so `perf stat` reports their counts separately unless told to merge
+  them. Pinning the run to one core keeps a single type.
+- **Scope and permission.** Counts cover the whole command, including start-up.
+  The kernel's `perf_event_paranoid` setting and the `CAP_PERFMON` capability
+  decide what an unprivileged user may count.
+
+`perf` is not available in the environment where this lesson was written, so
+it shows no counter output. The script below builds the locality and timing
+programs and runs `perf stat -r 5` on each, pinned to one CPU, writing the
+results for the owner to review on native Linux. Here only its check for a
+missing `perf` is tested.
+
+<details>
+<summary>Inspect the owner-run counter script</summary>
+
+<CodeExample
+  title="perf-counters.sh (only the missing-perf path is tested here)"
+  code={perfScript}
+  language="bash"
+/>
+
+</details>
+
+<details>
+<summary>Inspect the tested model and expected output</summary>
+
+<CodeExample
+  title="Timing summaries, roofline bounds and counter ratios"
+  code={model}
+  verified
+  output={
+    'median 0.24, p90 0.31, min 0.21, max 0.4\nA faster than B in 77.8% of pairings\nillustrative roof at 100 GFLOP/s and 50 GB/s: ridge 2 flops/byte\nArray add: 0.083 flops/byte, bound 4.2 GFLOP/s\nDot product: 0.250 flops/byte, bound 12.5 GFLOP/s\nMatrix multiply: 170.667 flops/byte, bound 100.0 GFLOP/s\nillustrative counters: 4,000,000,000 instructions in 2,500,000,000 cycles = IPC 1.6'
+  }
+/>
+
+</details>
+
+The tests check nearest-rank percentiles, medians of even and odd counts, the
+pairing share with ties, the roofline bounds and ridge point, IPC, the
+statements the lesson makes about the recorded runs, and that the counter
+script stops cleanly when `perf` is missing.
+
+## Practice
+
+<LabCard
+  title="01 / Summarize the runs"
+  command="pnpm lab computer-architecture-execution/measuring-performance"
+>
+  Implement `solve(values)` in `starter.ts`: return the median and the
+  nearest-rank 90th percentile of a list of timings without changing it. Before
+  running the tests, compute both for `[10, 1, 1, 1, 1]`.
+</LabCard>
+
+<details>
+<summary>Check after attempting</summary>
+
+Sorted, the list is 1, 1, 1, 1, 10. The median is the middle value, 1. The p90
+rank is ⌈0.9 × 5⌉ = 5, the slowest run: 10. With few runs, p90 is just the worst
+one, which is a reason to collect more runs before reading tail percentiles.
+
+</details>
+
+<LabCard
+  title="02 / Find the ridge"
+  command="pnpm exec vitest run labs/computer-architecture-execution/measuring-performance/"
+>
+  Add a test for a machine with a 200 GFLOP/s peak and 25 GB/s of bandwidth.
+  Predict its ridge point and the bound for a dot-product-like kernel at 1/4
+  flop per byte, then say what would raise that bound.
+</LabCard>
+
+<details>
+<summary>Check after testing</summary>
+
+The ridge is 200 ÷ 25 = 8 flops per byte. At 1/4 the memory roof gives
+25 × 0.25 = 6.25 GFLOP/s, far below the peak. Only more bandwidth or more reuse,
+fewer bytes per operation, raises it; a faster arithmetic unit does not.
+
+</details>
+
+## Check your reasoning
+
+<ConceptCheck
+  id="measuring-overlap"
+  question="Version B's median time is 3% lower than A's, from three runs each, and their ranges overlap almost completely. What should you do next?"
+  options={[
+    {
+      label:
+        'Run both many more times, alternating them, and compare the distributions again.',
+      correct: true,
+      explanation:
+        'Three runs cannot separate a 3% change from run-to-run spread of this size. More alternated runs narrow the uncertainty; if the ranges still overlap, report no clear difference.',
+    },
+    {
+      label: 'Ship B: a lower median means it is faster.',
+      explanation:
+        'With overlapping ranges and three runs, the order of the medians can easily come from noise, as the warm and cold runs above show.',
+    },
+    {
+      label: 'Keep only each version’s fastest run and compare those.',
+      explanation:
+        'The minimum discards most of the evidence and depends on luck. It can help to describe a best case, but not to decide a small difference.',
+    },
+  ]}
+/>
+
+## Two-minute recap
+
+- Treat a benchmark as an experiment: predict, fix the workload and
+  environment, check results, repeat and alternate.
+- Report a distribution: the median for a typical run and p10–p90 for spread;
+  overlapping ranges mean you need more runs.
+- Cache state, pinning and frequency are part of what you measure; record them.
+- A roofline bounds a kernel by peak compute or by bandwidth × intensity;
+  left of the ridge, move fewer bytes before computing faster.
+- Counters test causes: IPC and miss counts, read with their definitions,
+  multiplexing, hybrid cores and scope in mind.

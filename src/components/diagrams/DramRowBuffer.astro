@@ -1,0 +1,204 @@
+---
+import DiagramFrame from '../learning/DiagramFrame.astro';
+import { dramAccesses } from '../../../labs/computer-architecture-execution/dram-ssd-and-disks/devices';
+// One bank: rows of cells, and sense amplifiers that hold the open row.
+// Costs per access come from the tested model with illustrative timings.
+const timing = { cas: 4, rcd: 4, rp: 4 };
+const ROWS = 8;
+const COLUMNS = 16;
+const sequence = [5, 5, 5, 2, 5];
+const accesses = dramAccesses(sequence, timing);
+const total = accesses.reduce((n, a) => n + a.cycles, 0);
+const hits = accesses.filter((a) => a.kind === 'row hit').length;
+const PARTS = [
+  { name: 'close the open row (precharge)', key: 'precharge' },
+  { name: 'open a row (activate)', key: 'activate' },
+  { name: 'read the column', key: 'read' },
+];
+const widest = Math.max(...accesses.map((a) => a.cycles));
+const parts = (kind: string) =>
+  kind === 'row hit'
+    ? [{ key: 'read', cycles: timing.cas }]
+    : kind === 'row empty'
+      ? [
+          { key: 'activate', cycles: timing.rcd },
+          { key: 'read', cycles: timing.cas },
+        ]
+      : [
+          { key: 'precharge', cycles: timing.rp },
+          { key: 'activate', cycles: timing.rcd },
+          { key: 'read', cycles: timing.cas },
+        ];
+---
+
+<DiagramFrame
+  caption={`One DRAM bank. Reading a cell copies its whole row into the sense amplifiers; further reads from that open row only select columns. A different row must first be closed. Timings are illustrative units, not a specific module: this sequence of ${accesses.length} reads costs ${total} units, and ${hits} of them hit the open row.`}
+>
+  <div class="dram">
+    <p class="path">
+      memory controller <span aria-hidden="true">→</span> channel{' '}
+      <span aria-hidden="true">→</span> DIMM and rank{' '}
+      <span aria-hidden="true">→</span> chips <span aria-hidden="true">→</span>{' '}
+      <strong>bank</strong>
+    </p>
+    <div
+      class="bank"
+      role="img"
+      aria-label={`A bank of ${ROWS} rows by ${COLUMNS} columns; row 5 is open in the sense amplifiers.`}
+    >
+      {Array.from({ length: ROWS }, (_, row) => (
+        <div class:list={['row', { open: row === 5 }]} aria-hidden="true">
+          <span class="row-name">row {row}</span>
+          <span class="cells">
+            {Array.from({ length: COLUMNS }, () => (
+              <span />
+            ))}
+          </span>
+        </div>
+      ))}
+      <div class="amps" aria-hidden="true">
+        <span class="row-name">sense amps</span>
+        <span class="cells open">
+          {Array.from({ length: COLUMNS }, () => (
+            <span />
+          ))}
+        </span>
+      </div>
+    </div>
+    <ul class="legend" aria-label="Bar segments">
+      {PARTS.map((p) => (
+        <li>
+          <span class={`swatch ${p.key}`} />
+          {p.name}
+        </li>
+      ))}
+    </ul>
+    <ol class="sequence" aria-label="Access sequence and cost">
+      {accesses.map((a) => (
+        <li>
+          <span class="what">
+            row {a.row}: <strong>{a.kind}</strong>, {a.cycles} units
+          </span>
+          <span class="bars" aria-hidden="true">
+            {parts(a.kind).map((p) => (
+              <span
+                class={`part ${p.key}`}
+                style={`width: ${(p.cycles / widest) * 100}%`}
+                title={`${PARTS.find((x) => x.key === p.key)!.name}: ${p.cycles}`}
+              />
+            ))}
+          </span>
+        </li>
+      ))}
+    </ol>
+  </div>
+</DiagramFrame>
+<style>
+  .dram {
+    display: grid;
+    gap: var(--space-4);
+  }
+  .path {
+    margin: 0;
+    color: var(--muted);
+    font-size: var(--text-sm);
+  }
+  .path strong {
+    color: var(--text);
+  }
+  .bank {
+    display: grid;
+    gap: 3px;
+    padding: var(--space-3);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    background: var(--bg);
+  }
+  .row,
+  .amps {
+    display: grid;
+    grid-template-columns: 5.5rem minmax(0, 1fr);
+    gap: var(--space-2);
+    align-items: center;
+  }
+  .amps {
+    margin-top: var(--space-2);
+  }
+  .row-name {
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+  }
+  .cells {
+    display: grid;
+    grid-template-columns: repeat(16, minmax(0, 1fr));
+    gap: 2px;
+  }
+  .cells span {
+    height: 10px;
+    border-radius: 2px;
+    background: var(--diagram-cell);
+    box-shadow: inset 0 0 0 1px var(--border);
+  }
+  .row.open .cells span,
+  .cells.open span {
+    background: var(--chart-1);
+    box-shadow: none;
+  }
+  .row.open .row-name,
+  .amps .row-name {
+    color: var(--text);
+    font-weight: 700;
+  }
+  .sequence {
+    display: grid;
+    gap: var(--space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .dram .sequence li {
+    display: grid;
+    gap: var(--space-1);
+    margin: 0;
+    font-size: var(--text-sm);
+  }
+  .bars {
+    display: flex;
+    gap: 2px;
+  }
+  .part {
+    height: 14px;
+    border-radius: 4px;
+  }
+  .read {
+    background: var(--chart-1);
+  }
+  .activate {
+    background: var(--chart-2);
+  }
+  .precharge {
+    background: var(--chart-3);
+  }
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1) var(--space-4);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: var(--text-xs);
+  }
+  .dram .legend li {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    margin: 0;
+  }
+  .swatch {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+  }
+</style>

@@ -1,0 +1,26 @@
+sum_to:
+.LFB0:
+	.cfi_startproc
+	endbr64
+	testl	%esi, %esi
+	jle	.L4
+	movslq	%esi, %rsi
+	xorl	%eax, %eax
+	leaq	(%rdi,%rsi,4), %rdx
+	.p2align 4
+	.p2align 4
+	.p2align 3
+.L3:
+	addl	(%rdi), %eax
+	addq	$4, %rdi
+	cmpq	%rdx, %rdi
+	jne	.L3
+	ret
+	.p2align 4,,10
+	.p2align 3
+.L4:
+	xorl	%eax, %eax
+	ret
+	.cfi_endproc
+.LFE0:
+	.size	sum_to, .-sum_to

@@ -1,0 +1,190 @@
+---
+import DiagramFrame from '../learning/DiagramFrame.astro';
+import raw from '../../../labs/computer-architecture-execution/architecture-and-performance/measurement.json?raw';
+// Every recorded observation of the row- and column-order sums, as a strip
+// plot on one linear axis, with each order's median.
+interface Record {
+  trial: number;
+  order: 'rows' | 'columns';
+  seconds: number;
+}
+const data = JSON.parse(raw) as {
+  date: string;
+  compiler: string;
+  cpu: string;
+  size: number;
+  flags: string[];
+  records: Record[];
+};
+const ms = (s: number) => s * 1000;
+const orders = (['rows', 'columns'] as const).map((order, i) => {
+  const values = data.records
+    .filter((r) => r.order === order)
+    .sort((a, b) => a.seconds - b.seconds);
+  const median =
+    (values[(values.length - 1) >> 1]!.seconds +
+      values[values.length >> 1]!.seconds) /
+    2;
+  return { order, values, median, series: i + 1 };
+});
+const max = Math.max(...data.records.map((r) => ms(r.seconds)));
+const top = Math.ceil(max);
+const x = (s: number) => `${(ms(s) / top) * 100}%`;
+const ticks = Array.from({ length: top + 1 }, (_, i) => i);
+const fmt = (s: number) => ms(s).toFixed(2);
+const megabytes = (data.size * data.size * 4) / 2 ** 20;
+---
+
+<DiagramFrame
+  caption={`All ${data.records.length} recorded sums of a ${data.size}×${data.size} uint32 matrix (${megabytes} MiB), alternating row and column order. Each dot is one run; the bar marks the median. ${data.cpu}, ${data.compiler.split(' ')[0]} ${data.flags.join(' ')}, recorded ${data.date.slice(0, 10)}.`}
+>
+  <div class="strip">
+    <div class="legend" aria-hidden="true">
+      {orders.map((o) => (
+        <span>
+          <i class={`dot s${o.series}`} />{' '}
+          {o.order === 'rows' ? 'row order' : 'column order'}
+        </span>
+      ))}
+    </div>
+    {orders.map((o) => (
+      <div class="row">
+        <p class="name">
+          <strong>{o.order === 'rows' ? 'Row order' : 'Column order'}</strong>{' '}
+          <span>median {fmt(o.median)} ms</span>
+        </p>
+        <div class="track" aria-hidden="true">
+          <span class="median" style={`left: ${x(o.median)}`} />
+          {o.values.map((r) => (
+            <span
+              class={`dot s${o.series}`}
+              style={`left: ${x(r.seconds)}`}
+              title={`${o.order}, trial ${r.trial}: ${fmt(r.seconds)} ms`}
+            />
+          ))}
+        </div>
+      </div>
+    ))}
+    <div class="axis" aria-hidden="true">
+      {ticks.map((t) => (
+        <span style={`left: ${(t / top) * 100}%`}>{t}</span>
+      ))}
+      <span class="unit">ms</span>
+    </div>
+    <details>
+      <summary>All observations as a table</summary>
+      <div
+        class="table-scroll"
+        tabindex="0"
+        role="region"
+        aria-label="Recorded observations"
+      >
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Trial</th>
+              <th scope="col">Order</th>
+              <th scope="col">ms</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.records.map((r) => (
+              <tr>
+                <td>{r.trial}</td>
+                <td>{r.order}</td>
+                <td>{fmt(r.seconds)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </details>
+  </div>
+</DiagramFrame>
+<style>
+  .strip {
+    display: grid;
+    gap: var(--space-3);
+    padding: 0 var(--space-2);
+  }
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1) var(--space-4);
+    color: var(--muted);
+    font-size: var(--text-xs);
+  }
+  .legend span {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+  }
+  .legend .dot {
+    position: static;
+    transform: none;
+  }
+  .name {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 var(--space-2);
+    margin: 0 0 var(--space-1);
+    font-size: var(--text-sm);
+  }
+  .name span {
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+  }
+  .track {
+    position: relative;
+    height: 1.5rem;
+    border-bottom: 1px solid var(--border-strong);
+  }
+  .median {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 0;
+    border-left: 2px solid var(--text);
+  }
+  .dot {
+    position: absolute;
+    top: 50%;
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    box-shadow: 0 0 0 2px var(--surface);
+    opacity: 0.85;
+    transform: translate(-50%, -50%);
+  }
+  .dot.s1 {
+    background: var(--chart-1);
+  }
+  .dot.s2 {
+    background: var(--chart-2);
+  }
+  .axis {
+    position: relative;
+    height: 1rem;
+    margin-top: calc(-1 * var(--space-2));
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+  }
+  .axis span {
+    position: absolute;
+    transform: translateX(-50%);
+  }
+  .axis .unit {
+    right: 0;
+    top: 1rem;
+    transform: none;
+  }
+  details {
+    font-size: var(--text-sm);
+  }
+  details .table-scroll {
+    margin: var(--space-2) 0 0;
+  }
+</style>

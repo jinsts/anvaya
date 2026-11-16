@@ -1,0 +1,389 @@
+---
+title: 'Cache organization: Decide where each line can live'
+shortTitle: Cache organization
+summary: Split an address into tag, set and offset, trace placement and LRU replacement across cache designs, and compare the writes that write-back and write-through caches send onward.
+subject: computer-architecture-execution
+path: engineering-fundamentals
+difficulty: intermediate
+estimatedMinutes: 40
+learningObjectives:
+  - Split a byte address into tag, set index and offset for a given cache geometry
+  - Trace placement and LRU replacement in direct-mapped, set-associative and fully associative caches
+  - Classify a miss as compulsory, capacity or conflict and choose a change that targets its cause
+  - Compare write-back and write-through caches by the writes they send to the next level
+prerequisites:
+  - computer-architecture-execution/memory-hierarchy-and-caches
+tags: [memory, caches, locality, performance]
+skills: [data-structures-algorithms, complexity-analysis, trade-off-analysis]
+status: draft
+drafter: agent
+interviewQuestions:
+  - prompt: How does a set-associative cache decide whether an access hits?
+    answer: >-
+      With power-of-two line and set counts, the low address bits are the
+      offset within a line, the next bits select one set, and the remaining
+      bits form the tag. The cache compares that tag with the tag of every
+      valid line in the selected set, and a match is a hit. A direct-mapped
+      cache has one line per set and makes one comparison; a fully associative
+      cache has one set and compares against every line.
+    followUps:
+      - How many set and offset bits does a 32 KiB, 8-way cache with 64-byte lines use?
+  - prompt: Why can a loop with a power-of-two stride run slower than one with a slightly different stride?
+    answer: >-
+      When the stride is a multiple of the number of sets times the line size,
+      every access maps to the same set. Only that set's ways can hold the data,
+      so reused lines are evicted while the rest of the cache stays unused:
+      conflict misses. Padding or changing the stride spreads accesses across
+      sets. The exact effect depends on the cache geometry and, for physically
+      indexed caches, on page placement, so measure it on the target.
+  - prompt: What are the trade-offs between write-back and write-through caches?
+    answer: >-
+      A write-through cache sends every store to the next level, which keeps
+      that level current but adds a write for each store. A write-back cache
+      marks the line dirty and writes the whole line only when it is evicted,
+      which saves traffic when a line receives several stores. It needs dirty
+      bits and may have to write a victim back before filling a new line.
+      Neither policy makes data durable; that is a storage guarantee.
+  - prompt: How would you tell a conflict miss from a capacity miss?
+    answer: >-
+      Compare against a fully associative cache with the same capacity and
+      replacement policy. The first use of a block is a compulsory miss. A
+      later miss that the fully associative cache would have hit is a conflict
+      miss caused by placement; one it would also miss is a capacity miss. The
+      classification is an analysis model: hardware counters report misses, not
+      their class.
+    followUps:
+      - Which code change would you try first for each kind of miss?
+  - prompt: Why are large caches not fully associative?
+    answer: >-
+      A fully associative lookup compares the tag with every line, so it needs
+      a comparator per line, which costs area and energy and can lengthen the
+      hit time as the cache grows. Set-associative designs bound the number of
+      comparisons per lookup while removing most of the conflict misses of a
+      direct-mapped cache. The right number of ways is a hardware trade-off.
+sources:
+  - label: 'Dive into Systems, section 11.4.1 — Direct-mapped caches and address division'
+    url: https://diveintosystems.org/book/C11-MemHierarchy/caching.html#_direct_mapped_caches
+  - label: 'Dive into Systems, section 11.4.1 — Writing to cached data'
+    url: https://diveintosystems.org/book/C11-MemHierarchy/caching.html#_writing_to_cached_data
+  - label: 'Dive into Systems, section 11.4.2 — Cache misses and associative designs'
+    url: https://diveintosystems.org/book/C11-MemHierarchy/caching.html#_cache_misses_and_associative_designs
+  - label: 'Dive into Systems, section 11.4.3 — Set associative caches and LRU'
+    url: https://diveintosystems.org/book/C11-MemHierarchy/caching.html#_set_associative_caches
+  - label: 'Dive into Systems, section 11.6 — Cache levels on multicore processors'
+    url: https://diveintosystems.org/book/C11-MemHierarchy/coherency.html
+  - label: 'MIT Computation Structures, L14 — Associativity, replacement and write policies'
+    url: https://computationstructures.org/lectures/caches/caches.html
+---
+
+import CachePlacement from '../../../components/diagrams/CachePlacement.astro';
+import CacheExplorer from '../../../components/interactive/CacheExplorer';
+
+import source from '../../../../labs/computer-architecture-execution/cache-organization/example.ts?raw';
+import lscpu from '../../../../labs/computer-architecture-execution/cache-organization/lscpu-caches.txt?raw';
+
+## The same capacity can miss differently
+
+Take three caches that each hold four 16-byte lines, 64 bytes in total, and
+read addresses 0, 64, 0, 64, 128, 0. The direct-mapped cache misses all six
+times. The 2-way cache misses four times. The fully associative cache misses
+three times, once for each block it has never seen. Capacity is the same in
+every case; what differs is **where each block is allowed to live**.
+
+Think of parking. A direct-mapped cache gives every car one assigned bay, a
+set-associative cache assigns a row with a few bays, and a fully associative
+cache lets a car use any bay. The analogy stops at the search: the cache only
+checks the bays a block is allowed to use, and when they are all taken, a
+replacement policy chooses which car leaves. Nothing is rearranged to make room.
+
+The [memory hierarchy lesson](/learn/computer-architecture-execution/memory-hierarchy-and-caches/)
+traced a two-line direct-mapped cache. This lesson generalizes it to any number
+of sets and ways, then adds writes.
+
+## Split the address into tag, set and offset
+
+<CachePlacement />
+
+A cache stores whole lines, so a byte address first names a **block**: the
+address divided by the line size, rounded down. The remainder is the **offset**
+of the byte inside the line. The block number modulo the number of sets is the
+**set index**, and the rest of the block number is the **tag**, which the cache
+stores beside each line to say which block it holds. A **valid bit** marks
+whether a line holds anything at all.
+
+When the line size and set count are powers of two, these are bit fields: the
+lowest log₂(line size) bits are the offset, the next log₂(sets) bits are the set,
+and every higher bit is the tag. The number of sets follows from the geometry:
+
+**sets = capacity ÷ (ways × line size)**
+
+Real caches report their geometry. This is `lscpu --caches` on the machine used
+for this subject's measurements, inside its WSL2 environment:
+
+<CodeExample
+  title="Recorded cache geometry: lscpu --caches"
+  code={lscpu}
+  language="text"
+/>
+
+Its L1 data cache holds 48 KiB in 12 ways of 64-byte lines: 49,152 ÷ (12 × 64)
+gives 64 sets. An address therefore uses 6 offset bits and 6 set bits, and the
+tag is everything above them. A test checks that every recorded row satisfies
+the same formula. One consequence follows directly: 64 sets of 64 bytes span
+4,096 bytes, so addresses 4,096 bytes apart always land in the same L1d set.
+
+## Look up one set, then compare its tags
+
+A lookup always follows the same steps:
+
+1. The set bits select one set.
+2. The cache compares the address's tag with the tag of every valid line in
+   that set. A match is a **hit**, and the offset selects the bytes.
+3. On a **miss**, the cache fetches the whole line from the next level into one
+   of the set's ways, choosing a victim if every way is occupied.
+
+The organizations in the figure are points on one scale. A **direct-mapped**
+cache has one way per set, so a block has one possible line and a lookup makes
+one comparison. An **N-way set-associative** cache makes N comparisons. A
+**fully associative** cache has a single set, no set bits, and compares against
+every line.
+
+More ways remove conflicts, but each way needs its own tag comparison on every
+lookup. That costs area and energy and can lengthen the hit time, so designers
+choose a middle point. The recorded L1d above uses 12 ways.
+
+## Choose a victim when the set is full
+
+A **replacement policy** chooses which valid line in a full set to evict.
+**Least recently used** (LRU) evicts the line used longest ago. **First in,
+first out** evicts the line filled longest ago, and **random** picks any line.
+Hardware may implement cheaper approximations; the lab model uses exact LRU.
+
+The policies differ on a simple stream. In a single set with two ways, read
+blocks 0, 4, 0, 8, 0 (addresses 0, 64, 0, 128, 0). When block 8 arrives, LRU
+evicts block 4 because block 0 was just used, so the final read of block 0
+hits. First in, first out evicts block 0, the older fill, and the final read
+misses.
+
+LRU has a known weak spot. A loop over one more line than the cache holds evicts
+each line just before it is needed again, so a fully associative LRU cache
+misses on every access. In the lab's test of that loop, a direct-mapped cache of
+the same size happens to keep two lines and hits twice. More associativity is
+not better for every access pattern.
+
+## Name the miss to choose the fix
+
+| Miss       | Cause                                                                 | Change that targets it                                          |
+| ---------- | --------------------------------------------------------------------- | --------------------------------------------------------------- |
+| Compulsory | The block has never been in this cache                                | Touch less data, use each fetched line fully, or prefetch it    |
+| Capacity   | A fully associative cache of the same size would also have evicted it | Shrink the working set, for example by processing data in tiles |
+| Conflict   | A fully associative cache of the same size would still hold it        | Change the layout or stride so that blocks spread across sets   |
+
+The model classifies each miss by simulating that fully associative LRU cache
+beside the real one. This is an analysis model: hardware performance counters
+count misses at a cache level, not which of these classes they belong to.
+
+## Step through placement
+
+Before each access, read the address's set field, look at that set's lines, and
+predict hit or miss. Then switch organizations and run the same stream again.
+
+<CacheExplorer client:visible />
+
+The same 2-way trace in text, for the stream of the opening example. All three
+blocks map to set 0; ways are listed as way 0, way 1.
+
+<div className="table-scroll" tabIndex={0} role="region" aria-label="2-way cache trace">
+
+| Access | Block → set | Set 0 before | Result            | Why                                                          |
+| ------ | ----------- | ------------ | ----------------- | ------------------------------------------------------------ |
+| R 0    | 0 → 0       | empty, empty | miss (compulsory) | First use; fill way 0                                        |
+| R 64   | 4 → 0       | 0, empty     | miss (compulsory) | First use; fill way 1                                        |
+| R 0    | 0 → 0       | 0, 4         | hit               | Tag matches way 0                                            |
+| R 64   | 4 → 0       | 0, 4         | hit               | Tag matches way 1                                            |
+| R 128  | 8 → 0       | 0, 4         | miss (compulsory) | Set full; LRU evicts block 0                                 |
+| R 0    | 0 → 0       | 8, 4         | miss (conflict)   | A four-line fully associative cache would still hold block 0 |
+
+</div>
+
+<details>
+<summary>Inspect the tested model and expected output</summary>
+
+<CodeExample
+  title="One cache level with sets, ways, LRU and write policies"
+  code={source}
+  verified
+  output={
+    'direct-mapped 4x1: miss miss miss miss miss miss | 3 compulsory, 3 conflict\n2-way 2x2: miss miss hit hit miss miss | 3 compulsory, 1 conflict\nfully associative 1x4: miss miss hit hit miss hit | 3 compulsory, 0 conflict\n8 stores, write-through: next-level writes = 8\n8 stores, write-back: next-level writes = 1'
+  }
+/>
+
+</details>
+
+The tests check placement in all three organizations, LRU against a stream that
+first in, first out would handle differently, the capacity-miss loop, both write
+policies with and without write-allocate, and invalid geometry. The explorer
+runs this same model. For n accesses to a cache of L lines, the simulation takes
+O(n × L) time and space: each step searches the shadow fully associative cache
+and copies the cache for its snapshot. That suits teaching traces, not long
+address streams.
+
+## Writes decide when the next level sees new data
+
+A store that hits has two options. A **write-through** cache updates the line
+and also sends the store to the next level, so that level stays current. A
+**write-back** cache updates only the line and sets its **dirty bit**; the line
+is written to the next level when it is evicted.
+
+The tested example stores to one counter eight times, then evicts its line.
+Write-through sends eight writes; write-back sends one. Write-back always sends
+a whole line, though, so it saves traffic when a line receives several stores
+before eviction, not on every pattern.
+
+A store that misses has two options too. A **write-allocate** cache first loads
+the line and then writes into it, so later accesses to that line hit. A
+**no-write-allocate** cache sends the store onward without filling a line. The
+explorer uses write-allocate; the lab model supports both.
+
+<Callout title="A dirty line is not saved data" variant="warning">
+  Until eviction, a write-back cache can hold the only current copy of a line.
+  Writing it back moves it to the next cache level or to RAM, which is still not
+  durable storage. The [I/O
+  lesson](/learn/computer-architecture-execution/io-mechanisms/) covers what
+  makes a write survive power loss.
+</Callout>
+
+## Real processors stack several caches
+
+Processors combine levels with different geometries. Each core usually has its
+own L1 cache, split into separate instruction and data caches, and the cores
+share a last-level cache; an L2 may be private or shared. The recorded output
+shows separate 48 KiB L1d and 64 KiB L1i caches, a 3 MiB L2 per instance, and a
+single 24 MiB L3 instance.
+
+The 4,096-byte prediction above holds for that L1d because 64 sets of 64 bytes
+fit within one 4 KiB page, the usual page size on x86-64 Linux. The set bits
+then come from the page offset, which virtual and physical addresses share. A larger cache uses physical-address bits
+for its set index, and the operating system chooses which physical pages back a
+program. Strides through virtual memory then map to its sets less predictably.
+
+## Layout decides which sets you use
+
+Take a matrix of 64 rows of 1,024 four-byte values, so each row is 4,096 bytes,
+and sum it by columns on the recorded L1d. One column touches 64 lines, only
+4 KiB, which the 48 KiB cache could hold easily. But rows 4,096 bytes apart all
+map to the same set, and 12 ways cannot hold 64 lines. LRU evicts each line
+before the next column needs it again, so the walk misses on lines that would
+have fit: conflict misses.
+
+Padding each row by 64 bytes makes the stride 4,160 bytes. Each row then starts
+one set later, the column's 64 lines occupy 64 different sets, and the next 15
+columns, which share those lines, hit. Padding fixes placement only; a column
+walk still uses four bytes of each line it fetches.
+
+Classify before you pad. The [performance lesson](/learn/computer-architecture-execution/architecture-and-performance/)
+summed a 2,048 × 2,048 matrix by columns. Its rows are also a multiple of 4,096
+bytes apart, but one column touches 2,048 lines, 128 KiB, more than the whole
+L1d. A fully associative cache of the same size would miss too, so those L1
+misses are capacity misses, and padding would not remove them. No hardware
+counters were collected for that experiment, so this is a prediction, not a
+measured cause.
+
+<LabCard
+  title="Independent cache attempt"
+  command="pnpm lab computer-architecture-execution/cache-organization"
+>
+  Implement `solve(addresses, sets, ways)` in `starter.ts`: return hit or miss
+  for reads through a cold cache of 16-byte lines with exact LRU replacement.
+  Before running the tests, predict 0, 64, 0, 128, 0 in one set of two ways, and
+  0, 64, 128, 0, 64, 128 in the same cache.
+</LabCard>
+
+<details>
+<summary>Check after attempting</summary>
+
+The first stream gives miss, miss, hit, miss, hit: block 8 evicts block 4,
+because block 0 was used more recently. The second stream misses six times:
+three blocks cycle through two ways, and LRU always evicts the block needed
+next. Your attempt must choose an empty way before evicting, and must update a
+line's last use on hits as well as fills.
+
+</details>
+
+<LabCard title="02 / Read your own cache geometry" command="lscpu --caches">
+  On Linux, list your caches. For your L1d and L2, compute the number of sets
+  from size, ways and line size, compare it with the SETS column, and work out
+  how many offset and set bits an address uses. Then find the stride at which
+  addresses repeat the same L1d set.
+</LabCard>
+
+<details>
+<summary>Check after computing</summary>
+
+Sets are size ÷ (ways × line size); offset bits are log₂ of the line size and
+set bits are log₂ of the set count. The repeat stride is sets × line size. For
+the recorded L2, 3 MiB ÷ (12 × 64) gives 4,096 sets, 12 set bits and a
+262,144-byte repeat stride, larger than a 4 KiB page, so its sets depend on
+physical page placement.
+
+</details>
+
+<LabCard
+  title="03 / Pad the matrix"
+  command="pnpm exec vitest run labs/computer-architecture-execution/cache-organization/"
+>
+  Add a test that uses `splitAddress` with the recorded L1d geometry: 64-byte
+  lines, 64 sets and 12 ways. For the 64-row matrix above, list the sets used by
+  the first eight elements of column 0 with row strides of 4,096 and 4,160
+  bytes. Then simulate reading columns 0 and 1 with `simulateCache` and count
+  the hits for each stride.
+</LabCard>
+
+<details>
+<summary>Check after testing</summary>
+
+With a 4,096-byte stride every element uses the same set, and both columns miss
+on all 64 reads. With 4,160 bytes the sets are 0, 1, 2 … 7 for a matrix that
+starts at address 0: column 0 misses 64 times and column 1 hits 64 times,
+because each element of column 1 shares a line with its neighbor in column 0.
+
+</details>
+
+## Check your reasoning
+
+<ConceptCheck
+  id="cache-organization-conflict"
+  question="A loop reads element i of 16 arrays of four-byte values in turn. Every array starts at a multiple of 64 KiB, and the L1d has 64 sets of 12 ways with 64-byte lines. Almost every access misses, although the 16 lines in use would fit easily. Which change targets the cause?"
+  options={[
+    {
+      label:
+        'Offset each array by a different multiple of 64 bytes so the arrays use different sets.',
+      correct: true,
+      explanation:
+        'Starts 64 KiB apart are also 4 KiB apart, so element i of every array maps to the same set. Sixteen lines compete for 12 ways and LRU keeps evicting the next one needed: conflict misses. Staggering the starts spreads them over several sets.',
+    },
+    {
+      label: 'Switch the cache from write-back to write-through.',
+      explanation:
+        'The write policy decides when stores reach the next level. It does not change which set a line is placed in, and this loop only reads.',
+    },
+    {
+      label:
+        'Make the cache larger while keeping 12 ways and the same line size.',
+      explanation:
+        'More capacity adds sets, but the arrays start 64 KiB apart. While sets × 64 bytes is at most 64 KiB, element i of every array still shares one set and 16 lines still compete for 12 ways. The misses come from placement, not from a lack of room.',
+    },
+  ]}
+/>
+
+## Two-minute recap
+
+- An address splits into tag, set and offset; sets = capacity ÷ (ways × line size).
+- A block can only live in its set; the number of ways decides how many such
+  blocks coexist.
+- When a set is full, the replacement policy chooses the victim. LRU fails on a
+  loop one line larger than the cache.
+- Compulsory, capacity and conflict misses have different causes and different fixes.
+- Write-through sends every store onward; write-back sends dirty lines when they
+  are evicted. Neither makes data durable.
+- Strides that are multiples of sets × line size crowd one set; padding spreads them.

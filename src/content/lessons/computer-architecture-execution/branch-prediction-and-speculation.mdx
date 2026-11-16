@@ -1,0 +1,301 @@
+---
+title: 'Branch prediction and speculation: Guess, run ahead, roll back'
+shortTitle: Branch prediction and speculation
+summary: Step a two-bit branch predictor through real outcome patterns, measure what an unpredictable branch costs, see how out-of-order cores run ahead yet commit in order, and why speculation leaves traces Spectre can read.
+subject: computer-architecture-execution
+path: engineering-fundamentals
+difficulty: intermediate
+estimatedMinutes: 35
+learningObjectives:
+  - Trace a two-bit saturating counter and predict its accuracy on a branch's outcome pattern
+  - Explain a measured sorted-versus-random timing difference, after checking whether the compiler kept the branch
+  - Describe how a reorder buffer lets instructions execute out of order but commit in program order
+  - Explain how speculative execution can leak data through the cache in the Spectre pattern
+prerequisites:
+  - computer-architecture-execution/pipelining-and-hazards
+tags: [execution, performance, instructions]
+skills: [profiling-measurement, debugging, ai-assisted-verification]
+status: draft
+drafter: agent
+interviewQuestions:
+  - prompt: Why can processing a sorted array be faster than processing the same array unsorted?
+    answer: >-
+      If the loop contains a data-dependent branch, such as `if (x >= 128)`,
+      sorted data makes its outcomes long runs that a branch predictor learns
+      almost perfectly, while random data makes it mispredict about half the
+      time, and each misprediction discards work in the pipeline. Check the
+      generated code first: compilers often remove such branches with
+      conditional moves or vector instructions, and then the order no longer
+      matters. Measure both orders with the same build.
+    followUps:
+      - How would you confirm that the compiler kept the branch?
+  - prompt: How does a two-bit saturating counter predict branches, and why is it better than remembering the last outcome?
+    answer: >-
+      Each counter steps toward taken or not taken after every outcome and
+      stops at its two ends; the upper two states predict taken. One surprise
+      moves a strongly biased counter only to the weak state, so a loop branch
+      that exits once per run mispredicts once per exit, while a last-outcome
+      predictor mispredicts twice, at the exit and at the next entry. Neither
+      handles alternating patterns; history-based predictors are needed there.
+  - prompt: If a processor executes instructions out of order, how does the program still see results in order?
+    answer: >-
+      Instructions enter a reorder buffer in program order. They may execute
+      as soon as their operands are ready, but a result becomes architectural,
+      written to registers or memory, only when the instruction commits, and
+      instructions commit in program order. If an older instruction faults or
+      a branch was mispredicted, the younger ones are discarded before they
+      commit, so the program observes sequential semantics.
+  - prompt: What is Spectre, at a high level?
+    answer: >-
+      A class of attacks in which mistrained prediction makes the processor
+      speculatively execute code that should not run, such as a read past a
+      bounds check. The speculative results are discarded, but side effects
+      such as cache contents remain, and an attacker can measure them with
+      timing to recover data. Defenses include speculation barriers on
+      sensitive paths, masking indexes so out-of-bounds values cannot be
+      formed, and isolating secrets from untrusted code.
+sources:
+  - label: 'Dive into Systems, section 5.8 — Control hazards and branch prediction'
+    url: https://diveintosystems.org/book/C5-Arch/pipelining_advanced.html#_pipelining_hazards_control_hazards
+  - label: 'Dive into Systems, section 5.9 — Instruction-level parallelism and out-of-order processors'
+    url: https://diveintosystems.org/book/C5-Arch/modern.html#_instruction_level_parallelism
+  - label: 'Utah CS 6810, lecture 8 — Two-bit bimodal branch prediction'
+    url: https://my.eng.utah.edu/~cs6810/pres/10-6810-08.pdf
+  - label: 'Utah CS 6810, lecture 10 — Out-of-order processors and the reorder buffer'
+    url: https://my.eng.utah.edu/~cs6810/pres/14-6810-10.pdf
+  - label: 'Kocher et al. — Spectre attacks, variant 1 and countermeasures'
+    url: https://spectreattack.com/spectre.pdf
+  - label: 'GCC 15.2 manual — If-conversion and loop vectorization options'
+    url: https://gcc.gnu.org/onlinedocs/gcc-15.2.0/gcc/Optimize-Options.html#index-ftree-loop-vectorize
+---
+
+import PredictorStates from '../../../components/diagrams/PredictorStates.astro';
+import ReorderBuffer from '../../../components/diagrams/ReorderBuffer.astro';
+import SortedRandom from '../../../components/diagrams/SortedRandom.astro';
+import SpectreSteps from '../../../components/diagrams/SpectreSteps.astro';
+import PredictorExplorer from '../../../components/interactive/PredictorExplorer';
+
+import model from '../../../../labs/computer-architecture-execution/branch-prediction/predictor.ts?raw';
+import kernel from '../../../../labs/computer-architecture-execution/branch-prediction/kernel.c?raw';
+import kernelBranch from '../../../../labs/computer-architecture-execution/branch-prediction/kernel-branch.txt?raw';
+import kernelCmov from '../../../../labs/computer-architecture-execution/branch-prediction/kernel-cmov.txt?raw';
+import kernelVector from '../../../../labs/computer-architecture-execution/branch-prediction/kernel-vector.txt?raw';
+
+## Waiting for branches would waste the pipeline
+
+The [pipelining lesson](/learn/computer-architecture-execution/pipelining-and-hazards/)
+flushed two instructions for every taken branch, because the branch resolved in
+EX. Real processors fetch several instructions per cycle and resolve branches
+many stages after fetch, so waiting for every branch, or flushing after it,
+would waste most of the machine. Instead they **predict** each branch's outcome,
+keep fetching down the predicted path, and **speculatively** execute it.
+
+A good predictor is like a commuter who takes the usual road without checking
+traffic each morning: right almost every day, and the occasional wrong guess
+costs a detour. The analogy stops at the cost: a misprediction discards every
+instruction fetched down the wrong path, which in a deep pipeline is a lot of
+work.
+
+## A two-bit counter learns a branch's habit
+
+The simplest dynamic predictor remembers each branch's last outcome. A **two-bit
+saturating counter** adds hysteresis: it steps toward each outcome and stops at
+its ends, so one surprise only weakens a strong prediction.
+
+<PredictorStates />
+
+For a loop branch that is taken five times and then exits, the counter
+mispredicts once per exit; repeating the last outcome mispredicts twice, at the
+exit and again on re-entry. An alternating pattern defeats both: real processors
+add predictors that use the history of recent outcomes.
+
+Before stepping, look at the predictor's state and the pattern so far, and say
+whether the next guess will be right.
+
+<PredictorExplorer client:visible />
+
+## Measure what a misprediction costs
+
+The same bytes, summed with the condition `value >= 128`, give a branch that
+random data makes unpredictable and sorted data makes almost perfectly
+predictable. The native lab compiled one C function three ways and timed it on
+both orders:
+
+<SortedRandom />
+
+Only the third build depends on the order. Its listing still contains the
+condition as a jump, `jns`, which the predictor must guess for every element.
+GCC removed the branch from the other two: at `-O1` it computes both outcomes and
+selects one with a conditional move, `cmovs`, and at `-O2` it vectorizes the loop,
+comparing sixteen bytes at a time into a mask. With no branch to mispredict,
+the order no longer matters. The `-O1` build is slower than the sorted branch
+build because it always does the extra work; the vector build is fastest.
+
+The lesson for any "sorted is faster" benchmark: **read the generated code
+before explaining the timing.** The effect you are measuring may not exist in the
+binary.
+
+<details>
+<summary>Inspect the three listings and the kernel</summary>
+
+<CodeExample
+  title="kernel.c: one C function for all three builds"
+  code={kernel}
+  language="c"
+/>
+<CodeExample
+  title="-O2 -fno-tree-vectorize -fno-if-conversion -fno-if-conversion2: a branch"
+  code={kernelBranch}
+  language="text"
+/>
+<CodeExample
+  title="-O1: a conditional move, no branch in the loop body"
+  code={kernelCmov}
+  language="text"
+/>
+<CodeExample
+  title="-O2: vectorized, sixteen bytes per iteration"
+  code={kernelVector}
+  language="text"
+/>
+
+The harness builds random bytes with a fixed seed, sorts a copy, alternates
+which order runs first in each of seven rounds, and checks every sum. The native
+lab recompiles all three builds and fails if a listing drifts.
+
+</details>
+
+## Run ahead, commit in order
+
+Prediction keeps the front of the pipeline busy. **Out-of-order execution** keeps
+the back busy: instead of stalling behind an instruction that waits, such as a
+load that misses the cache, the core executes later instructions whose operands
+are ready.
+
+<ReorderBuffer />
+
+Instructions enter a **reorder buffer** in program order and may execute out of
+order, but each result becomes architectural, visible in registers or memory,
+only when the instruction **commits**, and commits happen in program order. If a
+branch was mispredicted or an older instruction faults, every younger
+instruction is discarded before it commits. The program therefore sees the
+same results as sequential execution, with exceptions reported at the right
+instruction.
+
+## Speculation leaves traces
+
+Discarding speculative work restores registers and memory, but not everything:
+a speculative load can still bring a line into the cache. **Spectre** showed that
+an attacker can mistrain a predictor so that code speculatively reads data it
+should not, encodes it in which cache line it touches, and then recovers it by
+timing reads.
+
+<SpectreSteps />
+
+The defenses work on different steps: speculation barriers such as `lfence` on
+sensitive branches stop the speculative read, masking an index so an
+out-of-bounds value cannot be formed removes what it reads, and keeping secrets
+out of the address space of untrusted code removes the target. Each costs some
+performance, which is why they are applied selectively.
+
+<details>
+<summary>Inspect the tested model and expected output</summary>
+
+<CodeExample
+  title="One- and two-bit predictors and a reorder buffer"
+  code={model}
+  verified
+  output={
+    'loop: one-bit 67%, two-bit 79%\nrandom: one-bit 54%, two-bit 58%\nsorted: one-bit 96%, two-bit 92%\nalternating: one-bit 0%, two-bit 0%\nin-order: last commit in cycle 15\nout-of-order: last commit in cycle 13'
+  }
+/>
+
+</details>
+
+The tests check every counter state on the loop stream for both predictors,
+saturation, the alternating pattern, the reorder buffer's start, completion and
+commit cycles in both modes, in-order commit, and that the recorded measurement
+and listings agree: only the branch build depends on order, and only its
+listing contains the conditional jump. The predictor model has one counter for
+one branch; real predictors index tables of counters by address and history.
+
+## Practice
+
+<LabCard
+  title="01 / Count the mispredictions"
+  command="pnpm lab computer-architecture-execution/branch-prediction"
+>
+  Implement `solve(outcomes)` in `starter.ts`: return how many outcomes a
+  two-bit counter that starts in state 1 mispredicts. Before running the tests,
+  trace taken, taken, not taken, not taken, not taken, taken, taken.
+</LabCard>
+
+<details>
+<summary>Check after attempting</summary>
+
+States before each branch: 1, 2, 3, 2, 1, 0, 1. The predictions are not taken,
+taken, taken, taken, not taken, not taken, not taken, so branches 1, 4, 5, 6 and 7
+mispredict: five of seven. A counter that has just switched direction needs two
+consecutive outcomes the other way to switch back.
+
+</details>
+
+<LabCard
+  title="02 / Check the compiler before the timing"
+  command="pnpm exec vitest run labs/computer-architecture-execution/branch-prediction/"
+>
+  A colleague reports that sorting made a loop with `if (x >= 128)` no faster.
+  Using `conditionalJumps` from `measurement.ts`, write a test that decides, for
+  each of the three recorded listings, whether a sorted-versus-random difference
+  is possible, and explain each answer.
+</LabCard>
+
+<details>
+<summary>Check after testing</summary>
+
+Only `kernel-branch.txt` has a conditional jump inside the loop that depends on
+the data, `jns`. The `cmov` and vector listings jump only for the loop itself, so
+their timing cannot depend on whether the data is sorted. The colleague's build
+probably removed the branch; their observation is consistent with the
+predictor being irrelevant, not with it failing.
+
+</details>
+
+## Check your reasoning
+
+<ConceptCheck
+  id="branch-prediction-sorted"
+  question="A loop sums values above a threshold. Sorting the input makes no difference to its speed. What is the most likely explanation?"
+  options={[
+    {
+      label:
+        'The compiler removed the branch, using a conditional move or vector compare, so there is nothing to predict.',
+      correct: true,
+      explanation:
+        'In the measured builds, only the one that kept the conditional jump got faster on sorted data. Without a data-dependent branch, element order cannot change predictions.',
+    },
+    {
+      label: 'The branch predictor is perfect on random data.',
+      explanation:
+        'Random outcomes of a 50/50 condition cannot be predicted much better than half the time; the measured branch build was several times slower on random data than on sorted data.',
+    },
+    {
+      label: 'Sorting moves the data into a faster cache level.',
+      explanation:
+        'Sorting a copy changes the order of values, not how many bytes the loop reads or how they are laid out in memory.',
+    },
+  ]}
+/>
+
+## Two-minute recap
+
+- Processors predict branches and speculatively execute the predicted path;
+  a misprediction discards the wrong-path work.
+- A two-bit counter mispredicts a loop branch once per exit; alternating and
+  random outcomes defeat simple counters.
+- A data-dependent branch made random data several times slower than sorted
+  data, but only in the build that kept the branch.
+- Out-of-order cores execute ready instructions early and commit results in
+  program order through a reorder buffer.
+- Speculation leaves cache traces that Spectre turns into a leak; defenses stop
+  speculative reads on sensitive paths.

@@ -1,0 +1,7 @@
+name: Unicode Standard Annexes
+kind: specification
+by: The Unicode Consortium
+url: https://www.unicode.org/reports/
+description: >-
+  Normative annexes to the Unicode Standard, including UAX #29, which defines
+  grapheme clusters as user-perceived characters.

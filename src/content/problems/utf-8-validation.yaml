@@ -1,0 +1,10 @@
+title: UTF-8 Validation
+url: https://leetcode.com/problems/utf-8-validation/
+difficulty: medium
+lessons: [computer-architecture-execution/text-encoding-and-memory-layout]
+topics: [binary, representation]
+lists: []
+hints:
+  - The lead byte's high bits say how many continuation bytes must follow. Read them before anything else.
+  - Keep a count of continuation bytes still owed. A byte that should continue a sequence must start with the bits 10; any other byte is a new lead byte, and only the valid lead patterns are allowed.
+  - Mask and compare the top bits of each input element, and fail if input ends while continuation bytes are owed. One pass is O(n) time and O(1) extra space.

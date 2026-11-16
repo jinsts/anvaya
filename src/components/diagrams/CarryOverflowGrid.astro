@@ -1,0 +1,128 @@
+---
+import DiagramFrame from '../learning/DiagramFrame.astro';
+import {
+  addBytes,
+  signedByte,
+} from '../../../labs/computer-architecture-execution/binary-and-data-representation/example';
+// One byte addition for each combination of the two flags, computed by the
+// tested model. The ninth bit is the carry out of bit 7.
+const cases = [
+  [1, 2],
+  [255, 1],
+  [127, 1],
+  [128, 128],
+].map(([a, b]) => {
+  const result = addBytes(a!, b!);
+  const sum = a! + b!;
+  return {
+    a: a!,
+    b: b!,
+    ...result,
+    ninth: sum >> 8,
+    bits: (sum & 0xff).toString(2).padStart(8, '0'),
+    exactSigned: signedByte(a!) + signedByte(b!),
+  };
+});
+const bits = (n: number) => n.toString(2).padStart(8, '0');
+const minus = (v: number) => (v < 0 ? `−${-v}` : String(v));
+---
+
+<DiagramFrame caption="Carry and signed overflow are independent. Carry asks whether the unsigned sum needed a ninth bit; overflow asks whether the signed sum left −128 to 127. All four combinations occur.">
+  <div class="grid">
+    {cases.map((x) => (
+      <div
+        class:list={['case', { carry: x.carry, overflow: x.signedOverflow }]}
+        role="group"
+        aria-label={`${x.a} plus ${x.b}: carry ${x.carry ? 'yes' : 'no'}, signed overflow ${x.signedOverflow ? 'yes' : 'no'}`}
+      >
+        <p class="flags">
+          <span class:list={['flag', { on: x.carry }]}>
+            Carry {x.carry ? 'yes' : 'no'}
+          </span>
+          <span class:list={['flag', { on: x.signedOverflow }]}>
+            Overflow {x.signedOverflow ? 'yes' : 'no'}
+          </span>
+        </p>
+        <code class="sum" aria-hidden="true">{`  ${bits(x.a)}
++ ${bits(x.b)}
+${x.ninth}|${x.bits}`}</code>
+        <dl>
+          <div>
+            <dt>Unsigned</dt>
+            <dd>
+              {x.a} + {x.b} = {x.a + x.b} → kept {x.unsigned}
+            </dd>
+          </div>
+          <div>
+            <dt>Signed</dt>
+            <dd>
+              {minus(signedByte(x.a))} + {minus(signedByte(x.b))} ={' '}
+              {minus(x.exactSigned)} → kept {minus(x.signed)}
+            </dd>
+          </div>
+        </dl>
+      </div>
+    ))}
+  </div>
+</DiagramFrame>
+<style>
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+    gap: var(--space-3);
+  }
+  .case {
+    display: grid;
+    gap: var(--space-2);
+    padding: var(--space-3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg);
+  }
+  .flags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin: 0;
+  }
+  .flag {
+    padding: 2px var(--space-2);
+    border: 1px dashed var(--border-strong);
+    border-radius: var(--radius-full);
+    color: var(--muted);
+    font-size: var(--text-xs);
+  }
+  .flag.on {
+    border: 1px solid var(--warning);
+    background: var(--warning-soft);
+    color: var(--text);
+    font-weight: 700;
+  }
+  .sum {
+    display: block;
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    font-size: var(--text-sm);
+    line-height: var(--leading);
+    white-space: pre;
+  }
+  dl {
+    display: grid;
+    gap: var(--space-1);
+    margin: 0;
+    font-size: var(--text-xs);
+  }
+  dl div {
+    display: grid;
+    grid-template-columns: 4.5rem 1fr;
+  }
+  dt {
+    color: var(--muted);
+  }
+  dd {
+    margin: 0;
+    font-family: var(--font-mono);
+  }
+</style>

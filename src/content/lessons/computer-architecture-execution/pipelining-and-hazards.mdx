@@ -1,0 +1,239 @@
+---
+title: 'Pipelining: Overlap instructions until a hazard stops you'
+shortTitle: Pipelining and hazards
+summary: Step a five-stage pipeline cycle by cycle, find the data and control hazards that insert bubbles, and see how forwarding, instruction order and branch resolution change the cycle count.
+subject: computer-architecture-execution
+path: engineering-fundamentals
+difficulty: intermediate
+estimatedMinutes: 30
+learningObjectives:
+  - Draw a stage-by-cycle timeline for a short instruction sequence in a five-stage pipeline
+  - Identify data, control and structural hazards and the stalls they cause
+  - Explain why forwarding removes most data stalls but not the load-use bubble
+  - Predict how reordering independent instructions or a taken branch changes the cycle count
+prerequisites:
+  - computer-architecture-execution/how-computers-execute-programs
+  - computer-architecture-execution/reading-assembly
+tags: [execution, instructions, performance]
+skills: [complexity-analysis, debugging, technical-communication]
+status: draft
+drafter: agent
+interviewQuestions:
+  - prompt: Does pipelining make an individual instruction faster?
+    answer: >-
+      No. Each instruction still passes through every stage, and pipeline
+      registers between stages can make its latency slightly longer.
+      Pipelining raises throughput: with five stages, up to five instructions
+      are in progress at once, so in the ideal case one finishes every cycle.
+      Shorter stages also allow a faster clock. Hazards are what keep real code
+      from reaching one instruction per cycle.
+  - prompt: What is a pipeline hazard, and what kinds are there?
+    answer: >-
+      A hazard is a situation in which the next instruction cannot proceed in
+      the next cycle. A data hazard is a dependence on a result that is not
+      ready yet. A control hazard arises because the next instruction to fetch
+      depends on a branch that has not been resolved. A structural hazard is
+      two instructions needing the same hardware in the same cycle. The
+      pipeline stalls, inserting bubbles, or flushes wrong-path instructions.
+  - prompt: Why does a load followed by an instruction that uses its value still stall when forwarding exists?
+    answer: >-
+      Forwarding passes a result from the end of one instruction's EX stage to
+      the start of the next one's EX. A load's value arrives only at the end of
+      MEM, one stage later, so the dependent instruction must wait one cycle
+      even with forwarding: the load-use bubble. A compiler hides it by placing
+      an independent instruction between the load and its use.
+    followUps:
+      - Why might a compiler still emit the dependent instruction right after the load?
+  - prompt: What does a taken branch cost in a simple pipeline, and how do processors reduce that cost?
+    answer: >-
+      If the pipeline fetches the next sequential instructions and the branch
+      is resolved in EX, a taken branch discards the two instructions fetched
+      behind it, a two-cycle penalty. Resolving branches earlier shortens it,
+      and branch prediction avoids it whenever the prediction is right. Deep
+      modern pipelines resolve branches many stages after fetch, so a
+      misprediction costs far more and accurate prediction matters more.
+sources:
+  - label: 'Dive into Systems, section 5.7 — Pipelining: making the CPU faster'
+    url: https://diveintosystems.org/book/C5-Arch/pipelining.html#_pipelining_making_the_cpu_faster
+  - label: 'Dive into Systems, section 5.8 — Data hazards and forwarding'
+    url: https://diveintosystems.org/book/C5-Arch/pipelining_advanced.html#_pipelining_consideration_data_hazards
+  - label: 'Dive into Systems, section 5.8 — Control hazards and branch prediction'
+    url: https://diveintosystems.org/book/C5-Arch/pipelining_advanced.html#_pipelining_hazards_control_hazards
+  - label: 'MIT Computation Structures — Pipelined Beta: stalls, bypassing and branch annulment'
+    url: https://computationstructures.org/lectures/pbeta/pbeta.html
+---
+
+import PipelineTable from '../../../components/diagrams/PipelineTable.astro';
+import PipelineStepper from '../../../components/interactive/PipelineStepper';
+
+import model from '../../../../labs/computer-architecture-execution/pipelining-and-hazards/pipeline.ts?raw';
+
+## One instruction per cycle, almost
+
+The [execution lesson](/learn/computer-architecture-execution/how-computers-execute-programs/)
+ran one instruction through the whole datapath before starting the next. Most of
+the datapath sat idle most of the time. A **pipeline** splits execution into
+stages and starts a new instruction every cycle, so several are in progress at
+once.
+
+A laundry with a washer, a dryer and a folding table works the same way: while
+one load dries, the next washes. Each load takes as long as before, but loads
+finish more often. The analogy stops at dependences. A load of laundry never
+needs the previous load's result; instructions often do.
+
+## Five stages, overlapped
+
+The teaching pipeline has five stages: **IF** fetches the instruction, **ID**
+decodes it and reads registers, **EX** computes in the ALU, **MEM** accesses data
+memory and **WB** writes the result back to a register. Ideally a new instruction
+enters IF every cycle, so after the pipeline fills one instruction finishes per
+cycle: four instructions take 4 + 4 = 8 cycles instead of 4 × 5 = 20.
+
+Pipelining improves **throughput**, instructions finished per unit of time, and
+lets each stage, and so the clock cycle, be short. It does not shorten the
+**latency** of a single instruction, which still passes every stage.
+
+## Data hazards insert bubbles
+
+A **data hazard** occurs when an instruction needs a register that an earlier
+instruction has not produced yet. The pipeline must hold the dependent
+instruction, leaving a **bubble**, an idle stage, behind it. **Forwarding**, also
+called bypassing, removes most of these waits by routing a result from the end
+of EX straight to the next instruction's EX, without waiting for write-back.
+
+<PipelineTable />
+
+Forwarding cannot help a load fully: its value is ready only at the end of MEM,
+one stage after EX, so a dependent instruction right behind it waits one cycle.
+This is the **load-use** bubble. The tables are computed by the lesson's tested
+model, whose assumptions are stated in its source below.
+
+## Step the pipeline yourself
+
+Pick a program, choose whether the hardware forwards, and predict how many cycles
+are lost before stepping. Then compare the reordered program: it does the same
+work with the independent `or` moved between the load and its use.
+
+<PipelineStepper client:visible />
+
+With forwarding, the reordered program loses no cycles: the `or` fills the slot
+the bubble would have taken. Compilers schedule instructions this way, and
+out-of-order processors do it in hardware.
+
+## Control hazards flush wrong-path work
+
+The next instruction to fetch depends on every branch before it. This pipeline
+keeps fetching sequentially, in effect predicting "not taken", and learns the
+branch's outcome in EX. If the branch is taken, the two instructions fetched
+behind it are on the wrong path and are **flushed**: they never write a result,
+and fetch restarts at the target. Each taken branch costs two cycles here; in
+modern processors that resolve branches many stages after fetch, the cost of a
+wrong guess is far higher, which is why the next lesson's branch predictors
+matter.
+
+A **structural hazard** is two instructions needing one piece of hardware in the
+same cycle, such as a single memory for instruction fetch and data access. This
+pipeline avoids it by design, with separate instruction and data memories and a
+register file that writes in the first half of a cycle and reads in the second.
+
+<details>
+<summary>Inspect the tested model and expected output</summary>
+
+<CodeExample
+  title="A five-stage in-order pipeline with optional forwarding"
+  code={model}
+  verified
+  output={
+    'load-use, forwarding off: 12 cycles, 4 bubbles, 0 flushed\nload-use, forwarding on: 9 cycles, 1 bubbles, 0 flushed\nreordered, forwarding off: 11 cycles, 3 bubbles, 0 flushed\nreordered, forwarding on: 8 cycles, 0 bubbles, 0 flushed\nbranch, forwarding off: 11 cycles, 2 bubbles, 2 flushed\nbranch, forwarding on: 9 cycles, 0 bubbles, 2 flushed'
+  }
+/>
+
+</details>
+
+The tests check the complete timelines of the load-use and branch programs with
+and without forwarding, that no two instructions ever occupy one stage in the
+same cycle, that every completed instruction visits the five stages in order,
+and invalid programs. It is a teaching model: real pipelines have more stages,
+issue several instructions per cycle and handle hazards in more ways.
+
+## Practice
+
+<LabCard
+  title="01 / Count the bubbles"
+  command="pnpm lab computer-architecture-execution/pipelining-and-hazards"
+>
+  Implement `solve(instructions, forwarding)` in `starter.ts`: for straight-line
+  code, with no branches, return the number of bubbles the teaching pipeline
+  inserts. Each instruction has a kind, an optional destination and its source
+  registers. Before running the tests, count the bubbles for a load followed by
+  two instructions that each use the previous result, with and without
+  forwarding.
+</LabCard>
+
+<details>
+<summary>Check after attempting</summary>
+
+Track the cycle each instruction executes. With forwarding a consumer can
+execute one cycle after an ALU producer and two cycles after a load; without it,
+three cycles after any producer. Each instruction also executes at least one
+cycle after the one before it. The bubbles are how far each execute cycle had to
+move. For the load chain: 4 without forwarding, 1 with it.
+
+</details>
+
+<LabCard
+  title="02 / Reorder to remove a stall"
+  command="pnpm exec vitest run labs/computer-architecture-execution/pipelining-and-hazards/"
+>
+  Write a program of five instructions with two independent loads, each followed
+  by an instruction that uses its value. Order it so that, with forwarding,
+  `schedule` reports no bubbles, and add a test that checks it.
+</LabCard>
+
+<details>
+<summary>Check after testing</summary>
+
+Put both loads first, then the two uses, for example `ld r1`, `ld r2`,
+`add r3, r1, …`, `add r4, r2, …`, followed by any fifth instruction. Each use is
+then at least two cycles behind its load. Moving a use directly after its load
+brings back one bubble.
+
+</details>
+
+## Check your reasoning
+
+<ConceptCheck
+  id="pipelining-load-use"
+  question="With forwarding, an add uses the register a load has just loaded. Why does it still wait one cycle?"
+  options={[
+    {
+      label:
+        'The loaded value exists only after MEM, one stage later than an ALU result.',
+      correct: true,
+      explanation:
+        'Forwarding moves a value from the end of one stage to the start of the next EX. An ALU result is ready after EX, but a load reads memory in MEM, so the add can start EX only one cycle later.',
+    },
+    {
+      label:
+        'Forwarding works only for registers written by the instruction immediately before.',
+      explanation:
+        'The add is immediately after the load here. The problem is when the value is produced, not how far apart the instructions are.',
+    },
+    {
+      label: 'Loads and adds cannot use the ALU in the same cycle.',
+      explanation:
+        'That would be a structural hazard, which this pipeline avoids. Each instruction uses EX in a different cycle.',
+    },
+  ]}
+/>
+
+## Two-minute recap
+
+- A pipeline overlaps stages of different instructions: higher throughput, not
+  lower latency per instruction.
+- Data hazards make a consumer wait for its producer; forwarding removes most
+  waits, except the one-cycle load-use bubble.
+- Reordering independent instructions fills bubbles without changing results.
+- A taken branch resolved in EX flushes the instructions fetched behind it.
+- Bubbles and flushes are why real code runs at more than one cycle per
+  instruction.

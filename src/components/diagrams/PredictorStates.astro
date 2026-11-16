@@ -1,0 +1,173 @@
+---
+import DiagramFrame from '../learning/DiagramFrame.astro';
+import {
+  STATE_NAMES,
+  STREAMS,
+  accuracy,
+  predict,
+} from '../../../labs/computer-architecture-execution/branch-prediction/predictor';
+// The two-bit counter's states, and each predictor's accuracy on the
+// lesson's outcome streams, computed by the tested model.
+const states = STATE_NAMES['two-bit'];
+const rows = STREAMS.map((s) => ({
+  label: s.label,
+  count: s.outcomes.length,
+  one: accuracy(predict(s.outcomes, 'one-bit')),
+  two: accuracy(predict(s.outcomes, 'two-bit')),
+}));
+const pct = (x: number) => `${Math.round(x * 100)}%`;
+---
+
+<DiagramFrame caption="Top: a two-bit saturating counter. A taken branch moves it one step right, a not-taken branch one step left, and it stops at the ends; the two right states predict taken. Bottom: accuracy of a one-bit and a two-bit predictor on four outcome streams, from the tested model; bar length is proportional to accuracy.">
+  <div class="predictor">
+    <ol class="states" aria-label="Two-bit counter states, from 0 to 3">
+      {states.map((name, i) => (
+        <li class:list={{ taken: i >= 2 }}>
+          <span class="value">{i}</span>
+          <span class="name">{name}</span>
+          <span class="moves" aria-hidden="true">
+            <span>{i > 0 ? '← N' : 'N ↺'}</span>
+            <span>{i < 3 ? 'T →' : '↺ T'}</span>
+          </span>
+        </li>
+      ))}
+    </ol>
+    <ul class="legend" aria-hidden="true">
+      <li>
+        <span class="swatch one"></span>one-bit: remember the last outcome
+      </li>
+      <li>
+        <span class="swatch two"></span>two-bit saturating counter
+      </li>
+    </ul>
+    <ol class="streams">
+      {rows.map((r) => (
+        <li>
+          <p>
+            <strong>{r.label}</strong> <span>({r.count} branches)</span>
+          </p>
+          <span class="bar-row">
+            <span class="bar one" style={`width: ${r.one * 70}%`} />
+            <span class="value-label">one-bit {pct(r.one)}</span>
+          </span>
+          <span class="bar-row">
+            <span class="bar two" style={`width: ${r.two * 70}%`} />
+            <span class="value-label">two-bit {pct(r.two)}</span>
+          </span>
+        </li>
+      ))}
+    </ol>
+  </div>
+</DiagramFrame>
+<style>
+  .predictor {
+    display: grid;
+    gap: var(--space-4);
+  }
+  .states {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .predictor .states li {
+    display: grid;
+    gap: var(--space-1);
+    justify-items: center;
+    margin: 0;
+    padding: var(--space-2);
+    border: 2px solid var(--border-strong);
+    border-radius: var(--radius);
+    background: var(--bg);
+    text-align: center;
+  }
+  .predictor .states li.taken {
+    border-color: var(--chart-1);
+    background: var(--tone-blue-soft);
+  }
+  .states .value {
+    font-family: var(--font-mono);
+    font-size: var(--text-lg);
+    font-weight: 700;
+  }
+  .states .name {
+    font-size: var(--text-xs);
+  }
+  .moves {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+  }
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1) var(--space-4);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: var(--text-xs);
+  }
+  .predictor .legend li {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    margin: 0;
+  }
+  .swatch {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+  }
+  .one {
+    background: var(--chart-2);
+  }
+  .two {
+    background: var(--chart-1);
+  }
+  .streams {
+    display: grid;
+    gap: var(--space-3);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .predictor .streams li {
+    display: grid;
+    gap: 2px;
+    margin: 0;
+  }
+  .streams p {
+    margin: 0;
+    font-size: var(--text-sm);
+  }
+  .streams p span {
+    color: var(--muted);
+    font-size: var(--text-xs);
+  }
+  .bar-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+  .bar {
+    flex: none;
+    min-width: 2px;
+    height: 10px;
+    border-radius: 0 4px 4px 0;
+  }
+  .value-label {
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    white-space: nowrap;
+  }
+  @media (max-width: 480px) {
+    .states {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+</style>

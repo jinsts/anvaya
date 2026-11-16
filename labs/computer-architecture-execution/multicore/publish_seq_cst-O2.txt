@@ -1,0 +1,11 @@
+publish_seq_cst:
+.LFB2:
+	.cfi_startproc
+	endbr64
+	movl	%edi, data(%rip)
+	movl	$1, %eax
+	xchgl	ready(%rip), %eax
+	ret
+	.cfi_endproc
+.LFE2:
+	.size	publish_seq_cst, .-publish_seq_cst

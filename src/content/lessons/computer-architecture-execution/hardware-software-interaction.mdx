@@ -1,0 +1,249 @@
+---
+title: 'Hardware and software: Cross the boundary deliberately'
+shortTitle: Hardware and software
+summary: Trace how privilege, saved resume points, address translation and drivers let ordinary programs use shared hardware safely.
+subject: computer-architecture-execution
+path: engineering-fundamentals
+difficulty: intermediate
+estimatedMinutes: 40
+learningObjectives:
+  - Distinguish a procedure call, a system call, a synchronous exception, and an interrupt
+  - Trace entry into the kernel and the saved state required to resume a program
+  - Explain why an application pointer is not automatically a device address
+prerequisites:
+  - computer-architecture-execution/cpu-registers-and-instructions
+  - computer-architecture-execution/memory-hierarchy-and-caches
+  - computer-architecture-execution/stack-and-heap
+tags: [memory, execution, hardware]
+skills: [debugging, technical-communication, trade-off-analysis]
+status: draft
+drafter: agent
+interviewQuestions:
+  - prompt: Why can an application call a library function but not simply jump into arbitrary kernel code?
+    answer: >-
+      An ordinary procedure call transfers control without granting privilege.
+      A system call uses a hardware-defined entry mechanism that changes privilege
+      and transfers control to a kernel-selected entry point. The kernel checks
+      the request and its arguments rather than trusting the caller. Returning
+      requires restoring an authorized user context, not merely jumping to an
+      address supplied by the application.
+    followUps:
+      - Does entering the kernel necessarily switch to a different process?
+  - prompt: How do a system call, a page fault, and a timer interrupt differ?
+    answer: >-
+      A system call is a deliberate synchronous request from the executing program.
+      A page fault is a synchronous exception associated with a memory access and
+      may be recoverable or fatal. A timer interrupt is an asynchronous event
+      relative to the program's instruction stream. All can enter privileged
+      handlers, but the saved return location and the action before resuming
+      depend on the event and architecture.
+  - prompt: Why can a driver not always hand an application's numeric pointer directly to a device?
+    answer: >-
+      The pointer normally names a virtual address in a process's address space.
+      A device may use a different address translation domain, and the memory
+      must remain valid for the transfer's lifetime. The operating system and
+      driver establish suitable mappings and permissions, sometimes through an
+      IOMMU. Cache synchronization and ownership rules may also be required.
+sources:
+  - label: 'OSTEP, chapter 6 — Limited direct execution and protected kernel entry'
+    url: https://pages.cs.wisc.edu/~remzi/OSTEP/cpu-mechanisms.pdf
+  - label: 'OSTEP, chapter 15 — Address translation and protection'
+    url: https://pages.cs.wisc.edu/~remzi/OSTEP/vm-mechanism.pdf
+  - label: 'OSTEP, chapter 36 — Device interfaces, drivers, and memory-mapped I/O'
+    url: https://pages.cs.wisc.edu/~remzi/OSTEP/file-devices.pdf
+  - label: 'Linux kernel DMA guide — CPU addresses, device addresses, and IOMMU mappings'
+    url: https://docs.kernel.org/core-api/dma-api-howto.html
+---
+
+import UserKernelSequence from '../../../components/diagrams/UserKernelSequence.astro';
+
+import example from '../../../../labs/computer-architecture-execution/hardware-software-interaction/example.ts?raw';
+
+## A function call cannot grant permission
+
+Suppose an image editor saves a photograph. Its arithmetic instructions execute
+directly on the CPU, but it cannot overwrite an arbitrary storage device block.
+Other processes and the operating system share that hardware. The system needs a
+controlled way to request a write while preserving isolation.
+
+Think of an office service desk: anyone may submit a request, while only staff
+can operate the locked equipment. The analogy stops at enforcement. A CPU's
+privilege checks are hardware rules, not a convention that cooperative programs
+may ignore.
+
+**User mode** restricts operations available to applications. **Kernel mode**
+permits the operating system to manage protected resources. Exact privilege
+levels and instruction names depend on the architecture. A normal function call
+changes control flow within the current privilege context; it does not make the
+callee privileged.
+
+A system call also has a binary interface, like the
+[calling convention](/learn/computer-architecture-execution/cpu-registers-and-instructions/)
+for ordinary calls: it defines how the request number and arguments reach the
+kernel. Following it does not authorize the request; the kernel still checks
+it.
+
+## Three reasons to enter a handler
+
+<UserKernelSequence />
+
+An **exception** is an event associated with executing an instruction. An
+**interrupt** arrives from a source such as a timer or device rather than being
+caused by the program's current instruction. Terminology varies by ISA; here,
+“synchronous” means tied to the instruction stream.
+
+The figure follows all three from the same instruction. The trigger decides
+where the program resumes: after a completed request, at an access that must be
+retried, or at an instruction that never started.
+
+A page fault does not always mean a program bug or a storage read. The operating
+system might provide a newly allocated page, establish a mapping, or terminate
+an invalid access. The faulting operation can be retried only when the handler
+has made that safe and the architecture supports the required restart behavior.
+
+For a syscall, the wrapper supplies the request and arguments; protected entry
+establishes a safe context, the kernel validates and services the request, and
+return code restores the authorized continuation.
+
+Hardware and entry code divide the saving work differently across systems.
+Entering the kernel also does not necessarily switch processes: the same thread
+may run kernel code and return directly. A blocking request can instead let the
+scheduler run another thread.
+
+## Test the return location
+
+The lab models a CPU using **instruction indices**, not byte addresses. A syscall
+at index 12 consumes that instruction and saves 13. A restartable fault at 12
+saves 12. An interrupt arrives between instructions, so its current index already
+names the next instruction to execute.
+
+<details>
+<summary>Inspect the tested model and expected output</summary>
+
+<CodeExample
+  title="Protected entry and return in an instruction-index model"
+  code={example}
+  verified
+  output={'syscall resumes at 13\nfault retries 12\ninterrupt resumes at 12'}
+/>
+
+</details>
+
+The invariant is that kernel entry preserves a user resume location, and only a
+kernel state with that location can return. Inputs stay unchanged. Each
+transition performs a bounded number of checks and field copies: O(1) time and
+space under the fixed-size state model.
+
+<Callout title="An explicit simplification">
+  This TypeScript model is not an emulator. Real instructions have
+  architecture-specific lengths, entry rules, register effects, exception
+  classes, and nested handlers. Some exceptions cannot resume. The model
+  deliberately accepts only entry from user mode and a restartable kind of
+  fault; the tests establish those rules alone.
+</Callout>
+
+## Addresses and device registers have different contracts
+
+An application's pointer usually names a **virtual address**. The processor's
+memory-management unit translates authorized accesses to physical memory using
+configuration managed by the operating system. Two processes can use the same
+virtual number for different physical pages. A valid pointer in one process is
+therefore not a universal address.
+
+**Memory-mapped I/O**, or MMIO, exposes device control or status registers in an
+address range. Reading such a register can acknowledge an event; writing it can
+start work. It follows the device's access widths, ordering, and mapping rules.
+Treating it as an ordinary cached array can be incorrect.
+
+A **driver** translates an operating-system request into a device protocol. It
+may set up buffers, write registers, submit a queue entry, and process completion.
+Device-accessible memory may need a separate mapping, possibly through an IOMMU,
+which translates device requests and can restrict their access. An application's
+pointer does not establish that mapping or keep a buffer alive.
+
+The next lesson follows [I/O submission and completion](/learn/computer-architecture-execution/io-mechanisms/).
+The boundary matters even when an API hides every register: a call that returned
+success may only have copied data into an operating-system buffer.
+
+Several cores sharing one memory raise separate questions of coherence,
+ordering and atomicity; the
+[multicore lesson](/learn/computer-architecture-execution/multicore-coherence-and-atomics/)
+covers them.
+
+## Practise the boundary
+
+<LabCard
+  title="01 / Choose the resume point"
+  command="pnpm lab computer-architecture-execution/hardware-software-interaction"
+>
+  Implement `solve(pc, event)` in `starter.ts`: return the user instruction
+  index that runs after the kernel handles the event. Before running the tests,
+  predict the result for each event at index 0, and say what should happen for a
+  system call at the largest safe integer.
+</LabCard>
+
+<details>
+  <summary>Check after attempting</summary>
+
+A system call at 0 resumes at 1; a restartable fault and an interrupt resume at 0. A system call at `Number.MAX_SAFE_INTEGER` would need a resume index that is
+not a safe integer, so the model rejects it with a `RangeError` instead of
+returning a wrong index. The handler's own index never becomes the resume point:
+it controls execution inside the kernel, while the saved context identifies
+where the user program continues.
+
+</details>
+
+<LabCard
+  title="02 / Audit a device handoff"
+  command="pnpm exec vitest run labs/computer-architecture-execution/hardware-software-interaction/"
+>
+  Write a short review of a fictional driver that submits a temporary
+  application pointer, returns immediately, and lets the application reuse that
+  memory. Identify the address-domain and lifetime assumptions, then propose the
+  state information the I/O lesson's request model should retain until
+  completion.
+</LabCard>
+
+<details>
+  <summary>Hint after an attempt</summary>
+
+A numeric pointer alone proves neither device visibility nor lifetime. Track an
+authorized mapping, buffer ownership, transfer bounds, and completion status.
+The driver must preserve the memory and reclaim it only under the platform's
+completion and synchronization contract.
+
+</details>
+
+## Check your reasoning
+
+<ConceptCheck
+  id="hardware-resume-point"
+  question="In this lesson's model, a restartable page fault occurs at instruction index 12. After the handler maps the page, where does the program resume, and why?"
+  options={[
+    {
+      label:
+        'At 12, so the faulting access runs again now that it can succeed.',
+      correct: true,
+      explanation:
+        'The fault stopped the instruction before it completed, so the saved resume point is the instruction itself. A system call at 12 would resume at 13, because the request was the instruction’s whole purpose.',
+    },
+    {
+      label: 'At 13, because the handler already performed the access.',
+      explanation:
+        'The handler made the access possible; it did not execute the program’s instruction. Skipping to 13 would lose the access.',
+    },
+    {
+      label: 'At the handler’s own index, because the kernel ran last.',
+      explanation:
+        'The handler’s index controls execution inside the kernel. Return restores the saved user context instead.',
+    },
+  ]}
+/>
+
+## Two-minute recap
+
+- Ordinary calls preserve privilege; system calls enter through controlled mechanisms.
+- Syscalls, synchronous exceptions, and interrupts differ in cause and resumption rules.
+- A kernel entry need not change which process is running.
+- Virtual pointers, device addresses, and MMIO registers have distinct contracts.
+- Drivers make device requirements explicit for software.

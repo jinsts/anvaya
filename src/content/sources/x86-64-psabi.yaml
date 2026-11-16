@@ -1,0 +1,7 @@
+name: 'System V Application Binary Interface: AMD64 Architecture Processor Supplement'
+kind: specification
+by: H.J. Lu, Michael Matz, Milind Girkar, Jan Hubička, Andreas Jaeger and Mark Mitchell
+url: https://gitlab.com/x86-psABIs/x86-64-ABI
+description: >-
+  The x86-64 psABI used by Linux: register usage, argument passing, stack frame
+  alignment and data layout that compilers and the native labs follow.

@@ -95,10 +95,29 @@ Owner request, decided in [ADR 0007](docs/adr/0007-curriculum-scaffolding.md).
       lists (88 topics); there are no lessons.
 - [x] Subject and path pages render the overview, outline, skills and
       prerequisite links. Playbook, authoring guide and README updated.
-- [ ] Browser tests and visual review of the new pages: not run in the
-      authoring environment (Chromium could not start). See
-      [VERIFICATION.md](docs/VERIFICATION.md).
+- [x] Browser tests and visual review of the new pages: run later, once
+      Chromium could start; the subject and path pages are covered by the
+      catalog browser tests and accessibility scans in every gate run since.
+      See [VERIFICATION.md](docs/VERIFICATION.md).
 - [ ] Owner review of the subject overviews, which are agent drafts.
 
 No lesson was written, no competency is recorded as achieved, and no push,
 deployment or license choice is part of this entry.
+
+## Subject chapters and lesson pages — 2026-11-13
+
+Owner request, proposed in [ADR 0008](docs/adr/0008-subject-chapters-and-lesson-pages.md).
+
+- [x] A path section is a chapter. A subject's adjacent sections are grouped on
+      the path page, the study sidebar and the subject outline; separated
+      chapters and a duplicate overview chapter list fail the build.
+- [x] Lesson sizing guidance: one teaching unit per page, usually 15–30 minutes.
+- [x] Computer Architecture & Execution restructured into six chapters. Its nine
+      lessons keep their URLs; ten planned pages hold split or missing material.
+- [ ] Owner review of the ADR and the restructured outline (approve by merging).
+- [x] Draft the planned pages, one lesson per change, moving material out of the
+      existing lessons named in the path's YAML comments: every planned Computer
+      Architecture & Execution page is now an agent draft on the
+      `content/computer-architecture` branch (not pushed), and no planned entry
+      remains in its chapters.
+- [ ] Owner review and promotion of those drafts.

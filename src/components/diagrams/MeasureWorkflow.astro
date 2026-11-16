@@ -1,0 +1,74 @@
+---
+import DiagramFrame from '../learning/DiagramFrame.astro';
+// The measurement loop the lesson follows; each step names its evidence.
+const steps = [
+  { name: 'Predict', detail: 'a falsifiable claim with a mechanism' },
+  {
+    name: 'Fix the workload',
+    detail: 'input, sizes, timed region, cache state',
+  },
+  { name: 'Fix the environment', detail: 'machine, compiler, flags, load' },
+  { name: 'Check the result', detail: 'same output, outside the timer' },
+  { name: 'Repeat and alternate', detail: 'many runs, candidates interleaved' },
+  { name: 'Summarize the spread', detail: 'median, p10–p90, not one number' },
+  { name: 'Test the cause', detail: 'generated code, counters, one change' },
+];
+---
+
+<DiagramFrame caption="A measurement loop. A timing answers whether something got faster; only the last step tests why, and its answer is the next prediction.">
+  <ol class="loop">
+    {steps.map((s, i) => (
+      <li>
+        <span class="n" aria-hidden="true">
+          {i + 1}
+        </span>
+        <strong>{s.name}</strong>
+        <span class="detail">{s.detail}</span>
+      </li>
+    ))}
+  </ol>
+  <p class="back">
+    <span aria-hidden="true">↻</span> The cause you find becomes the next
+    prediction.
+  </p>
+</DiagramFrame>
+<style>
+  .loop {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 9.5rem), 1fr));
+    gap: var(--space-3);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .loop li {
+    position: relative;
+    display: grid;
+    align-content: start;
+    gap: 2px;
+    margin: 0;
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg);
+    font-size: var(--text-sm);
+  }
+  .loop li:last-child {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+  }
+  .n {
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+  }
+  .detail {
+    color: var(--muted);
+    font-size: var(--text-xs);
+  }
+  .back {
+    margin: var(--space-3) 0 0;
+    color: var(--muted);
+    font-size: var(--text-sm);
+  }
+</style>

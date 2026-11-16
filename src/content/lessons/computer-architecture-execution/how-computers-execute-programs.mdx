@@ -1,0 +1,262 @@
+---
+title: 'Program execution: Follow the changing state'
+shortTitle: Program execution
+summary: Trace instructions, registers, and control flow to explain how stored program bytes become a running computation.
+subject: computer-architecture-execution
+path: engineering-fundamentals
+difficulty: foundation
+estimatedMinutes: 35
+learningObjectives:
+  - Trace the program counter and register state across sequential instructions and branches
+  - Identify which datapath units a load, an arithmetic instruction and a store use
+  - Distinguish a stored program, a running process, and a processor executing instructions
+  - Explain why an instruction count does not determine elapsed time
+prerequisites: []
+tags: [execution, instructions, memory]
+skills: [debugging, implementation, technical-communication]
+status: draft
+drafter: agent
+interviewQuestions:
+  - prompt: How does a processor know which instruction to execute next?
+    answer: >-
+      The program counter identifies an instruction address in the architectural
+      execution model. Normal control flow advances to the next instruction,
+      while branches, calls, returns and exceptions can change that destination.
+      The exact increment depends on the instruction encoding and architecture.
+      Modern processors may fetch speculatively, so this model explains the
+      committed behavior rather than every internal action.
+    followUps:
+      - Why does adding one to the program counter work in our teaching model but not generally in a real machine?
+  - prompt: What is the difference between a program and a process?
+    answer: >-
+      A program is stored instructions and associated data, such as an executable
+      file. A process is an operating system abstraction for a running instance,
+      with an address space, execution state and resources. Two processes can
+      run the same program while keeping different data and register states.
+      Scheduling decides when their threads execute on available processors.
+  - prompt: Why can two executions with the same instruction count take different amounts of time?
+    answer: >-
+      An instruction count measures completed work at the instruction-set level,
+      not how long operands take to arrive. Cache misses, dependencies and branch
+      prediction change the cycles required, while frequency and scheduling
+      affect elapsed time. Pipelining also overlaps work on several instructions.
+      A useful comparison therefore states the processor, workload and measured
+      conditions instead of assuming one instruction means one cycle.
+  - prompt: Why can a processor execute instructions out of order without changing the program's result?
+    answer: >-
+      The instruction set defines which architectural results a program may
+      observe. An out-of-order implementation can start independent work early
+      while respecting dependencies and the architecture's ordering rules.
+      Speculative work must be prevented from committing an incorrect
+      architectural result. The internal execution order therefore need not be
+      the same as the order used to explain the program's committed state.
+sources:
+  - label: 'Dive into Systems — The von Neumann architecture'
+    url: https://diveintosystems.org/book/C5-Arch/von.html
+  - label: 'Dive into Systems — Processor instruction execution'
+    url: https://diveintosystems.org/book/C5-Arch/instrexec.html
+  - label: 'MIT Computation Structures, L13 — Building the Beta datapath: fetch, ALU, load and store paths'
+    url: https://computationstructures.org/lectures/beta/beta.html
+  - label: 'Dive into Systems — Pipelining instruction execution'
+    url: https://diveintosystems.org/book/C5-Arch/pipelining.html
+  - label: 'Operating Systems: Three Easy Pieces — The abstraction of a process'
+    url: https://pages.cs.wisc.edu/~remzi/OSTEP/cpu-intro.pdf
+---
+
+import BranchTimeline from '../../../components/diagrams/BranchTimeline.astro';
+import DatapathStepper from '../../../components/interactive/DatapathStepper';
+
+import example from '../../../../labs/computer-architecture-execution/how-computers-execute-programs/example.ts?raw';
+import datapath from '../../../../labs/computer-architecture-execution/how-computers-execute-programs/datapath.ts?raw';
+
+## A program is a sequence of state changes
+
+Suppose a counter begins at two and is reduced until it reaches zero. A source
+language might hide the steps behind a loop. At the machine level, each
+instruction reads some state, performs an operation, and chooses what happens
+next. Following those changes is the foundation of reading a crash report or
+explaining a performance surprise.
+
+Think of a musician following a score. The score is stored information; the
+current position and the notes being played describe an execution. A repeat mark
+changes which part comes next. The analogy stops at meaning: a processor follows
+encoded operations and state transitions, without understanding the program's
+purpose.
+
+A **stored-program computer** keeps instructions in memory as well as data. The
+processor contains control circuitry, arithmetic and logic circuitry, and small
+storage locations called **registers**. Memory holds the larger working set;
+input and output connect execution to devices. Modern systems refine this model
+with caches and separate instruction and data paths, but it remains a useful
+starting point.
+
+## Follow one instruction through the datapath
+
+The **datapath** is the hardware an instruction flows through. The **program
+counter** (PC) holds the position of the next instruction. Instruction memory
+returns that instruction, and the **decoder** turns its bits into control
+signals: which registers to read, what the **ALU** (arithmetic logic unit)
+should compute, and whether data memory is read or written. Meanwhile a small
+adder computes the next PC.
+
+The stepper runs three instructions that increment a value in memory, the same
+load, add and store that the compiled C function `bump` performs in a later
+lesson. Before each step, predict which state changes besides the PC.
+
+<DiagramFrame caption="A single-cycle teaching datapath. Highlighted units and wires are the ones the tested model reports for the current instruction. A real ISA with 4-byte instructions adds 4 to the PC instead of 1.">
+  <DatapathStepper client:visible />
+</DiagramFrame>
+
+| Step | Instruction        | Path through the datapath                                | State after              |
+| ---- | ------------------ | -------------------------------------------------------- | ------------------------ |
+| 1    | `load R0, [1000]`  | ALU passes the address; data memory returns 7 to R0      | PC 1, R0 7, [1000] 7     |
+| 2    | `add R0, R0, 1`    | R0 and the constant enter the ALU; the result goes to R0 | PC 2, R0 8, [1000] 7     |
+| 3    | `store R0, [1000]` | ALU passes the address; R0's value is written to memory  | PC 3, R0 8, [1000] **8** |
+
+Only the store changes memory. Between the load and the store the new value
+exists only in R0, which is why a crash or another thread reading memory in
+between would still see 7.
+
+<details>
+<summary>Inspect the tested datapath model and expected output</summary>
+
+<CodeExample
+  title="A register machine that reports the units and wires each step uses"
+  code={datapath}
+  verified
+  output={
+    'load R0, [1000]: PC 1, R0 7, memory[1000] 7\nadd R0, R0, 1: PC 2, R0 8, memory[1000] 7\nstore R0, [1000]: PC 3, R0 8, memory[1000] 8'
+  }
+/>
+
+</details>
+
+## Trace a deliberately small machine
+
+Our illustrative machine has one eight-bit **accumulator**, a register that
+holds the arithmetic result. Its unsigned values range from 0 through 255;
+addition wraps modulo 256. Its PC counts instruction positions, beginning at
+zero. That choice makes the trace small; it is not an x86-64 or ARM64 encoding.
+
+The program sets the accumulator to 2, adds 255, branches back to the add while
+the result is nonzero, then halts. Adding 255 modulo 256 has the effect of
+subtracting one. Before each instruction, predict both the new accumulator and
+where the PC will point afterward.
+
+| Instruction position | Operation in this teaching machine    | Next effect                |
+| -------------------- | ------------------------------------- | -------------------------- |
+| 0                    | Set accumulator to 2                  | Continue at 1              |
+| 1                    | Add 255 modulo 256                    | Continue at 2              |
+| 2                    | Branch to 1 if accumulator is nonzero | Otherwise continue at 3    |
+| 3                    | Halt                                  | Stop with PC retained at 3 |
+
+<BranchTimeline />
+
+After the first addition the accumulator is 1, so the branch returns to
+instruction position 1. After the second it is 0, so execution continues to
+position 3. The branch executes twice, even though it appears once in the
+program. **Static instruction count** counts instructions in the program;
+**dynamic instruction count** counts the instructions actually executed.
+
+<details>
+<summary>Inspect the tested model and expected output</summary>
+
+<CodeExample
+  title="A bounded instruction trace in TypeScript"
+  code={example}
+  verified
+  output={'0: 0\n1: 2\n2: 1\n1: 1\n2: 0\n3: 0\n3: 0 halted'}
+/>
+
+</details>
+
+Each output line shows PC and accumulator after a state transition, with the
+initial state first. The tests check the full sequence, unsigned wraparound,
+taken and untaken branches, invalid operands, and the step limit.
+
+<details>
+<summary>Model contract and simulator costs</summary>
+
+Every successful step uses a valid instruction position and keeps the
+accumulator within one unsigned byte. Invalid control flow throws instead of
+reading arbitrary host memory. A step budget stops an endless loop; reaching it
+is a simulator limit, not evidence that a real program would halt. For p stored
+instructions and s executed steps, the simulator does O(p + s) work and keeps an
+O(s) trace so you can inspect it. These are costs of the TypeScript model, not
+of a processor.
+
+</details>
+
+## Separate program behavior from processor timing
+
+The trace completes six instructions: one set, two additions, two branches and
+one halt. It contains no clock model. Six instructions do not imply six cycles,
+six nanoseconds, or any particular hardware speed.
+
+A pipeline overlaps instruction stages. The [performance lesson](/learn/computer-architecture-execution/architecture-and-performance/) works the latency, throughput and dependency timeline.
+
+## The operating system supplies an execution context
+
+A file containing instructions is a **program**. A **process** gives a running
+instance an address space, saved execution state and resources. The operating
+system arranges initial execution and schedules threads onto processors. A
+single-threaded process may stop running while another uses the same core, then
+resume from saved state.
+
+Our model omits loading, address translation, interrupts and multiple threads.
+It also uses a halt instruction to finish the demonstration; an ordinary hosted
+application normally exits through its runtime and operating system. Keep the
+layers separate when diagnosing a failure: the PC explains control flow, while
+the process and runtime explain which memory and services that flow can use.
+
+## Attempt the control-flow contract
+
+<LabCard title="Independent execution attempt" command="pnpm lab computer-architecture-execution/how-computers-execute-programs">
+Implement `solve(initial)` in `starter.ts`: count executed instructions for the
+set/add-255/conditional-branch/halt program. Count the untaken branch and halt.
+Try 7 and 19, then explain the special case where the initial byte is zero.
+</LabCard>
+<details>
+<summary>Check after deriving the count</summary>
+
+For a positive byte n, there are n additions, n branches, one set and one halt:
+2n + 2 instructions. Zero first wraps to 255, so the loop runs 256 times and the
+count is 514. The reference uses a sufficient step budget and the same contracts
+as the learner's attempt.
+
+</details>
+
+## Check your reasoning
+
+<ConceptCheck
+  id="execution-branch-state"
+  question="After the accumulator becomes zero, why does our conditional branch continue to the halt instruction?"
+  options={[
+    {
+      label:
+        'Zero makes the branch condition false, so the normal next position is selected.',
+      correct: true,
+      explanation:
+        'The instruction branches only when the accumulator is nonzero. With zero, nextPC stays at pc + 1, which selects halt.',
+    },
+    {
+      label: 'Zero automatically stops every processor.',
+      explanation:
+        'Zero is an ordinary data value. This program stops because control reaches halt; without that instruction, execution would continue or fail.',
+    },
+    {
+      label: 'The processor knows the source loop has finished.',
+      explanation:
+        'The model executes its instruction semantics. It does not retain or interpret a higher-level loop or programmer intent.',
+    },
+  ]}
+/>
+
+## Two-minute recap
+
+- A program defines operations; execution changes registers, memory and control flow.
+- The PC selects the next instruction; a branch can replace the normal successor.
+- Static instructions and dynamically executed instructions are different counts.
+- A sequential trace describes committed behavior without predicting hardware timing.
+- Pipelining can improve throughput while each instruction still has several stages.
+- A process supplies an execution context; this simulator models only a small part of it.

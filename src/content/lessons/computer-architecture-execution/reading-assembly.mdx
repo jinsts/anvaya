@@ -1,0 +1,351 @@
+---
+title: 'Reading assembly: Follow branches, loops and calls'
+shortTitle: Reading assembly
+summary: Read real GCC output for a loop and a call, find the loop's backward branch, predict conditional jumps from flags, and trace registers and the stack through the calling convention.
+subject: computer-architecture-execution
+path: engineering-fundamentals
+difficulty: intermediate
+estimatedMinutes: 35
+learningObjectives:
+  - Map the parts of a C loop to the instructions, labels and branches GCC generates
+  - Predict whether a conditional jump is taken from the flags a cmp or test sets
+  - Trace argument, return and callee-saved registers and the stack through a call
+  - Explain what -O2 changed in a listing compared with -O0
+prerequisites:
+  - computer-architecture-execution/cpu-registers-and-instructions
+  - computer-architecture-execution/binary-and-data-representation
+tags: [instructions, registers, execution, compilation]
+skills: [debugging, technical-communication, ai-assisted-verification]
+status: draft
+drafter: agent
+interviewQuestions:
+  - prompt: How do you find a loop in an unfamiliar assembly listing?
+    answer: >-
+      Look for a conditional jump whose target label is above it: a backward
+      branch. The instructions between the label and the jump are the loop
+      body plus its exit test. Optimized code often tests the condition at the
+      bottom and guards the first iteration with a separate check before the
+      loop, so the source's `for` header is split across two places. The
+      instructions that change the compared register tell you the induction
+      variable, which may be a pointer rather than the source's index.
+  - prompt: What does a compiler typically change in a simple loop between -O0 and -O2?
+    answer: >-
+      At -O0 every variable lives in a stack slot, so each use is a load and
+      each update a store, which keeps the code easy to debug. At -O2
+      variables stay in registers, an index can become a pointer that advances
+      by the element size, the exit test moves to the bottom with a guard
+      before the loop, and the loop may be unrolled or vectorized. The results
+      are the same; the dynamic instruction count and the debugger's view of
+      variables differ.
+  - prompt: Why does a function push rbx before using it?
+    answer: >-
+      Under the System V x86-64 ABI, rbx is callee-saved: a function must
+      return with the value its caller left there. A function that needs a
+      value to survive its own calls keeps it in such a register, so it must
+      save the caller's value first and restore it before returning. Argument
+      and temporary registers such as rdi, rsi, rdx and rax are caller-saved,
+      so any call may overwrite them.
+    followUps:
+      - Why must rsp be a multiple of 16 just before a call instruction?
+  - prompt: How does a conditional jump decide whether to jump?
+    answer: >-
+      A preceding instruction such as `cmp` or `test` computes a result only
+      for its flags: zero, sign, carry and overflow. The jump reads a
+      combination of flags. Signed comparisons use sign and overflow, for
+      example `jl` jumps when SF differs from OF; unsigned comparisons use the
+      carry flag, for example `jb` jumps when CF is set. The same bits can
+      therefore compare as less under one condition and greater under another.
+  - prompt: How does a function call differ between x86-64 and ARM64?
+    answer: >-
+      On x86-64, `call` pushes the return address on the stack and `ret` pops
+      it. On ARM64, `bl` puts the return address in the link register x30 and
+      `ret` jumps to x30, so a function that calls another must first save x30,
+      usually with the frame pointer in a single `stp`. Both ABIs pass the first
+      arguments in registers and require a 16-byte aligned stack at calls.
+sources:
+  - label: 'Dive into Systems, section 7.4 — Conditional comparison and jump instructions'
+    url: https://diveintosystems.org/book/C7-x86_64/preliminaries.html#_conditional_jump_instructions
+  - label: 'Dive into Systems, section 7.6 — Loops in assembly'
+    url: https://diveintosystems.org/book/C7-x86_64/loops.html#_for_loops_in_assembly
+  - label: 'Dive into Systems, section 7.5 — Functions in assembly and parameter registers'
+    url: https://diveintosystems.org/book/C7-x86_64/functions.html#_function_parameters
+  - label: 'System V AMD64 psABI, 3.2 — Register usage and the stack frame'
+    url: https://gitlab.com/x86-psABIs/x86-64-ABI
+  - label: 'Arm AAPCS64 — Link register, callee-saved registers and stack alignment'
+    url: https://github.com/ARM-software/abi-aa/blob/main/aapcs64/aapcs64.rst
+  - label: 'GCC 15.2 manual — What -O2 enables'
+    url: https://gcc.gnu.org/onlinedocs/gcc-15.2.0/gcc/Optimize-Options.html#index-O2
+---
+
+import AnnotatedListing from '../../../components/diagrams/AnnotatedListing.astro';
+import ControlFlowGraph from '../../../components/diagrams/ControlFlowGraph.astro';
+import AssemblyStepper from '../../../components/interactive/AssemblyStepper';
+import {
+  SCALE_O2,
+  SUM_O2,
+} from '../../../../labs/computer-architecture-execution/reading-assembly/annotations';
+
+import sumSource from '../../../../labs/computer-architecture-execution/reading-assembly/sum.c?raw';
+import scaleSource from '../../../../labs/computer-architecture-execution/reading-assembly/scale.c?raw';
+import mainSource from '../../../../labs/computer-architecture-execution/reading-assembly/main.c?raw';
+import sumO0 from '../../../../labs/computer-architecture-execution/reading-assembly/sum-O0.txt?raw';
+import sumO2 from '../../../../labs/computer-architecture-execution/reading-assembly/sum-O2.txt?raw';
+import scaleO0 from '../../../../labs/computer-architecture-execution/reading-assembly/scale-O0.txt?raw';
+import scaleO2 from '../../../../labs/computer-architecture-execution/reading-assembly/scale-O2.txt?raw';
+import sumArm from '../../../../labs/computer-architecture-execution/reading-assembly/sum-arm64-O2.txt?raw';
+import scaleArm from '../../../../labs/computer-architecture-execution/reading-assembly/scale-arm64-O2.txt?raw';
+import model from '../../../../labs/computer-architecture-execution/reading-assembly/x86.ts?raw';
+
+## When the source is not enough
+
+A profiler points at one line of C, `total += values[i]`, and the debugger says
+`i` is "optimized out". A benchmark of that loop runs faster than seems
+possible. Both questions are answered by the instructions the compiler actually
+produced. You do not need to write assembly to read it: a listing is a small
+number of patterns repeated.
+
+Reading a listing is like reading a recipe translated into a language with a
+tiny vocabulary: each step is simple, and the skill is recognizing which group
+of steps makes up "knead the dough". The analogy stops at order: the compiler
+may rearrange, merge or delete steps as long as the result is the same.
+
+The [registers lesson](/learn/computer-architecture-execution/cpu-registers-and-instructions/)
+read three instructions of a straight-line function. This page adds the two
+things that make real code non-linear: **branches** and **calls**. Every listing
+here is GCC 15.2's output for Linux x86-64, compiled and checked by the native
+lab.
+
+## Read the listing beside the source
+
+Listings use AT&T syntax: `op source, destination`, a size suffix (`l` for 32
+bits, `q` for 64), `%` before registers and `$` before constants.
+`8(%rdi)` reads memory at rdi + 8, and `(%rdi,%rsi,4)` means rdi + rsi × 4.
+Lines starting with a dot are assembler directives, such as alignment and
+unwinding data; labels end with a colon.
+
+<AnnotatedListing
+  source={sumSource}
+  listing={sumO2}
+  annotations={SUM_O2}
+  label="sum_to in C and in GCC -O2 assembly"
+  caption="sum_to at -O2. Each number links the instructions to the part of the C loop they implement; the groups are the lesson's reading of the listing, and a test checks them against the committed file."
+/>
+
+The compiler kept the computation and changed its shape. There is no `i`:
+`%rdi` itself walks through the array, 4 bytes per element, until it reaches an
+end pointer computed once before the loop. That is why the debugger cannot
+show `i`. The `endbr64` at the top marks a valid target for indirect branches,
+a security feature; it does no arithmetic.
+
+## Conditions are flags plus a jump
+
+Comparisons do not produce a true or false value in a register. `cmp b, a`
+computes a − b, and `test b, a` computes a AND b, only to set **flags**: ZF if
+the result is zero, SF if its top bit is set, and CF and OF for unsigned carry
+and signed overflow, the same conditions as in the
+[binary lesson](/learn/computer-architecture-execution/binary-and-data-representation/).
+The next conditional jump reads them:
+
+<div className="table-scroll" tabIndex={0} role="region" aria-label="Conditional jumps and the flags they read">
+
+| Jump  | Jumps when        | Meaning after `cmp b, a` |
+| ----- | ----------------- | ------------------------ |
+| `jne` | ZF = 0            | a ≠ b                    |
+| `jl`  | SF ≠ OF           | a < b, signed            |
+| `jle` | ZF = 1 or SF ≠ OF | a ≤ b, signed            |
+| `jb`  | CF = 1            | a < b, unsigned          |
+
+</div>
+
+Signed and unsigned conditions read different flags from the same subtraction,
+so the compiler picks the jump from the C types. In `sum_to`, `testl %esi, %esi`
+followed by `jle` asks whether `count` is zero or negative, because `count` is a
+signed `int`.
+
+## A loop is a backward branch
+
+<ControlFlowGraph
+  graphs={[
+    { title: 'sum_to at -O0', listing: sumO0 },
+    { title: 'sum_to at -O2', listing: sumO2 },
+  ]}
+  caption="Basic blocks, computed from the two listings by the tested model. A block runs straight through; arrows on the right are jumps. The highlighted backward jump is the loop. -O0 jumps down to the test first; -O2 guards once, then tests at the bottom."
+/>
+
+A **basic block** is a run of instructions with one entry and one exit: control
+enters at its first instruction and leaves at its last. Drawing blocks and the
+jumps between them gives the function's **control-flow graph**. A jump to a
+block above is a loop.
+
+Both versions test `i < count` at the bottom of the loop, so each iteration
+needs only one branch. -O0 reaches the test with an unconditional `jmp` the
+first time; -O2 checks `count ≤ 0` once before entering. Before you step,
+predict how many times `jne` jumps back for four values.
+
+<AssemblyStepper client:visible listings={{ sumO0, sumO2, scaleO2 }} />
+
+The same -O2 loop without JavaScript, for `values = {3, 5, 7, 9}` at 0x5000:
+
+<div className="table-scroll" tabIndex={0} role="region" aria-label="The -O2 loop, iteration by iteration">
+
+| Iteration | `addl (%rdi), %eax` | rdi after `addq $4` | `cmpq %rdx, %rdi` | `jne .L3`     |
+| --------- | ------------------- | ------------------- | ----------------- | ------------- |
+| 1         | eax = 3             | 0x5004              | 0x5004 ≠ 0x5010   | jumps         |
+| 2         | eax = 8             | 0x5008              | 0x5008 ≠ 0x5010   | jumps         |
+| 3         | eax = 15            | 0x500c              | 0x500c ≠ 0x5010   | jumps         |
+| 4         | eax = 24            | 0x5010              | equal, ZF = 1     | falls through |
+
+</div>
+
+For this input -O2 executes 23 instructions and -O0 executes 58: -O0 loads `i`
+and `total` from the stack and stores them back on every iteration. That is a
+count of executed instructions in the model, not a timing.
+
+## Calls follow the calling convention
+
+`scale_sum` calls `sum_to`, which is compiled in a different file, so GCC
+cannot see which registers `sum_to` uses. It relies only on the **System V
+x86-64 calling convention**: the first integer arguments arrive in rdi, rsi and
+rdx, an `int` result returns in eax, and rbx, rbp and r12–r15 are
+**callee-saved**, so a function must return with the values its caller left
+there. Every other general-purpose register may be overwritten by any call.
+
+<AnnotatedListing
+  source={scaleSource}
+  listing={scaleO2}
+  annotations={SCALE_O2}
+  label="scale_sum in C and in GCC -O2 assembly"
+  caption="scale_sum at -O2. factor must survive the call, so it moves from edx, which sum_to may overwrite, to the callee-saved ebx, whose old value is pushed first."
+/>
+
+In the stepper, choose `scale_sum` and watch the stack. `pushq %rbx` saves the
+caller's rbx; `call` pushes the address of the `imull` that follows it and
+jumps; `ret` in `sum_to` pops that address and resumes there. The push of rbx
+also makes rsp a multiple of 16 at the `call`, as the ABI requires. The `@PLT`
+suffix asks the linker to route the call through a table in case `sum_to` ends
+up in a shared library; the [compilation lesson](/learn/computer-architecture-execution/compilation-and-execution/)
+covers linking.
+
+<details>
+<summary>Compare the same functions compiled for ARM64</summary>
+
+GCC 15.2 targeting aarch64-linux-gnu, also at -O2, produced these listings:
+
+<CodeExample title="sum_to, ARM64 -O2" code={sumArm} language="text" />
+<CodeExample title="scale_sum, ARM64 -O2" code={scaleArm} language="text" />
+
+ARM64 is a load/store architecture, so the loop loads each element with `ldr`,
+whose `[x2], 4` form also advances the pointer, before adding it. `bl` puts the
+return address in the link register x30 instead of on the stack, so
+`scale_sum` saves x29 and x30 together with `stp` before calling. Here GCC
+keeps `factor` in a stack slot across the call, `str w2, [sp, 28]`, and reloads
+it afterwards, rather than in a callee-saved register.
+
+</details>
+
+<details>
+<summary>Inspect the tested model, the -O0 listings and the C sources</summary>
+
+<CodeExample title="sum_to, x86-64 -O0" code={sumO0} language="text" />
+<CodeExample title="scale_sum, x86-64 -O0" code={scaleO0} language="text" />
+<CodeExample
+  title="main.c: the native program's checks"
+  code={mainSource}
+  language="c"
+/>
+<CodeExample
+  title="A subset x86-64 interpreter that runs the listings"
+  code={model}
+/>
+
+</details>
+
+The tests run all four committed listings in the interpreter and check the
+results against the native program's assertions, check that rbx is preserved,
+that rsp returns to its starting value and is 16-byte aligned at the call, the
+basic blocks of both versions, signed and unsigned jump conditions at their
+overflow edges, and that the annotations match the listings. The native lab
+recompiles the sources and fails if a listing drifts. The interpreter covers
+only the instructions these listings use, and models no timing.
+
+## Practice
+
+<LabCard
+  title="01 / Decide the jump from the flags"
+  command="pnpm lab computer-architecture-execution/reading-assembly"
+>
+  Implement `solve(jump, left, right)` in `starter.ts`: after `cmpl right, left`
+  on 32-bit values, return whether the jump is taken. Compute ZF, SF, CF and OF
+  from the subtraction rather than comparing the numbers. Before running the
+  tests, predict `jl` with left −2³¹ and right 1, and `ja` with left 2³¹ − 1 and
+  right −1.
+</LabCard>
+
+<details>
+<summary>Check after attempting</summary>
+
+−2³¹ − 1 overflows: the 32-bit result is 0x7fffffff, so SF is 0 but OF is 1.
+SF ≠ OF, so `jl` jumps, which is correct because −2³¹ is less than 1. For
+`ja`, −1 is the pattern 0xffffffff, the largest unsigned value, so
+0x7fffffff − 0xffffffff borrows: CF is 1 and `ja` does not jump.
+
+</details>
+
+<LabCard
+  title="02 / Trace a call by hand"
+  command="pnpm exec vitest run labs/computer-architecture-execution/reading-assembly/"
+>
+  Without the stepper, trace `scale_sum(values, 4, 3)` at -O2 on paper: write
+  rbx, rsp relative to its value at entry, and eax after each instruction of
+  `scale_sum`. Then add a test with `run` that checks your eax and that rbx is
+  restored.
+</LabCard>
+
+<details>
+<summary>Check after tracing</summary>
+
+`pushq %rbx` moves rsp down 8 and saves the caller's rbx. `movl %edx, %ebx` sets
+ebx to 3. The call pushes another 8 bytes; `sum_to` returns 24 in eax and its
+`ret` pops them. `imull %ebx, %eax` makes eax 72, `popq %rbx` restores rbx and
+rsp is back to its entry value, and `ret` pops the caller's return address.
+
+</details>
+
+## Check your reasoning
+
+<ConceptCheck
+  id="reading-assembly-callee-saved"
+  question="In scale_sum at -O2, GCC copies factor from edx to ebx before calling sum_to. Why not leave it in edx?"
+  options={[
+    {
+      label:
+        'edx is caller-saved, so sum_to may overwrite it; ebx is callee-saved, so sum_to must preserve it.',
+      correct: true,
+      explanation:
+        'The calling convention lets any function clobber rdx. scale_sum needs factor after the call, so it moves it into a register sum_to must restore, after saving the caller’s value of that register.',
+    },
+    {
+      label: 'imull can only multiply by ebx.',
+      explanation:
+        'imull accepts any general-purpose register as its source. The choice of ebx is about surviving the call, not about the multiply.',
+    },
+    {
+      label: 'edx is needed to pass the third argument to sum_to.',
+      explanation:
+        'sum_to takes two arguments, in rdi and esi. Nothing is passed in edx; the problem is that sum_to is allowed to overwrite it.',
+    },
+  ]}
+/>
+
+## Two-minute recap
+
+- AT&T syntax is `op source, destination`; ignore directives and find labels,
+  jumps, calls and returns first.
+- `cmp` and `test` only set flags; signed jumps read SF and OF, unsigned jumps
+  read CF.
+- A jump to a label above it is a loop; optimized loops usually test at the
+  bottom after a guard.
+- Arguments arrive in rdi, rsi, rdx; results return in rax; callee-saved
+  registers must be restored, and rsp is 16-byte aligned at a call.
+- -O2 keeps values in registers and may replace an index with a pointer, so
+  source variables can disappear from the debugger.

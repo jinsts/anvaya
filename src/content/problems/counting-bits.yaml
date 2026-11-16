@@ -1,0 +1,10 @@
+title: Counting Bits
+url: https://leetcode.com/problems/counting-bits/
+difficulty: easy
+lessons: [computer-architecture-execution/binary-and-data-representation]
+topics: [binary, bit-manipulation]
+lists: [blind-75, neetcode-150]
+hints:
+  - Shifting a number right by one drops its lowest bit, so its count differs from that smaller number's count by exactly that bit.
+  - Build the answers in increasing order so the smaller number's count is already known when you need it.
+  - One mask and one shift per number gives O(n) time, and the output array is the only O(n) space.

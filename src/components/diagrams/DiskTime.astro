@@ -1,0 +1,195 @@
+---
+import DiagramFrame from '../learning/DiagramFrame.astro';
+import {
+  DRIVE,
+  diskAccess,
+} from '../../../labs/computer-architecture-execution/dram-ssd-and-disks/devices';
+// A disk read waits for the arm to seek and the platter to turn before any
+// data moves. Times come from the tested model with an illustrative drive.
+const reads = [
+  { name: 'Random 4 KiB read', bytes: 4096 },
+  { name: 'Random 1 MiB read', bytes: 1 << 20 },
+].map((r) => ({ ...r, ...diskAccess(DRIVE, r.bytes) }));
+const widest = Math.max(...reads.map((r) => r.totalMs));
+const segments = [
+  { key: 'seekMs', name: 'seek: move the arm to the track', css: 'seek' },
+  {
+    key: 'rotationMs',
+    name: 'rotation: wait half a turn on average',
+    css: 'rotation',
+  },
+  { key: 'transferMs', name: 'transfer: read the data', css: 'transfer' },
+] as const;
+const ms = (n: number) => (n < 0.1 ? n.toFixed(3) : n.toFixed(1));
+---
+
+<DiagramFrame
+  caption={`An illustrative ${DRIVE.rpm.toLocaleString('en')} RPM drive with an ${DRIVE.averageSeekMs} ms average seek and ${DRIVE.transferMBps} MB/s transfer, within the ranges the sources give. Positioning dominates small random reads: the 4 KiB read delivers ${reads[0]!.rateMBps.toFixed(2)} MB/s, while large sequential transfers approach ${DRIVE.transferMBps} MB/s.`}
+>
+  <div class="disk">
+    <svg
+      viewBox="0 0 220 160"
+      role="img"
+      aria-labelledby="disk-title disk-desc"
+    >
+      <title id="disk-title">Hard disk platter and arm</title>
+      <desc id="disk-desc">
+        A spinning platter with concentric tracks. The arm swings the head to a
+        track (seek), then waits for the sector to rotate under it.
+      </desc>
+      <circle cx="80" cy="80" r="70" class="platter" />
+      {[58, 46, 34].map((r) => (
+        <circle cx="80" cy="80" r={r} class="track" />
+      ))}
+      <circle cx="80" cy="80" r="46" class="target" />
+      <circle cx="80" cy="80" r="8" class="spindle" />
+      <path d="M126 80 A46 46 0 0 1 112 113" class="sector" />
+      <line x1="205" y1="20" x2="122" y2="62" class="arm" />
+      <circle cx="205" cy="20" r="6" class="pivot" />
+      <rect x="116" y="57" width="12" height="9" rx="2" class="head" />
+      <text x="150" y="110">
+        sector
+      </text>
+      <text x="150" y="124">
+        turning in
+      </text>
+      <text x="168" y="54">
+        head
+      </text>
+    </svg>
+    <div class="bars">
+      <ul class="legend" aria-label="Time components">
+        {segments.map((s) => (
+          <li>
+            <span class={`swatch ${s.css}`} />
+            {s.name}
+          </li>
+        ))}
+      </ul>
+      {reads.map((r) => (
+        <div class="read">
+          <p>
+            <strong>{r.name}</strong>: {ms(r.totalMs)} ms ={' '}
+            {segments.map((s) => ms(r[s.key])).join(' + ')}
+          </p>
+          <span
+            class="stack"
+            aria-hidden="true"
+            style={`width: ${(r.totalMs / widest) * 100}%`}
+          >
+            {segments.map((s) => (
+              <span
+                class={`segment ${s.css}`}
+                style={`flex-grow: ${r[s.key]}`}
+                title={`${s.name}: ${ms(r[s.key])} ms`}
+              />
+            ))}
+          </span>
+        </div>
+      ))}
+    </div>
+  </div>
+</DiagramFrame>
+<style>
+  .disk {
+    display: grid;
+    grid-template-columns: minmax(0, 14rem) minmax(0, 1fr);
+    gap: var(--space-5);
+    align-items: center;
+  }
+  svg {
+    width: 100%;
+    height: auto;
+  }
+  .platter {
+    fill: var(--diagram-cell);
+    stroke: var(--border-strong);
+  }
+  .track {
+    fill: none;
+    stroke: var(--border);
+  }
+  .target {
+    fill: none;
+    stroke: var(--diagram-edge);
+    stroke-dasharray: 3 3;
+  }
+  .spindle,
+  .pivot {
+    fill: var(--diagram-edge);
+  }
+  .sector {
+    fill: none;
+    stroke: var(--chart-2);
+    stroke-width: 6;
+    stroke-linecap: round;
+  }
+  .arm {
+    stroke: var(--text);
+    stroke-width: 4;
+    stroke-linecap: round;
+  }
+  .head {
+    fill: var(--chart-1);
+  }
+  text {
+    fill: var(--muted);
+    font-family: var(--font-body);
+    font-size: var(--text-xs);
+  }
+  .bars {
+    display: grid;
+    gap: var(--space-3);
+  }
+  .read p {
+    margin: 0 0 var(--space-1);
+    font-size: var(--text-sm);
+  }
+  .stack {
+    display: flex;
+    gap: 2px;
+    min-width: 4px;
+  }
+  .segment {
+    min-width: 2px;
+    height: 16px;
+    border-radius: 4px;
+  }
+  .seek {
+    background: var(--chart-1);
+  }
+  .rotation {
+    background: var(--chart-2);
+  }
+  .transfer {
+    background: var(--chart-3);
+  }
+  .legend {
+    display: grid;
+    gap: var(--space-1);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: var(--text-xs);
+  }
+  .disk .legend li {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin: 0;
+  }
+  .swatch {
+    flex: none;
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+  }
+  @media (max-width: 600px) {
+    .disk {
+      grid-template-columns: 1fr;
+    }
+    svg {
+      max-width: 14rem;
+    }
+  }
+</style>

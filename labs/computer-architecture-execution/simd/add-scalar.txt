@@ -1,0 +1,23 @@
+add_arrays:
+.LFB0:
+	.cfi_startproc
+	endbr64
+	movq	%rdx, %r8
+	testq	%rcx, %rcx
+	je	.L1
+	xorl	%eax, %eax
+	.p2align 5
+	.p2align 4
+	.p2align 3
+.L3:
+	movl	(%r8,%rax,4), %edx
+	addl	(%rsi,%rax,4), %edx
+	movl	%edx, (%rdi,%rax,4)
+	addq	$1, %rax
+	cmpq	%rax, %rcx
+	jne	.L3
+.L1:
+	ret
+	.cfi_endproc
+.LFE0:
+	.size	add_arrays, .-add_arrays

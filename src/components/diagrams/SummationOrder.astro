@@ -1,0 +1,103 @@
+---
+import DiagramFrame from '../learning/DiagramFrame.astro';
+import {
+  kahanFloat32,
+  sumFloat32,
+} from '../../../labs/computer-architecture-execution/floating-point-representation/example';
+// The same five binary32 values summed in two orders. Each row shows the
+// binary64 sum before rounding and the binary32 total that is kept.
+const big = 2 ** 24;
+const values = [big, 1, 1, 1, 1];
+const orders = [
+  { title: 'Large value first', values },
+  { title: 'Small values first', values: [...values.slice(1), big] },
+].map((order) => ({ ...order, ...sumFloat32(order.values) }));
+const compensated = kahanFloat32(values);
+const n = (value: number) => value.toLocaleString('en');
+---
+
+<DiagramFrame caption="Summing 2²⁴ and four ones in binary32. Every partial sum is rounded to binary32 before the next addition, so the order decides whether the ones survive.">
+  <div class="orders">
+    {orders.map((order) => (
+      <div class="order" role="group" aria-label={order.title}>
+        <p class="order-title">{order.title}</p>
+        <ol>
+          {order.steps.map((step) => (
+            <li class:list={{ lost: step.wide !== step.stored }}>
+              <span class="add">+ {n(step.add)}</span>
+              <span class="wide">= {n(step.wide)}</span>
+              <span class="stored">kept {n(step.stored)}</span>
+              {step.wide !== step.stored && (
+                <strong class="loss">lost {n(step.wide - step.stored)}</strong>
+              )}
+            </li>
+          ))}
+        </ol>
+        <p class="total">
+          Total <strong>{n(order.total)}</strong>
+        </p>
+      </div>
+    ))}
+  </div>
+  <p class="note">
+    The exact sum is {n(big + 4)}. Kahan's compensated summation, which carries
+    each rounding error into the next addition, also returns {n(compensated)} in
+    the large-first order.
+  </p>
+</DiagramFrame>
+<style>
+  .orders {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+    gap: var(--space-4);
+  }
+  .order {
+    padding: var(--space-3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg);
+  }
+  .order-title {
+    margin: 0 0 var(--space-2);
+    font-size: var(--text-sm);
+    font-weight: 600;
+  }
+  ol {
+    display: grid;
+    gap: var(--space-1);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .orders ol li {
+    display: grid;
+    grid-template-columns: 7rem minmax(0, 1fr);
+    gap: 0 var(--space-2);
+    margin: 0;
+    padding: var(--space-1) var(--space-2);
+    border-left: 3px solid var(--border-strong);
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+  }
+  .orders ol li.lost {
+    border-left-color: var(--error);
+    background: var(--error-soft);
+  }
+  .stored,
+  .loss {
+    grid-column: 2;
+    color: var(--muted);
+  }
+  .lost .stored {
+    color: var(--text);
+  }
+  .total {
+    margin: var(--space-2) 0 0;
+    font-size: var(--text-sm);
+  }
+  .note {
+    margin: var(--space-4) 0 0;
+    font-size: var(--text-sm);
+    line-height: var(--leading);
+  }
+</style>

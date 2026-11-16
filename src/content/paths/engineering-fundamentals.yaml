@@ -26,23 +26,71 @@ objectives:
       Strengthen coding, technical reasoning, system design and architectural
       communication for demanding engineering roles, as a result of depth
       rather than a substitute for it.
-# One section per subject, in an order that respects subject prerequisites.
-# The planned topics are the owner's initial scope (requested 2026-11-12);
-# each becomes one or more lessons. Overviews live in src/content/subjects/.
+# Sections are chapters (ADR 0008). A subject starts as one section and is
+# divided into adjacent chapter sections once its curriculum is structured.
+# Subjects follow prerequisite order. The planned topics are the owner's initial
+# scope (requested 2026-11-12); each becomes one or more lessons, one teaching
+# unit per page. Overviews live in src/content/subjects/.
 sections:
-  - id: computer-architecture-execution
-    title: Computer Architecture & Execution
+  # Computer Architecture & Execution, restructured into six chapters on
+  # 2026-11-13 at the owner's request. Existing lessons keep their URLs. A
+  # planned page split from an existing lesson takes over that material when
+  # it is drafted; until then the existing lesson still teaches it. Planned
+  # rows display after a chapter's lessons; comments give intended positions.
+  - id: architecture-machine-state
+    title: Machine state and data representation
     subject: computer-architecture-execution
-    planned:
-      - How computers execute programs
-      - CPU architecture, registers, and instructions
-      - Compilation and execution fundamentals
-      - Binary representation and data representation
-      - Memory hierarchy, caches, RAM, and storage
-      - Stack and heap fundamentals
-      - Hardware and software interaction
-      - I/O mechanisms
-      - Performance implications of computer architecture
+    lessons:
+      - computer-architecture-execution/how-computers-execute-programs
+      - computer-architecture-execution/binary-and-data-representation
+      - computer-architecture-execution/floating-point-representation
+      - computer-architecture-execution/text-encoding-and-memory-layout
+  - id: architecture-source-to-process
+    title: From source to running process
+    subject: computer-architecture-execution
+    lessons:
+      - computer-architecture-execution/cpu-registers-and-instructions
+      - computer-architecture-execution/reading-assembly
+      - computer-architecture-execution/compilation-and-execution
+      - computer-architecture-execution/stack-and-heap
+  - id: architecture-memory-hierarchy
+    title: The memory hierarchy
+    subject: computer-architecture-execution
+    lessons:
+      - computer-architecture-execution/memory-hierarchy-and-caches
+      - computer-architecture-execution/cache-organization
+      - computer-architecture-execution/dram-ssd-and-disks
+    # cache-organization took associativity and write policies from
+    # memory-hierarchy-and-caches, which keeps the hierarchy, locality and
+    # access costs. The storage page completes the approved topic "Memory
+    # hierarchy, caches, RAM, and storage".
+  - id: architecture-processor
+    title: Inside the processor
+    subject: computer-architecture-execution
+    # The first three split from architecture-and-performance. Multicore was
+    # proposed by an agent review on 2026-11-13: coherence (MESI-style
+    # ownership), store buffers and memory ordering, fences, atomic
+    # read-modify-write instructions, false sharing, and the costs of hardware
+    # threads and NUMA. It takes the coherence material from
+    # hardware-software-interaction. Locks, condition variables and deadlock
+    # stay with the OS subject's concurrency topics.
+    lessons:
+      - computer-architecture-execution/pipelining-and-hazards
+      - computer-architecture-execution/branch-prediction-and-speculation
+      - computer-architecture-execution/simd-and-data-parallelism
+      - computer-architecture-execution/multicore-coherence-and-atomics
+  - id: architecture-devices
+    title: Devices and the hardware–software boundary
+    subject: computer-architecture-execution
+    lessons:
+      - computer-architecture-execution/hardware-software-interaction
+      - computer-architecture-execution/io-mechanisms
+  - id: architecture-performance
+    title: Performance on real hardware
+    subject: computer-architecture-execution
+    lessons:
+      - computer-architecture-execution/architecture-and-performance
+      - computer-architecture-execution/measuring-performance
   - id: operating-systems-runtime-internals
     title: Operating Systems & Runtime Internals
     subject: operating-systems-runtime-internals

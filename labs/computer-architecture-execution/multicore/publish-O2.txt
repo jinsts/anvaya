@@ -1,0 +1,10 @@
+publish:
+.LFB0:
+	.cfi_startproc
+	endbr64
+	movl	%edi, data(%rip)
+	movl	$1, ready(%rip)
+	ret
+	.cfi_endproc
+.LFE0:
+	.size	publish, .-publish

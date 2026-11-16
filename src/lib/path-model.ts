@@ -20,6 +20,8 @@ export interface Subject {
   prerequisites?: SubjectLink[];
   related?: SubjectLink[];
   skills?: { skill: string; focus?: string }[];
+  /** A provisional chapter sketch, only while one section teaches the subject. */
+  overview?: { chapters?: string[] };
 }
 
 export interface Skill {
@@ -133,6 +135,24 @@ export const pathLabel = (path: LearningPath) => path.shortTitle ?? path.title;
 /** The subject a section teaches: its own, or the path's. */
 export const sectionSubject = (path: LearningPath, section: PathSection) =>
   section.subject ?? path.subject;
+
+/** A run of adjacent sections that teach one subject: its chapters (ADR 0008). */
+export interface SubjectGroup {
+  subject?: string;
+  sections: PathSection[];
+}
+
+/** Group a path's sections by subject, keeping study order. */
+export function subjectGroups(path: LearningPath): SubjectGroup[] {
+  const groups: SubjectGroup[] = [];
+  for (const section of pathSections(path)) {
+    const subject = sectionSubject(path, section);
+    const last = groups.at(-1);
+    if (last && last.subject === subject) last.sections.push(section);
+    else groups.push({ subject, sections: [section] });
+  }
+  return groups;
+}
 
 /** The subjects a path teaches, in study order. */
 export function pathSubjects(path: LearningPath): string[] {
@@ -293,6 +313,15 @@ export function validateCatalog({
           `Missing section subject reference: ${path.id}/${section.id} → ${section.subject}`,
         );
     }
+    // A subject's chapters are adjacent sections, so pages can group them.
+    const grouped = subjectGroups(path).map((group) => group.subject);
+    const split = grouped.find(
+      (subject, index) => grouped.indexOf(subject) !== index,
+    );
+    if (split)
+      throw new Error(
+        `Path ${path.id} separates the chapters of ${split}; keep its sections adjacent`,
+      );
     // A path that teaches a subject's prerequisite teaches it first.
     const order = pathSubjects(path);
     order.forEach((id, index) => {
@@ -310,6 +339,20 @@ export function validateCatalog({
     for (const id of ids) {
       if (!byId.has(id)) throw new Error(`Invalid path reference: ${id}`);
     }
+  }
+  // Once sections divide a subject into chapters, they are its only outline.
+  for (const subject of subjects) {
+    if (!subject.overview?.chapters?.length) continue;
+    const chaptered = paths.some(
+      (path) =>
+        pathSections(path).filter(
+          (section) => sectionSubject(path, section) === subject.id,
+        ).length > 1,
+    );
+    if (chaptered)
+      throw new Error(
+        `Subject ${subject.id} has chapter sections; remove overview.chapters`,
+      );
   }
   for (const lesson of lessons) {
     if (!lessonIdPattern.test(lesson.id))

@@ -1,0 +1,9 @@
+name: Computation Structures
+kind: course
+by: MIT Computation Structures course staff
+url: https://computationstructures.org/notes/
+prefixes:
+  - https://computationstructures.org/
+description: >-
+  MIT course notes and lectures explain instruction sets, datapaths, memory,
+  and processor performance through explicit models of a programmable computer.

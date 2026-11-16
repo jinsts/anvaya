@@ -1,0 +1,134 @@
+sum_large:
+.LFB0:
+	.cfi_startproc
+	endbr64
+	movq	%rdi, %r8
+	movq	%rsi, %rdi
+	testq	%rsi, %rsi
+	je	.L10
+	leaq	-1(%rsi), %rax
+	cmpq	$14, %rax
+	jbe	.L11
+	movq	%rsi, %rdx
+	pxor	%xmm7, %xmm7
+	pxor	%xmm9, %xmm9
+	movq	%r8, %rax
+	andq	$-16, %rdx
+	pxor	%xmm8, %xmm8
+	pxor	%xmm6, %xmm6
+	leaq	(%r8,%rdx), %rcx
+	.p2align 4
+	.p2align 3
+.L4:
+	movdqu	(%rax), %xmm2
+	movdqa	%xmm9, %xmm0
+	movdqa	%xmm9, %xmm3
+	addq	$16, %rax
+	pcmpgtb	%xmm2, %xmm0
+	movdqa	%xmm2, %xmm1
+	movdqa	%xmm2, %xmm5
+	punpcklbw	%xmm9, %xmm1
+	punpckhbw	%xmm9, %xmm5
+	movdqa	%xmm1, %xmm10
+	movdqa	%xmm5, %xmm4
+	punpckhwd	%xmm8, %xmm5
+	pcmpgtb	%xmm0, %xmm3
+	movdqa	%xmm0, %xmm2
+	punpcklwd	%xmm8, %xmm10
+	punpcklwd	%xmm8, %xmm4
+	punpckhwd	%xmm8, %xmm1
+	punpcklbw	%xmm3, %xmm2
+	punpckhbw	%xmm3, %xmm0
+	movdqa	%xmm2, %xmm3
+	movdqa	%xmm2, %xmm12
+	movdqa	%xmm0, %xmm11
+	psraw	$15, %xmm3
+	punpcklwd	%xmm3, %xmm12
+	punpckhwd	%xmm3, %xmm2
+	movdqa	%xmm0, %xmm3
+	psraw	$15, %xmm3
+	movdqa	%xmm12, %xmm13
+	movdqa	%xmm12, %xmm14
+	punpcklwd	%xmm3, %xmm11
+	psrad	$31, %xmm13
+	punpckhwd	%xmm3, %xmm0
+	movdqa	%xmm10, %xmm3
+	punpckldq	%xmm13, %xmm14
+	punpckhdq	%xmm13, %xmm12
+	punpckldq	%xmm6, %xmm3
+	punpckhdq	%xmm6, %xmm10
+	movdqa	%xmm0, %xmm13
+	pand	%xmm12, %xmm10
+	pand	%xmm14, %xmm3
+	movdqa	%xmm5, %xmm12
+	paddq	%xmm10, %xmm3
+	movdqa	%xmm0, %xmm10
+	punpckldq	%xmm6, %xmm12
+	psrad	$31, %xmm10
+	movdqa	%xmm11, %xmm14
+	punpckhdq	%xmm6, %xmm5
+	punpckldq	%xmm10, %xmm13
+	punpckhdq	%xmm10, %xmm0
+	pand	%xmm13, %xmm12
+	movdqa	%xmm11, %xmm13
+	pand	%xmm0, %xmm5
+	paddq	%xmm12, %xmm3
+	psrad	$31, %xmm13
+	movdqa	%xmm4, %xmm12
+	punpckhdq	%xmm13, %xmm11
+	punpckldq	%xmm13, %xmm14
+	punpckldq	%xmm6, %xmm12
+	punpckhdq	%xmm6, %xmm4
+	pand	%xmm14, %xmm12
+	pand	%xmm11, %xmm4
+	movdqa	%xmm2, %xmm11
+	paddq	%xmm12, %xmm4
+	psrad	$31, %xmm11
+	movdqa	%xmm2, %xmm12
+	paddq	%xmm3, %xmm4
+	movdqa	%xmm1, %xmm3
+	punpckldq	%xmm11, %xmm12
+	punpckldq	%xmm6, %xmm3
+	punpckhdq	%xmm11, %xmm2
+	punpckhdq	%xmm6, %xmm1
+	pand	%xmm12, %xmm3
+	pand	%xmm2, %xmm1
+	paddq	%xmm3, %xmm1
+	paddq	%xmm5, %xmm1
+	paddq	%xmm1, %xmm4
+	paddq	%xmm4, %xmm7
+	cmpq	%rax, %rcx
+	jne	.L4
+	movdqa	%xmm7, %xmm0
+	psrldq	$8, %xmm0
+	paddq	%xmm0, %xmm7
+	movq	%xmm7, %rax
+	cmpq	%rdi, %rdx
+	je	.L15
+	.p2align 5
+	.p2align 4
+	.p2align 3
+.L8:
+	movzbl	(%r8,%rdx), %ecx
+	movq	%rcx, %rsi
+	addq	%rax, %rcx
+	testb	%sil, %sil
+	cmovs	%rcx, %rax
+	addq	$1, %rdx
+	cmpq	%rdi, %rdx
+	jb	.L8
+	ret
+	.p2align 4,,10
+	.p2align 3
+.L10:
+	xorl	%eax, %eax
+	ret
+.L11:
+	xorl	%edx, %edx
+	xorl	%eax, %eax
+	jmp	.L8
+.L15:
+	ret
+	.cfi_endproc
+.LFE0:
+	.size	sum_large, .-sum_large

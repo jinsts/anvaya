@@ -1,0 +1,227 @@
+---
+import DiagramFrame from '../learning/DiagramFrame.astro';
+import {
+  textLadder,
+  textUnits,
+} from '../../../labs/computer-architecture-execution/text-encoding-and-memory-layout/example';
+// One string at four levels. Columns are UTF-8 bytes; every other unit spans
+// the bytes of the code points it covers. UTF-16 units sit under the code point
+// they encode, which is a different encoding, not a byte-for-byte alignment.
+interface Props {
+  text?: string;
+}
+const { text = 'A\u{1F642}é' } = Astro.props;
+const ladder = textLadder(text);
+const counts = textUnits(text);
+const hex = (n: number, width = 2) =>
+  n.toString(16).toUpperCase().padStart(width, '0');
+let column = 1;
+const graphemes = ladder.map((g) => {
+  const start = column;
+  const points = g.points.map((p) => {
+    const pointStart = column;
+    column += p.utf8.length;
+    return { ...p, start: pointStart, span: p.utf8.length };
+  });
+  return { text: g.text, start, span: column - start, points };
+});
+const points = graphemes.flatMap((g) => g.points);
+// A surrogate pair splits its code point's columns between the two units.
+const units = points.flatMap((p) =>
+  p.utf16.length === 1
+    ? [{ value: p.utf16[0]!, start: p.start, span: p.span }]
+    : p.utf16.map((value, i) => ({
+        value,
+        start: p.start + (i * p.span) / 2,
+        span: p.span / 2,
+      })),
+);
+const bytes = points.flatMap((p) => p.utf8);
+const label = (g: { text: string; points: { codePoint: number }[] }) =>
+  g.points.map((p) => `U+${hex(p.codePoint, 4)}`).join(' + ');
+const rows = [
+  {
+    name: 'Graphemes',
+    count: counts.graphemes,
+    note: 'what a reader sees as one character',
+  },
+  {
+    name: 'Code points',
+    count: counts.points,
+    note: 'Unicode scalar values, hex',
+  },
+  { name: 'UTF-16 units', count: counts.units, note: "JavaScript's length" },
+  {
+    name: 'UTF-8 bytes',
+    count: counts.bytes,
+    note: 'storage and network size',
+  },
+];
+---
+
+<DiagramFrame
+  caption={`One string, four lengths: ${counts.graphemes} graphemes, ${counts.points} code points, ${counts.units} UTF-16 units and ${counts.bytes} UTF-8 bytes. The é here is a plain e followed by a combining acute accent, U+0301.`}
+>
+  <div class="ladder" style={`--columns: ${bytes.length}`}>
+    <div class="row">
+      <p class="label">
+        <strong>
+          {rows[0]!.name} · {rows[0]!.count}
+        </strong>
+        <span>{rows[0]!.note}</span>
+      </p>
+      <ol
+        class="cells"
+        aria-label={`${rows[0]!.name}: ${graphemes.map(label).join(', ')}`}
+      >
+        {graphemes.map((g) => (
+          <li
+            class="grapheme"
+            style={`grid-column: ${g.start} / span ${g.span}`}
+          >
+            <span class="glyph" aria-hidden="true">
+              {g.text}
+            </span>
+          </li>
+        ))}
+      </ol>
+    </div>
+    <div class="row">
+      <p class="label">
+        <strong>
+          {rows[1]!.name} · {rows[1]!.count}
+        </strong>
+        <span>{rows[1]!.note}</span>
+      </p>
+      <ol
+        class="cells"
+        aria-label={`${rows[1]!.name}: ${points.map((p) => `U+${hex(p.codePoint, 4)}`).join(', ')}`}
+      >
+        {points.map((p) => (
+          <li class="point" style={`grid-column: ${p.start} / span ${p.span}`}>
+            <code>{hex(p.codePoint, 2)}</code>
+          </li>
+        ))}
+      </ol>
+    </div>
+    <div class="row">
+      <p class="label">
+        <strong>
+          {rows[2]!.name} · {rows[2]!.count}
+        </strong>
+        <span>{rows[2]!.note}</span>
+      </p>
+      <ol
+        class="cells"
+        aria-label={`${rows[2]!.name}: ${units.map((u) => hex(u.value, 4)).join(', ')}`}
+      >
+        {units.map((u) => (
+          <li
+            class:list={[
+              'unit',
+              { surrogate: u.value >= 0xd800 && u.value <= 0xdfff },
+            ]}
+            style={`grid-column: ${u.start} / span ${u.span}`}
+          >
+            <code>{hex(u.value, 4)}</code>
+          </li>
+        ))}
+      </ol>
+    </div>
+    <div class="row">
+      <p class="label">
+        <strong>
+          {rows[3]!.name} · {rows[3]!.count}
+        </strong>
+        <span>{rows[3]!.note}</span>
+      </p>
+      <ol
+        class="cells"
+        aria-label={`${rows[3]!.name}: ${bytes.map((b) => hex(b)).join(' ')}`}
+      >
+        {bytes.map((b) => (
+          <li class="byte">
+            <code>{hex(b)}</code>
+          </li>
+        ))}
+      </ol>
+    </div>
+  </div>
+</DiagramFrame>
+<style>
+  .ladder {
+    display: grid;
+    gap: var(--space-2);
+  }
+  .row {
+    display: grid;
+    grid-template-columns: 10rem minmax(0, 1fr);
+    gap: var(--space-3);
+    align-items: center;
+  }
+  .label {
+    display: grid;
+    margin: 0;
+    font-size: var(--text-sm);
+    line-height: var(--leading-snug);
+  }
+  .label span {
+    color: var(--muted);
+    font-size: var(--text-xs);
+  }
+  .cells {
+    display: grid;
+    grid-template-columns: repeat(var(--columns), minmax(0, 1fr));
+    gap: var(--space-1);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .ladder .cells li {
+    display: grid;
+    place-items: center;
+    min-width: 0;
+    min-height: var(--space-10);
+    margin: 0;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    text-align: center;
+  }
+  .grapheme {
+    background: var(--tone-violet-soft);
+  }
+  .glyph {
+    font-size: var(--text-2xl);
+    line-height: 1;
+  }
+  .point {
+    background: var(--tone-teal-soft);
+  }
+  .unit {
+    background: var(--tone-amber-soft);
+  }
+  .unit.surrogate {
+    border-style: dashed;
+  }
+  .byte {
+    background: var(--diagram-cell);
+  }
+  .ladder code {
+    padding: 0;
+    border: 0;
+    background: none;
+    font-size: var(--text-xs);
+    overflow-wrap: anywhere;
+  }
+  @media (max-width: 560px) {
+    .row {
+      grid-template-columns: 1fr;
+      gap: var(--space-1);
+    }
+    .label {
+      grid-template-columns: max-content 1fr;
+      gap: var(--space-2);
+      align-items: baseline;
+    }
+  }
+</style>

@@ -1,0 +1,288 @@
+---
+title: 'Text encodings and layout: Put multi-byte data in bytes'
+shortTitle: Text encodings and memory layout
+summary: Encode code points in UTF-8 and UTF-16, count a string in the unit a task needs, and predict how byte order and alignment place integers and record fields in memory.
+subject: computer-architecture-execution
+path: engineering-fundamentals
+difficulty: foundation
+estimatedMinutes: 30
+learningObjectives:
+  - Encode a code point into UTF-8 bytes and UTF-16 code units
+  - Choose between byte, code unit, code point and grapheme counts for a text-processing task
+  - Predict the bytes of an integer at consecutive addresses in little- and big-endian order
+  - Compute field offsets, padding and size for a record, and reorder fields to reduce padding
+prerequisites:
+  - computer-architecture-execution/binary-and-data-representation
+tags: [binary, representation, memory]
+skills: [debugging, implementation, trade-off-analysis]
+status: draft
+drafter: agent
+interviewQuestions:
+  - prompt: What does a string's length tell you about its storage and its visible characters?
+    answer: >-
+      It depends on the encoding and on the unit the API counts. JavaScript's
+      `length` counts UTF-16 code units, so a code point above U+FFFF counts as
+      two. UTF-8 uses one to four bytes per code point, and one visible
+      character, a grapheme, can be several code points, such as a letter and a
+      combining accent. Pick the unit from the task: bytes for storage and
+      protocol limits, graphemes for cursor movement and truncation shown to
+      users.
+    followUps:
+      - How would you truncate a string to at most 255 UTF-8 bytes without producing invalid text?
+  - prompt: Why is UTF-8 the usual encoding for files and network protocols?
+    answer: >-
+      ASCII text is unchanged in UTF-8, so older tools and protocols keep
+      working. The encoding has no byte-order variants, because it is a
+      sequence of single bytes. Lead and continuation bytes have distinct bit
+      patterns, so a reader can find the start of a character from any position,
+      and a corrupted byte damages only one character. Text dominated by
+      characters above U+07FF can be larger than in UTF-16.
+  - prompt: What is endianness, and when does it matter in application code?
+    answer: >-
+      It is the order in which a multi-byte value's bytes are stored at
+      increasing addresses: little-endian puts the least significant byte first,
+      big-endian the most significant. Arithmetic in registers is unaffected. It
+      matters when bytes cross a boundary, such as a file format, a network
+      protocol or a memory-mapped buffer read by another machine. Formats should
+      name their order, and code should convert explicitly, for example with
+      `DataView`'s endianness argument.
+  - prompt: Why can a struct take more bytes than the sum of its fields?
+    answer: >-
+      The ABI requires each field to start at an address that is a multiple of
+      its alignment, so the compiler inserts padding before a field when needed.
+      The struct's size is also rounded up to its largest alignment, so every
+      element of an array stays aligned. Ordering fields from largest to
+      smallest alignment usually removes most padding, but reordering changes a
+      binary interface, so it is a design decision for public types.
+    followUps:
+      - Why is sending a struct's raw bytes over the network fragile?
+sources:
+  - label: 'RFC 3629, section 3 — UTF-8 definition and byte templates'
+    url: https://www.rfc-editor.org/rfc/rfc3629.html#section-3
+  - label: 'MDN — String: UTF-16 code units, code points and grapheme clusters'
+    url: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String#utf-16_characters_unicode_code_points_and_grapheme_clusters
+  - label: 'Unicode UAX #29 — Grapheme cluster boundaries'
+    url: https://www.unicode.org/reports/tr29/#Grapheme_Cluster_Boundaries
+  - label: 'Dive into Systems, section 4.7 — Integer byte order'
+    url: https://diveintosystems.org/book/C4-Binary/byte_order.html#_integer_byte_order
+  - label: 'Dive into Systems, section 7.9.1 — Data alignment and structs'
+    url: https://diveintosystems.org/book/C7-x86_64/structs.html#_data_alignment_and_structs
+---
+
+import ByteOrderLanes from '../../../components/diagrams/ByteOrderLanes.astro';
+import TextLadder from '../../../components/diagrams/TextLadder.astro';
+import Utf8Encoding from '../../../components/diagrams/Utf8Encoding.astro';
+import StructLayoutExplorer from '../../../components/interactive/StructLayoutExplorer';
+
+import source from '../../../../labs/computer-architecture-execution/text-encoding-and-memory-layout/example.ts?raw';
+import nativeSource from '../../../../labs/computer-architecture-execution/text-encoding-and-memory-layout/representation.c?raw';
+import nativeOutput from '../../../../labs/computer-architecture-execution/text-encoding-and-memory-layout/representation-output.txt?raw';
+
+## Three bugs from the same cause
+
+A form accepts a 20-character name, and the database rejects it for exceeding
+20 bytes. A client reads a 32-bit length from a file and gets 2,018,915,346
+instead of 305,419,896. A service sends a C struct over a socket, and the
+receiver reads garbage from its third field. Each value was correct. Each
+reader assumed the wrong rule for how a value occupies **several bytes**.
+
+The [representation lesson](/learn/computer-architecture-execution/binary-and-data-representation/)
+gave a single byte its meaning. This page covers values that need more than
+one: text, whose characters need one to four bytes each; integers, whose bytes
+can be stored in either order; and records, whose fields need aligned
+addresses. Think of a moving truck: the same furniture fits differently
+depending on the packing rules, and the person unloading must know them. The
+analogy stops at flexibility: a byte layout is a contract, and a reader that
+guesses gets wrong values rather than an untidy truck.
+
+## UTF-8 spends one to four bytes per code point
+
+Unicode gives every character a **code point**, a number written U+0041 for
+"A". An encoding turns code points into stored units. **UTF-8** uses bytes and
+picks a template by the code point's range:
+
+<Utf8Encoding />
+
+The lead byte's high bits say how many bytes follow, and every continuation
+byte starts with `10`. Because the patterns differ, a reader dropped into the
+middle of UTF-8 text can find the next character boundary, and ASCII text, all
+below U+0080, is unchanged. Code points U+D800 to U+DFFF are never encoded:
+they are reserved for UTF-16.
+
+**UTF-16** uses 16-bit code units. Code points up to U+FFFF take one unit;
+larger ones are split across a **surrogate pair**, a high unit from D800–DBFF
+and a low unit from DC00–DFFF. JavaScript strings are sequences of UTF-16 units.
+
+## Count in the unit the task needs
+
+<TextLadder />
+
+A **grapheme** is what a reader sees as one character. Unicode defines its
+boundaries, and one grapheme can hold several code points, such as a letter
+followed by a combining accent, or the two regional-indicator code points of a
+flag. The four counts answer different questions:
+
+| Question                                          | Count        | JavaScript                                      |
+| ------------------------------------------------- | ------------ | ----------------------------------------------- |
+| Will it fit in a byte-limited column or packet?   | UTF-8 bytes  | `new TextEncoder().encode(s).length`            |
+| What does `s.length` or `s[i]` mean?              | UTF-16 units | `s.length`                                      |
+| How many Unicode characters were encoded?         | Code points  | `[...s].length`                                 |
+| How far should the cursor move or truncation cut? | Graphemes    | `Intl.Segmenter` with `granularity: 'grapheme'` |
+
+Cutting text at the wrong unit corrupts it. Slicing a JavaScript string by
+units can split a surrogate pair; truncating UTF-8 bytes can cut a sequence in
+half; truncating code points can strip an accent from its letter.
+
+## Byte order decides which byte comes first
+
+<ByteOrderLanes />
+
+Memory is addressed in bytes, so a 32-bit value occupies four consecutive
+addresses. **Little-endian** machines store the least significant byte at the
+lowest address; **big-endian** machines store the most significant byte there.
+Arithmetic in registers does not depend on it. It matters when bytes leave the
+machine or are reinterpreted: the file in the opening read `12 34 56 78` as a
+little-endian value and got 0x78563412, which is 2,018,915,346.
+
+Formats therefore name their order. Internet protocols use big-endian
+**network byte order**. In JavaScript, `DataView` methods take an explicit
+`littleEndian` argument; never rely on the host's order for data that crosses a
+boundary. Floating-point values follow the same rule: the recorded program
+prints binary32 0.1, pattern `3dcccccd`, as `cd cc cc 3d`.
+
+## Alignment adds padding between fields
+
+Hardware reads an aligned value, one whose address is a multiple of its size,
+in a single access. The x86-64 ABI therefore gives each type an **alignment**:
+1 for `char`, 4 for `int32_t`, 8 for `double`. A compiler places each field at
+the next offset that is a multiple of its alignment, inserting **padding**
+bytes when needed, and rounds the record's size up to its largest alignment so
+that every element of an array is aligned too.
+
+Before you use the explorer, predict the size of the declared order: where does
+`ratio` have to start, and where does the record end?
+
+<StructLayoutExplorer client:visible />
+
+The declared order wastes 10 of 24 bytes: seven before `ratio`, which must start
+at 8, and three before `count`, which must start at a multiple of 4. Sorting by
+alignment, largest first, packs the same fields into 16 bytes with 2 bytes of
+trailing padding. The same program that recorded the byte order compiled both
+orders with the real ABI:
+
+<CodeExample
+  title="representation.c output on x86-64 Linux, GCC 15.2"
+  code={nativeOutput}
+  language="text"
+/>
+
+The tests check that the layout model reproduces these offsets and sizes.
+Reordering is not always free. A struct that other code or files already depend
+on has a fixed binary layout, and grouping fields by alignment can separate
+fields that are used together. Packing attributes remove padding entirely, at
+the cost of misaligned fields that the processor or compiler must access with
+extra work. To send a record anywhere, encode each field explicitly in a
+named byte order instead of copying its raw bytes, which include the padding.
+
+<details>
+<summary>Inspect the tested model and the native program</summary>
+
+<CodeExample
+  title="UTF-8, UTF-16, byte order and record layout as explicit rules"
+  code={source}
+  verified
+  output={
+    'U+20AC in UTF-8: e2 82 ac\ncounts: {"bytes":8,"units":5,"points":4,"graphemes":3}\n0x12345678 little-endian: 78 56 34 12\n0x12345678 big-endian: 12 34 56 78\ndeclared: size 24, padding 10, tag@0 ratio@8 flag@16 count@20\nreordered: size 16, padding 2, ratio@0 count@8 tag@12 flag@13'
+  }
+/>
+<CodeExample
+  title="representation.c: bytes in address order and offsetof"
+  code={nativeSource}
+  language="c"
+/>
+
+</details>
+
+The tests compare the UTF-8 encoder with `TextEncoder` at every length
+boundary, the UTF-16 units with JavaScript strings, and the byte-order, UTF-8
+and layout models with the recorded native output. The native lab recompiles
+`representation.c` and fails if its output drifts from the committed copy.
+
+## Practice
+
+<LabCard
+  title="01 / Encode UTF-8 by hand"
+  command="pnpm lab computer-architecture-execution/text-encoding-and-memory-layout"
+>
+  Implement `solve(codePoint)` in `starter.ts`: return the UTF-8 bytes of one
+  code point using shifts and masks, without `TextEncoder`, and throw a
+  `RangeError` for surrogates and values above U+10FFFF. Before running the
+  tests, encode U+00A3 and U+0939 on paper.
+</LabCard>
+
+<details>
+<summary>Check after attempting</summary>
+
+U+00A3 is in the two-byte range: its 11 payload bits `00010 100011` give
+`C2 A3`. U+0939 needs three bytes: `0000 100100 111001` gives `E0 A4 B9`. Choose
+the row by comparing with 0x7F, 0x7FF and 0xFFFF, then take six bits at a time
+from the low end for the continuation bytes.
+
+</details>
+
+<LabCard
+  title="02 / Predict a layout"
+  command="pnpm exec vitest run labs/computer-architecture-execution/text-encoding-and-memory-layout/"
+>
+  A record declares `char a; int16_t b; char c; double d;` with alignments 1, 2,
+  1 and 8. Predict each offset, the padding and the size, then check with
+  `layoutRecord` in a test. Does sorting by alignment make it smaller?
+</LabCard>
+
+<details>
+<summary>Check after testing</summary>
+
+Offsets are 0, 2, 4 and 8: one padding byte before `b` and three before `d`,
+for a size of 16 with 4 bytes of padding. Sorted by alignment the order is
+`d, b, a, c` with offsets 0, 8, 10 and 11, ending at 12 and rounded up to 16.
+The size does not change: only the padding moves to the end.
+
+</details>
+
+## Check your reasoning
+
+<ConceptCheck
+  id="text-units-limit"
+  question="A column accepts at most 8 bytes of UTF-8. The JavaScript string 'héllo🙂', with a precomposed é, has length 7. Does it fit?"
+  options={[
+    {
+      label: 'No: it needs 10 bytes.',
+      correct: true,
+      explanation:
+        'h, l, l and o take one byte each, é (U+00E9) takes two and 🙂 (U+1F642) takes four: 10 bytes. The length of 7 counts UTF-16 units, where 🙂 is a surrogate pair.',
+    },
+    {
+      label: 'Yes: its length is 7, which is under 8.',
+      explanation:
+        'length counts UTF-16 code units, not bytes. A byte limit needs the UTF-8 byte count.',
+    },
+    {
+      label: 'Yes: it is 6 characters, and each character is one byte.',
+      explanation:
+        'It is 6 graphemes, but only ASCII characters take one UTF-8 byte. é takes two bytes and 🙂 takes four.',
+    },
+  ]}
+/>
+
+## Two-minute recap
+
+- UTF-8 encodes a code point in one to four bytes; lead bytes announce the
+  length and continuation bytes start with `10`.
+- UTF-16 uses one 16-bit unit up to U+FFFF and a surrogate pair above it;
+  JavaScript's `length` counts these units.
+- Bytes, UTF-16 units, code points and graphemes are four different counts:
+  choose by the task.
+- Little-endian stores the least significant byte first; formats that cross
+  machines must name their byte order.
+- Fields start at multiples of their alignment, and size rounds up to the
+  largest alignment; ordering by alignment reduces padding.

@@ -1,0 +1,163 @@
+---
+import DiagramFrame from '../learning/DiagramFrame.astro';
+import {
+  PROGRAMS,
+  schedule,
+} from '../../../labs/computer-architecture-execution/pipelining-and-hazards/pipeline';
+// Stage-by-cycle tables computed by the tested five-stage pipeline model.
+interface Props {
+  program?: string;
+}
+const { program: id = 'load-use' } = Astro.props;
+const program = PROGRAMS.find((p) => p.id === id)!;
+const versions = [false, true].map((forwarding) => ({
+  forwarding,
+  ...schedule(program.program, { forwarding }),
+}));
+const label = (cell: string | null) =>
+  cell === null ? '' : cell === 'stall' ? 'wait' : cell;
+---
+
+<DiagramFrame
+  caption={`${program.label}, cycle by cycle in the teaching pipeline. Without forwarding each dependent instruction waits in ID until its producer writes back; with forwarding only the load-use pair waits, one cycle, because a load's value exists only after MEM. "wait" marks a bubble: a stage left idle.`}
+>
+  <div class="versions">
+    {versions.map((v) => (
+      <div class="version">
+        <p class="title">
+          <strong>Forwarding {v.forwarding ? 'on' : 'off'}</strong>
+          <span>
+            {v.cycles} cycles · {v.bubbles}{' '}
+            {v.bubbles === 1 ? 'bubble' : 'bubbles'}
+          </span>
+        </p>
+        <div
+          class="table-scroll"
+          tabindex="0"
+          role="region"
+          aria-label={`Pipeline with forwarding ${v.forwarding ? 'on' : 'off'}`}
+        >
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Instruction</th>
+                {Array.from({ length: v.cycles }, (_, c) => (
+                  <th scope="col">{c + 1}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {v.rows.map((row) => (
+                <tr>
+                  <th scope="row">
+                    <code>{row.instruction.text}</code>
+                  </th>
+                  {row.cells.map((cell) => (
+                    <td
+                      class:list={[
+                        'cell',
+                        cell ? `s-${cell.toLowerCase()}` : 'empty',
+                      ]}
+                    >
+                      {label(cell)}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    ))}
+  </div>
+</DiagramFrame>
+<style>
+  .versions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-5);
+  }
+  .version {
+    min-width: 0;
+  }
+  .title {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: var(--space-2);
+    margin: 0 0 var(--space-2);
+    font-size: var(--text-sm);
+  }
+  .title span {
+    color: var(--muted);
+  }
+  .versions .table-scroll {
+    margin: 0;
+  }
+  table {
+    border-collapse: separate;
+    border-spacing: 2px;
+    font-size: var(--text-xs);
+  }
+  th,
+  td {
+    padding: var(--space-1) var(--space-2);
+    border: 0;
+    text-align: center;
+    white-space: nowrap;
+  }
+  thead th {
+    background: none;
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-weight: 400;
+  }
+  tbody th {
+    position: sticky;
+    left: 0;
+    background: var(--surface);
+    text-align: left;
+  }
+  tbody th code {
+    padding: 0;
+    border: 0;
+    background: none;
+    font-size: var(--text-xs);
+  }
+  .cell {
+    min-width: 2.75rem;
+    border-radius: 4px;
+    font-family: var(--font-mono);
+    font-weight: 600;
+  }
+  .s-if {
+    background: var(--tone-blue-soft);
+  }
+  .s-id {
+    background: var(--tone-violet-soft);
+  }
+  .s-ex {
+    background: var(--tone-amber-soft);
+  }
+  .s-mem {
+    background: var(--tone-teal-soft);
+  }
+  .s-wb {
+    background: var(--tone-green-soft);
+  }
+  .s-stall {
+    background: repeating-linear-gradient(
+      135deg,
+      var(--surface) 0 4px,
+      var(--subtle) 4px 8px
+    );
+    color: var(--muted);
+    font-weight: 400;
+    box-shadow: inset 0 0 0 1px var(--border-strong);
+  }
+  .s-flushed {
+    background: var(--error-soft);
+    color: var(--error);
+    text-decoration: line-through;
+  }
+</style>

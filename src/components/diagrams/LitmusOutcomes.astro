@@ -1,0 +1,104 @@
+---
+import DiagramFrame from '../learning/DiagramFrame.astro';
+import { messagePassing } from '../../../labs/computer-architecture-execution/multicore/models';
+// Every outcome of the message-passing test that the tested reordering model
+// allows, with and without release/acquire.
+const relaxed = messagePassing(false);
+const synced = messagePassing(true);
+const all = relaxed.map((o) => o.outcome);
+const label: Record<string, string> = {
+  'r1=0, r2=0': 'saw neither yet',
+  'r1=0, r2=42': 'saw the data, not the flag',
+  'r1=1, r2=42': 'saw both: the intended result',
+  'r1=1, r2=0': 'saw the flag but stale data',
+};
+---
+
+<DiagramFrame caption="The message-passing test. The writer stores data, then a flag; the reader loads the flag, then the data. Allowed outcomes from a teaching model in which accesses to different locations may be reordered unless release and acquire forbid it. Only release/acquire rules out reading the flag but stale data.">
+  <div class="litmus">
+    <div
+      class="threads"
+      aria-label="The two threads, as pseudo-code"
+      role="group"
+    >
+      <pre><code>{`writer:
+  data = 42
+  flag = 1        // release`}</code></pre>
+      <pre><code>{`reader:
+  r1 = flag       // acquire
+  r2 = data`}</code></pre>
+    </div>
+    <div
+      class="table-scroll"
+      tabindex="0"
+      role="region"
+      aria-label="Allowed outcomes"
+    >
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">Outcome</th>
+            <th scope="col">Plain accesses</th>
+            <th scope="col">Release / acquire</th>
+          </tr>
+        </thead>
+        <tbody>
+          {all.map((outcome) => {
+            const ok = synced.some((o) => o.outcome === outcome);
+            return (
+              <tr class:list={{ forbidden: !ok }}>
+                <th scope="row">
+                  <code>{outcome}</code>
+                  <span>{label[outcome]}</span>
+                </th>
+                <td>allowed</td>
+                <td>{ok ? 'allowed' : 'forbidden'}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</DiagramFrame>
+<style>
+  .litmus {
+    display: grid;
+    gap: var(--space-3);
+  }
+  .threads {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
+    gap: var(--space-2);
+  }
+  .threads pre {
+    padding: var(--space-2) var(--space-3);
+    font-size: var(--text-sm);
+  }
+  .litmus .table-scroll {
+    margin: 0;
+  }
+  tbody th {
+    display: grid;
+    font-weight: 400;
+  }
+  tbody th code {
+    padding: 0;
+    white-space: nowrap;
+    border: 0;
+    background: none;
+    font-weight: 700;
+  }
+  tbody th span {
+    color: var(--muted);
+    font-size: var(--text-xs);
+  }
+  tr.forbidden td:last-child {
+    color: var(--success);
+    font-weight: 700;
+  }
+  tr.forbidden td:nth-child(2) {
+    color: var(--error);
+    font-weight: 700;
+  }
+</style>

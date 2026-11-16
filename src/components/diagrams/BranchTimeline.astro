@@ -1,0 +1,157 @@
+---
+import DiagramFrame from '../learning/DiagramFrame.astro';
+import {
+  execute,
+  type Instruction,
+} from '../../../labs/computer-architecture-execution/how-computers-execute-programs/example';
+// Rows are the program's instructions; columns are executed steps. The path
+// is the tested model's trace, so a backward line is a taken branch.
+const program: Instruction[] = [
+  { op: 'set', value: 2 },
+  { op: 'add', value: 255 },
+  { op: 'jnz', target: 1 },
+  { op: 'halt' },
+];
+const trace = execute(program);
+const executed = trace.slice(0, -1).map((snapshot, i) => ({
+  pc: snapshot.pc,
+  accumulator: trace[i + 1]!.accumulator,
+}));
+const text = (i: Instruction) =>
+  i.op === 'set'
+    ? `set ${i.value}`
+    : i.op === 'add'
+      ? `add ${i.value}`
+      : i.op === 'jnz'
+        ? `jnz ${i.target}`
+        : 'halt';
+const rowY = (pc: number) => 46 + pc * 34;
+const colX = (step: number) => 134 + step * 38;
+const width = colX(executed.length - 1) + 30;
+const height = rowY(program.length - 1) + 50;
+const points = executed.map((e, step) => ({
+  x: colX(step),
+  y: rowY(e.pc),
+  ...e,
+}));
+---
+
+<DiagramFrame
+  caption={`Static count: ${program.length} instructions in the program. Dynamic count: ${executed.length} executed. The line climbs back when the branch is taken, so positions 1 and 2 run twice.`}
+>
+  <svg
+    class="timeline"
+    viewBox={`0 0 ${width} ${height}`}
+    role="img"
+    aria-labelledby="branch-title branch-desc"
+  >
+    <title id="branch-title">Executed instruction positions over time</title>
+    <desc id="branch-desc">
+      {executed
+        .map(
+          (e, i) =>
+            `Step ${i + 1}: position ${e.pc}, ${text(program[e.pc]!)}, accumulator ${e.accumulator}`,
+        )
+        .join('. ')}
+      .
+    </desc>
+    <text x="4" y="18" class="axis">
+      position
+    </text>
+    {executed.map((_, step) => (
+      <text x={colX(step)} y="18" class="axis">
+        {step + 1}
+      </text>
+    ))}
+    {program.map((instruction, pc) => (
+      <g>
+        <line
+          x1="118"
+          x2={width - 10}
+          y1={rowY(pc)}
+          y2={rowY(pc)}
+          class="row"
+        />
+        <text x="4" y={rowY(pc) + 4} class="instruction">
+          {pc}: {text(instruction)}
+        </text>
+      </g>
+    ))}
+    {points.slice(1).map((p, i) => {
+      const from = points[i]!;
+      const back = p.pc < from.pc;
+      return (
+        <line
+          x1={from.x}
+          y1={from.y}
+          x2={p.x}
+          y2={p.y}
+          class:list={['step', { back }]}
+        />
+      );
+    })}
+    {points.map((p) => (
+      <g>
+        <circle cx={p.x} cy={p.y} r="7" class="dot" />
+        <text x={p.x} y={height - 12} class="acc">
+          {p.accumulator}
+        </text>
+      </g>
+    ))}
+    <text x="4" y={height - 12} class="axis">
+      accumulator after
+    </text>
+    <text x={points[3]!.x} y={rowY(1) - 15} class="note">
+      branch taken
+    </text>
+  </svg>
+</DiagramFrame>
+<style>
+  .timeline {
+    display: block;
+    width: 100%;
+    max-width: 420px;
+    height: auto;
+  }
+  text {
+    fill: var(--text);
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+  }
+  .axis {
+    fill: var(--muted);
+    font-family: var(--font-body);
+    text-anchor: middle;
+  }
+  .axis:first-of-type,
+  text.axis[x='4'] {
+    text-anchor: start;
+  }
+  .row {
+    stroke: var(--border);
+    stroke-dasharray: 2 3;
+  }
+  .step {
+    stroke: var(--diagram-edge);
+    stroke-width: 2;
+  }
+  .step.back {
+    stroke: var(--accent);
+    stroke-width: 3;
+  }
+  .dot {
+    fill: var(--accent-soft);
+    stroke: var(--accent);
+    stroke-width: 2;
+  }
+  .acc {
+    text-anchor: middle;
+    font-weight: 600;
+  }
+  .note {
+    text-anchor: middle;
+    fill: var(--accent);
+    font-family: var(--font-body);
+    font-weight: 600;
+  }
+</style>

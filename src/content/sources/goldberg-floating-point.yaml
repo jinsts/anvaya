@@ -1,0 +1,8 @@
+name: What Every Computer Scientist Should Know About Floating-Point Arithmetic
+kind: reference
+by: David Goldberg (ACM Computing Surveys, 1991), reprinted in Oracle's Numerical Computation Guide
+url: https://docs.oracle.com/cd/E19957-01/806-3568/ncg_goldberg.html
+description: >-
+  The standard tutorial on IEEE 754 rounding, ulps, special values, gradual
+  underflow and summation error, published by ACM and reprinted by the
+  standard's implementers.

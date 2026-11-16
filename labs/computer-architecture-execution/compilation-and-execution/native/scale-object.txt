@@ -1,0 +1,10 @@
+0000000000000000 <scale_sum>:
+   0:	f3 0f 1e fa          	endbr64
+   4:	53                   	push   %rbx
+   5:	89 d3                	mov    %edx,%ebx
+   7:	e8 00 00 00 00       	call   c <scale_sum+0xc>
+			8: R_X86_64_PLT32	sum_to-0x4
+   c:	0f af c3             	imul   %ebx,%eax
+   f:	5b                   	pop    %rbx
+  10:	c3                   	ret
+

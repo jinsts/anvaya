@@ -1,0 +1,8 @@
+name: CS/EE 6810 Computer Architecture lecture notes
+kind: course
+by: Rajeev Balasubramonian, University of Utah
+url: https://my.eng.utah.edu/~cs6810/
+description: >-
+  Graduate computer architecture lecture notes from the University of Utah,
+  covering branch predictors, out-of-order processors, reorder buffers and
+  in-order commit.

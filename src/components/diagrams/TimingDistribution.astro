@@ -1,0 +1,192 @@
+---
+import DiagramFrame from '../learning/DiagramFrame.astro';
+import {
+  shareFaster,
+  summarize,
+} from '../../../labs/computer-architecture-execution/measuring-performance/stats';
+import raw from '../../../labs/computer-architecture-execution/measuring-performance/timing.json?raw';
+// Every recorded run of the same 4 MiB sum, warm or after evicting the cache.
+const data = JSON.parse(raw) as {
+  date: string;
+  compiler: string;
+  cpu: string;
+  flags: string[];
+  records: { state: 'warm' | 'cold'; round: number; nsPerElement: number }[];
+};
+const series = (['warm', 'cold'] as const).map((state, i) => {
+  const runs = data.records.filter((r) => r.state === state);
+  return {
+    state,
+    label:
+      state === 'warm' ? 'Warm: array just read' : 'Cold: after a 64 MiB sweep',
+    runs,
+    stats: summarize(runs.map((r) => r.nsPerElement)),
+    series: i + 1,
+  };
+});
+const all = data.records.map((r) => r.nsPerElement);
+const top = Math.ceil(Math.max(...all) * 10) / 10;
+const x = (v: number) => `${(v / top) * 100}%`;
+const ticks = Array.from({ length: Math.round(top / 0.1) + 1 }, (_, i) =>
+  Number((i * 0.1).toFixed(1)),
+);
+const f = (v: number) => v.toFixed(3);
+const share = shareFaster(
+  series[0]!.runs.map((r) => r.nsPerElement),
+  series[1]!.runs.map((r) => r.nsPerElement),
+);
+---
+
+<DiagramFrame
+  caption={`${data.records.length} timed sums of the same 4 MiB array, alternating warm and cold runs. Dots are single runs; the shaded band spans p10 to p90 and the bar is the median. A warm run beat a cold run in ${Math.round(share * 100)}% of all pairings, so a single pair of runs would often have picked the wrong winner. ${data.cpu}, ${data.compiler.split(' ')[0]} ${data.flags.join(' ')}, recorded ${data.date.slice(0, 10)}.`}
+>
+  <div class="dist">
+    {series.map((s) => (
+      <div class="row">
+        <p class="name">
+          <strong>{s.label}</strong>{' '}
+          <span>
+            median {f(s.stats.median)} · p10–p90 {f(s.stats.p10)}–
+            {f(s.stats.p90)} ns/element
+          </span>
+        </p>
+        <div class="track" aria-hidden="true">
+          <span
+            class={`band s${s.series}`}
+            style={`left: ${x(s.stats.p10)}; width: calc(${x(s.stats.p90)} - ${x(s.stats.p10)})`}
+          />
+          <span class="median" style={`left: ${x(s.stats.median)}`} />
+          {s.runs.map((r) => (
+            <span
+              class={`dot s${s.series}`}
+              style={`left: ${x(r.nsPerElement)}`}
+              title={`${s.state}, round ${r.round}: ${f(r.nsPerElement)} ns/element`}
+            />
+          ))}
+        </div>
+      </div>
+    ))}
+    <div class="axis" aria-hidden="true">
+      {ticks.map((t) => (
+        <span style={`left: ${x(t)}`}>{t.toFixed(1)}</span>
+      ))}
+    </div>
+    <p class="unit" aria-hidden="true">
+      ns per element
+    </p>
+    <details>
+      <summary>Summary statistics as a table</summary>
+      <div
+        class="table-scroll"
+        tabindex="0"
+        role="region"
+        aria-label="Timing summary"
+      >
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Runs</th>
+              <th scope="col">n</th>
+              <th scope="col">min</th>
+              <th scope="col">p10</th>
+              <th scope="col">median</th>
+              <th scope="col">p90</th>
+              <th scope="col">max</th>
+            </tr>
+          </thead>
+          <tbody>
+            {series.map((s) => (
+              <tr>
+                <th scope="row">{s.state}</th>
+                <td>{s.stats.n}</td>
+                <td>{f(s.stats.min)}</td>
+                <td>{f(s.stats.p10)}</td>
+                <td>{f(s.stats.median)}</td>
+                <td>{f(s.stats.p90)}</td>
+                <td>{f(s.stats.max)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </details>
+  </div>
+</DiagramFrame>
+<style>
+  .dist {
+    display: grid;
+    gap: var(--space-3);
+    padding: 0 var(--space-2);
+  }
+  .name {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 var(--space-2);
+    margin: 0 0 var(--space-1);
+    font-size: var(--text-sm);
+  }
+  .name span {
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+  }
+  .track {
+    position: relative;
+    height: 1.75rem;
+    border-bottom: 1px solid var(--border-strong);
+  }
+  .band {
+    position: absolute;
+    top: 15%;
+    bottom: 15%;
+    border-radius: 4px;
+    opacity: 0.25;
+  }
+  .band.s1,
+  .dot.s1 {
+    background: var(--chart-1);
+  }
+  .band.s2,
+  .dot.s2 {
+    background: var(--chart-2);
+  }
+  .median {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    border-left: 2px solid var(--text);
+  }
+  .dot {
+    position: absolute;
+    top: 50%;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    box-shadow: 0 0 0 1.5px var(--surface);
+    transform: translate(-50%, -50%);
+  }
+  .axis {
+    position: relative;
+    height: 1rem;
+    margin-top: calc(-1 * var(--space-2));
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+  }
+  .axis span {
+    position: absolute;
+    transform: translateX(-50%);
+  }
+  .unit {
+    margin: calc(-1 * var(--space-2)) 0 0;
+    color: var(--muted);
+    font-size: var(--text-xs);
+    text-align: right;
+  }
+  details {
+    font-size: var(--text-sm);
+  }
+  details .table-scroll {
+    margin: var(--space-2) 0 0;
+  }
+</style>

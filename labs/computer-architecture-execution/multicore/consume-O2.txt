@@ -1,0 +1,16 @@
+consume:
+.LFB1:
+	.cfi_startproc
+	endbr64
+	.p2align 4
+	.p2align 4
+	.p2align 3
+.L4:
+	movl	ready(%rip), %eax
+	testl	%eax, %eax
+	je	.L4
+	movl	data(%rip), %eax
+	ret
+	.cfi_endproc
+.LFE1:
+	.size	consume, .-consume

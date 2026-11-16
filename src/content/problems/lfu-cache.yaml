@@ -1,0 +1,12 @@
+title: LFU Cache
+url: https://leetcode.com/problems/lfu-cache/
+difficulty: hard
+lessons:
+  - computer-architecture-execution/cache-organization
+  - dsa/hash-maps
+topics: [caches, hashing, design]
+lists: []
+hints:
+  - The victim is the key with the fewest uses, and recency only breaks ties, so you need two orderings at once.
+  - Group keys by use count and keep each group in recency order. Track the smallest count that still has keys.
+  - A use moves a key to the next count's group. The smallest count changes only when its group empties or a new key arrives with one use, so every operation can stay expected O(1).

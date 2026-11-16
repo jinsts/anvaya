@@ -182,3 +182,1164 @@
     font-size: var(--text-xl);
   }
 }
+/* Cache explorer: shares the container, controls and story styles above. */
+.cache-explorer .operation-controls label {
+  flex: 1 1 15rem;
+}
+.access-stream {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: var(--space-4) 0;
+  padding: 0;
+  list-style: none;
+}
+.access-stream li {
+  display: grid;
+  min-width: var(--space-12);
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  text-align: center;
+}
+.access-stream li.next {
+  border: 2px solid var(--accent);
+  background: var(--accent-soft);
+}
+.access-stream code,
+.cache-fields code {
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: var(--text-sm);
+}
+.access-stream span {
+  min-height: 1lh;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+.cache-fields {
+  display: flex;
+  gap: var(--space-1);
+  max-width: 420px;
+  margin: 0 0 var(--space-4);
+  padding: 0;
+  list-style: none;
+}
+.cache-fields li {
+  display: grid;
+  min-width: 0;
+  padding: var(--space-1);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--diagram-cell);
+  text-align: center;
+}
+.cache-fields code {
+  overflow-wrap: anywhere;
+}
+.cache-fields span {
+  color: var(--muted);
+  font-size: var(--text-xs);
+}
+.cache-table-wrap {
+  overflow-x: auto;
+}
+.cache-table {
+  width: 100%;
+  margin: 0;
+  border-collapse: separate;
+  border-spacing: var(--space-1);
+  table-layout: fixed;
+  font-size: var(--text-xs);
+}
+.cache-table caption {
+  padding-bottom: var(--space-1);
+  color: var(--muted);
+  font-size: var(--text-xs);
+  text-align: left;
+}
+.cache-table th {
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-weight: 500;
+}
+.cache-table thead th:first-child,
+.cache-table tbody th {
+  width: 6em;
+}
+.cache-table tbody th span {
+  display: block;
+  color: var(--accent);
+}
+.cache-table td {
+  height: var(--space-16);
+  padding: var(--space-1);
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--diagram-cell);
+  text-align: center;
+  vertical-align: middle;
+  overflow-wrap: anywhere;
+}
+.cache-table td > * {
+  display: block;
+}
+.cache-table td strong {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+}
+.cache-table td span {
+  color: var(--muted);
+}
+.cache-table tr.lookup td {
+  border-style: solid;
+  border-color: var(--accent);
+}
+.cache-table td.changed {
+  border: 2px solid var(--accent);
+  background: var(--accent-soft);
+}
+.cache-table td.changed span {
+  color: var(--text);
+}
+.prediction-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+/* Lesson prose indents lists and spaces list items; these rows are not prose. */
+.cache-explorer .access-stream,
+.cache-explorer .cache-fields {
+  padding-left: 0;
+}
+.cache-explorer .access-stream li,
+.cache-explorer .cache-fields li {
+  margin-top: 0;
+}
+/* Binary32 explorer: shares the container, story and prediction styles above. */
+.float-inputs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--space-3);
+  margin: var(--space-4) 0;
+}
+.float-inputs form {
+  display: flex;
+  flex: 1 1 18rem;
+  align-items: end;
+  gap: var(--space-2);
+}
+.float-inputs label {
+  display: flex;
+  flex: 1 1 12rem;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+.float-inputs input,
+.float-inputs select {
+  width: 100%;
+  min-width: 0;
+  color: var(--text);
+  font-family: var(--font-mono);
+}
+.float-bits {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: var(--space-4) 0;
+}
+.bit-group {
+  display: grid;
+  align-content: start;
+  gap: var(--space-1);
+  min-width: 0;
+  padding: var(--space-2);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+}
+.bit-group.sign {
+  background: var(--tone-rose-soft);
+}
+.bit-group.exponent {
+  background: var(--tone-amber-soft);
+}
+.bit-group.fraction {
+  flex: 1 1 20rem;
+  background: var(--tone-teal-soft);
+}
+.bit-group-name {
+  color: var(--muted);
+  font-size: var(--text-xs);
+  font-weight: 600;
+}
+.bit-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+}
+.float-explorer .bit {
+  min-width: 24px;
+  min-height: 32px;
+  padding: 0 var(--space-1);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+}
+.float-explorer .bit[aria-pressed='true'] {
+  border: 2px solid var(--text);
+  color: var(--text);
+  font-weight: 700;
+}
+.float-readout {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+  gap: var(--space-2);
+  margin: var(--space-4) 0;
+}
+.float-readout > div {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 var(--space-2);
+  min-width: 0;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+}
+.float-readout > div.wide {
+  grid-column: 1 / -1;
+}
+.float-readout dt {
+  color: var(--muted);
+  font-size: var(--text-xs);
+}
+.float-readout dd {
+  margin: 0;
+  font-size: var(--text-sm);
+  overflow-wrap: anywhere;
+}
+.float-explorer code {
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: var(--text-sm);
+}
+.float-challenge {
+  margin: var(--space-4) 0 0;
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.float-challenge legend {
+  padding: 0 var(--space-1);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+.float-challenge p {
+  margin: 0;
+  font-size: var(--text-sm);
+}
+.float-challenge [aria-disabled='true'] {
+  cursor: default;
+}
+.float-challenge [aria-pressed='true'] {
+  box-shadow: inset 0 0 0 2px var(--text);
+}
+/* Record layout explorer. */
+.layout-decl {
+  margin: var(--space-3) 0;
+  padding: var(--space-3) var(--space-4);
+  background: var(--code-bg);
+  font-size: var(--text-sm);
+}
+.layout-fields {
+  display: grid;
+  gap: var(--space-2);
+  margin: var(--space-3) 0;
+  padding: 0;
+  list-style: none;
+}
+.layout-explorer .layout-fields li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border-strong);
+  border-left-width: 4px;
+  border-radius: var(--radius-sm);
+}
+.layout-name {
+  display: grid;
+  min-width: 0;
+}
+.layout-name span {
+  color: var(--muted);
+  font-size: var(--text-xs);
+}
+.layout-explorer code {
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: var(--text-sm);
+}
+.layout-moves {
+  display: flex;
+  gap: var(--space-1);
+}
+.layout-moves button {
+  min-width: 44px;
+  min-height: 36px;
+}
+.layout-total {
+  margin: var(--space-3) 0 var(--space-2);
+  font-size: var(--text-sm);
+}
+.layout-grid {
+  display: grid;
+  gap: 2px;
+  margin: 0 0 var(--space-3);
+}
+.layout-index {
+  align-self: center;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  text-align: center;
+}
+.layout-block {
+  display: grid;
+  place-content: center;
+  min-width: 0;
+  min-height: var(--space-10);
+  padding: 2px;
+  border: 1px solid var(--border-strong);
+  border-left-width: 4px;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  line-height: var(--leading-snug);
+  text-align: center;
+}
+.byte-offset {
+  color: var(--muted);
+}
+.layout-explorer .padding {
+  border-style: dashed;
+  background: repeating-linear-gradient(
+    135deg,
+    var(--subtle) 0 4px,
+    var(--surface) 4px 8px
+  );
+  color: var(--muted);
+}
+.layout-explorer :is(li, span).field-rose {
+  border-left-color: var(--tone-rose);
+  background: var(--tone-rose-soft);
+}
+.layout-explorer :is(li, span).field-teal {
+  border-left-color: var(--tone-teal);
+  background: var(--tone-teal-soft);
+}
+.layout-explorer :is(li, span).field-amber {
+  border-left-color: var(--tone-amber);
+  background: var(--tone-amber-soft);
+}
+.layout-explorer :is(li, span).field-violet {
+  border-left-color: var(--tone-violet);
+  background: var(--tone-violet-soft);
+}
+/* Lesson prose indents lists; these lists are not prose. */
+.layout-explorer .layout-fields {
+  padding-left: 0;
+}
+/* Byte explorer: reuses the binary32 explorer's bit, readout and challenge styles. */
+.byte-bits {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: var(--space-1);
+  max-width: 28rem;
+  margin: var(--space-4) 0;
+}
+.byte-bit {
+  display: grid;
+  gap: 2px;
+  justify-items: stretch;
+  text-align: center;
+}
+.byte-explorer .bit {
+  min-width: 24px;
+  min-height: 44px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-lg);
+}
+.byte-explorer .bit[aria-pressed='true'] {
+  border: 2px solid var(--text);
+  background: var(--accent-soft);
+  color: var(--text);
+  font-weight: 700;
+}
+.byte-bit .weight {
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+.byte-explorer code {
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: var(--text-sm);
+}
+.byte-add-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--space-3);
+  margin: var(--space-2) 0;
+}
+.byte-add-row label {
+  display: flex;
+  flex: 1 1 9rem;
+  flex-direction: column;
+  gap: var(--space-1);
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+.byte-add-row input,
+.byte-add-row select {
+  width: 100%;
+  min-width: 0;
+  color: var(--text);
+}
+.byte-flags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin: var(--space-3) 0 0;
+}
+.byte-flags .flag {
+  padding: 2px var(--space-2);
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-full);
+  color: var(--muted);
+  font-size: var(--text-xs);
+}
+.byte-flags .flag.on {
+  border: 1px solid var(--warning);
+  background: var(--warning-soft);
+  color: var(--text);
+  font-weight: 700;
+}
+/* Datapath diagram and stepper. Active wires draw in once; with reduced motion
+   the global rule removes the animation and they appear solid immediately. */
+.datapath {
+  display: block;
+  width: 100%;
+  max-width: 440px;
+  height: auto;
+}
+.datapath-unit rect {
+  fill: var(--diagram-cell);
+  stroke: var(--border-strong);
+  stroke-width: 1.5;
+}
+.datapath-unit.on rect {
+  fill: var(--accent-soft);
+  stroke: var(--accent);
+  stroke-width: 3;
+}
+.datapath text {
+  fill: var(--text);
+  font-family: var(--font-body);
+  font-size: var(--text-xs);
+}
+.datapath .datapath-label {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  text-anchor: middle;
+}
+.datapath .datapath-value {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  text-anchor: middle;
+}
+.datapath-wire path {
+  fill: none;
+  stroke: var(--diagram-edge);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 3;
+}
+.datapath-wire text {
+  fill: var(--muted);
+  font-size: var(--text-xs);
+  paint-order: stroke;
+  stroke: var(--surface);
+  stroke-width: 4px;
+  stroke-linejoin: round;
+}
+.datapath-wire.on path {
+  stroke: var(--accent);
+  stroke-width: 3;
+  stroke-dasharray: 100;
+  stroke-dashoffset: 0;
+  animation: datapath-draw 0.7s ease-out;
+}
+.datapath-wire.on text {
+  fill: var(--text);
+  font-weight: 600;
+}
+.datapath-head {
+  fill: var(--diagram-edge);
+}
+.datapath-head.on {
+  fill: var(--accent);
+}
+@keyframes datapath-draw {
+  from {
+    stroke-dashoffset: 100;
+  }
+}
+.datapath-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 420px) minmax(13rem, 1fr);
+  gap: var(--space-5);
+  align-items: start;
+  margin: var(--space-4) 0;
+}
+.datapath-side {
+  display: grid;
+  gap: var(--space-4);
+}
+.datapath-stepper .datapath-program {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.datapath-stepper .datapath-program li {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+.datapath-program li.next {
+  border: 2px solid var(--accent);
+  background: var(--accent-soft);
+}
+.datapath-program li.done {
+  color: var(--muted);
+}
+.datapath-program li.done::after {
+  content: ' ✓ executed';
+  font-size: var(--text-xs);
+}
+.datapath-stepper code {
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: var(--text-sm);
+  white-space: nowrap;
+}
+.datapath-state {
+  margin: 0;
+  font-family: var(--font-mono);
+}
+.datapath-state caption {
+  padding: 0 0 var(--space-2);
+  font-family: var(--font-body);
+  font-size: var(--text-xs);
+}
+.datapath-state th,
+.datapath-state td {
+  padding: var(--space-2) var(--space-3);
+}
+.datapath-state tr.changed {
+  background: var(--diagram-active);
+}
+.datapath-state tr.changed td::after {
+  content: ' changed';
+  color: var(--muted);
+  font-family: var(--font-body);
+  font-size: var(--text-xs);
+}
+@media (max-width: 760px) {
+  .datapath-layout {
+    grid-template-columns: 1fr;
+  }
+}
+/* Assembly stepper. */
+.assembly-stepper .operation-controls label {
+  flex: 1 1 16rem;
+}
+.asm-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--space-4);
+  align-items: start;
+}
+.assembly-stepper .asm-listing,
+.assembly-stepper .asm-stack {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: var(--space-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--code-bg);
+  list-style: none;
+}
+.assembly-stepper .asm-listing li,
+.assembly-stepper .asm-stack li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 var(--space-2);
+  margin: 0;
+  padding: 2px var(--space-2);
+  border: 1px solid transparent;
+  border-radius: 4px;
+}
+.asm-listing li.next {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.asm-listing li.next::after {
+  content: '← next';
+  color: var(--accent);
+  font-size: var(--text-xs);
+  font-weight: 700;
+}
+.asm-label {
+  flex-basis: 100%;
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: 700;
+}
+.assembly-stepper code {
+  padding: 0 0 0 var(--space-3);
+  border: 0;
+  background: none;
+  font-size: var(--text-xs);
+}
+.asm-state {
+  display: grid;
+  gap: var(--space-3);
+}
+.asm-registers {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+.asm-registers caption {
+  padding: 0 0 var(--space-1);
+  font-family: var(--font-body);
+  font-size: var(--text-xs);
+}
+.asm-registers th,
+.asm-registers td {
+  padding: var(--space-1) var(--space-2);
+}
+.asm-registers th span {
+  color: var(--muted);
+  font-weight: 400;
+}
+.asm-registers tr.changed {
+  background: var(--diagram-active);
+}
+.asm-registers tr.changed th::after {
+  content: ' ●';
+  color: var(--success);
+}
+.asm-flags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0;
+}
+.asm-flags .flag {
+  padding: 2px var(--space-2);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+.asm-flags .flag.changed {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.asm-stack li span {
+  color: var(--muted);
+  font-size: var(--text-xs);
+}
+.asm-stack li.top {
+  border-color: var(--border-strong);
+}
+.asm-stack li.top span {
+  color: var(--text);
+}
+.asm-stack li.caller {
+  border-top: 1px dashed var(--border-strong);
+  border-radius: 0;
+}
+@media (max-width: 760px) {
+  .asm-layout {
+    grid-template-columns: 1fr;
+  }
+}
+/* Call stack stepper. New frames slide in and references draw in once;
+   reduced motion removes both animations. */
+.callstack {
+  display: block;
+  width: 100%;
+  max-width: 520px;
+  height: auto;
+  margin: var(--space-3) 0;
+}
+.callstack text {
+  fill: var(--text);
+  font-family: var(--font-body);
+  font-size: var(--text-xs);
+}
+.callstack .column {
+  fill: var(--muted);
+  font-weight: 600;
+}
+.callstack .base {
+  stroke: var(--border-strong);
+  stroke-width: 2;
+}
+.callstack .frame-box > rect {
+  fill: var(--tone-violet-soft);
+  stroke: var(--tone-violet);
+  stroke-width: 1.5;
+}
+.callstack .frame-box {
+  animation: frame-in 0.35s ease-out;
+}
+@keyframes frame-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+.callstack .slot {
+  fill: var(--surface);
+  stroke: var(--border);
+}
+.callstack .frame-name {
+  font-weight: 700;
+}
+.callstack .local {
+  font-family: var(--font-mono);
+}
+.callstack .object rect {
+  fill: var(--tone-teal-soft);
+  stroke: var(--tone-teal);
+  stroke-width: 1.5;
+}
+.callstack .object.freed rect {
+  fill: var(--surface);
+  stroke: var(--border-strong);
+  stroke-dasharray: 5 4;
+}
+.callstack .ref path {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2.5;
+  stroke-dasharray: 100;
+  stroke-dashoffset: 0;
+  animation: datapath-draw 0.6s ease-out;
+}
+.callstack .ref.dangling path {
+  stroke: var(--error);
+  stroke-dasharray: 6 4;
+  animation: none;
+}
+.callstack .warning {
+  fill: var(--error);
+  font-weight: 700;
+  text-anchor: middle;
+}
+.callstack-question {
+  font-weight: 600;
+}
+.callstack-head {
+  fill: var(--accent);
+}
+/* Pipeline stepper: stage colors match the static pipeline table. The new
+   column fades in; reduced motion removes the animation. */
+.pipeline-stepper .operation-controls label {
+  flex: 1 1 12rem;
+}
+.pipeline-stepper .operation-controls .pipeline-check {
+  flex: 0 0 auto;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 44px;
+  color: var(--text);
+}
+.pipeline-check input {
+  width: 20px;
+  height: 20px;
+}
+.pipeline-grid table {
+  border-collapse: separate;
+  border-spacing: 2px;
+  font-size: var(--text-xs);
+}
+.pipeline-grid th,
+.pipeline-grid td {
+  padding: var(--space-1) var(--space-2);
+  border: 0;
+  text-align: center;
+  white-space: nowrap;
+}
+.pipeline-grid thead th {
+  background: none;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-weight: 400;
+}
+.pipeline-grid thead th.now {
+  color: var(--accent);
+  font-weight: 700;
+}
+.pipeline-grid tbody th {
+  position: sticky;
+  left: 0;
+  background: var(--surface);
+  text-align: left;
+}
+.pipeline-grid code {
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: var(--text-xs);
+}
+.pipeline-grid .cell {
+  min-width: 2.75rem;
+  height: 1.75rem;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-weight: 600;
+}
+.pipeline-grid .cell.empty {
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+.pipeline-grid .cell.now:not(.empty) {
+  animation: cell-in 0.3s ease-out;
+}
+@keyframes cell-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+.pipeline-grid .s-if {
+  background: var(--tone-blue-soft);
+}
+.pipeline-grid .s-id {
+  background: var(--tone-violet-soft);
+}
+.pipeline-grid .s-ex {
+  background: var(--tone-amber-soft);
+}
+.pipeline-grid .s-mem {
+  background: var(--tone-teal-soft);
+}
+.pipeline-grid .s-wb {
+  background: var(--tone-green-soft);
+}
+.pipeline-grid .s-stall {
+  background: repeating-linear-gradient(
+    135deg,
+    var(--surface) 0 4px,
+    var(--subtle) 4px 8px
+  );
+  color: var(--muted);
+  font-weight: 400;
+  box-shadow: inset 0 0 0 1px var(--border-strong);
+}
+.pipeline-grid .s-flushed {
+  background: var(--error-soft);
+  color: var(--error);
+  text-decoration: line-through;
+}
+/* Branch predictor explorer. */
+.predictor-explorer .operation-controls label {
+  flex: 1 1 14rem;
+}
+.predictor-explorer .predictor-states,
+.predictor-explorer .outcome-strip {
+  margin: var(--space-3) 0;
+  padding: 0;
+  list-style: none;
+}
+.predictor-states {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr));
+  gap: var(--space-2);
+}
+.predictor-explorer .predictor-states li {
+  display: grid;
+  margin: 0;
+  padding: var(--space-2);
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
+  text-align: center;
+}
+.predictor-explorer .predictor-states li.current {
+  border: 2px solid var(--accent);
+  background: var(--accent-soft);
+  font-weight: 700;
+}
+.predictor-states strong {
+  font-family: var(--font-mono);
+  font-size: var(--text-base);
+}
+.outcome-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+.predictor-explorer .outcome-strip li {
+  display: grid;
+  min-width: 1.75rem;
+  margin: 0;
+  padding: 2px 0;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  text-align: center;
+}
+.predictor-explorer .outcome-strip li.right {
+  border-color: var(--success);
+  background: var(--success-soft);
+}
+.predictor-explorer .outcome-strip li.wrong {
+  border: 2px solid var(--error);
+  background: var(--error-soft);
+}
+.predictor-explorer .outcome-strip li.next {
+  border: 2px solid var(--accent);
+}
+/* Vector loop stepper. */
+.simd-stepper .operation-controls label {
+  flex: 1 1 9rem;
+}
+.simd-stepper .simd-elements {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(3rem, 1fr));
+  gap: 3px;
+  margin: var(--space-3) 0;
+  padding: 0;
+  list-style: none;
+}
+.simd-stepper .simd-elements li {
+  display: grid;
+  justify-items: center;
+  margin: 0;
+  padding: var(--space-1);
+  border: 1px dashed var(--border-strong);
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+.simd-stepper .simd-elements li.vector {
+  border-style: solid;
+  border-color: var(--chart-1);
+}
+.simd-stepper .simd-elements li.done {
+  background: var(--tone-blue-soft);
+}
+.simd-stepper .simd-elements li.scalar.done {
+  background: var(--subtle);
+}
+.simd-stepper .simd-elements li.active {
+  box-shadow: inset 0 0 0 2px var(--accent);
+  animation: cell-in 0.3s ease-out;
+}
+.simd-elements .index {
+  color: var(--muted);
+}
+.simd-elements .value {
+  font-weight: 700;
+}
+/* MESI coherence stepper. */
+.mesi-stepper .operation-controls label {
+  flex: 1 1 9rem;
+}
+.mesi-cores {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+  margin: var(--space-3) 0;
+}
+.mesi-core {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-1);
+  padding: var(--space-3) var(--space-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  text-align: center;
+}
+.mesi-core.acted {
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+.mesi-name {
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+.mesi-state {
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border: 2px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: var(--text-xl);
+  font-weight: 700;
+  animation: cell-in 0.3s ease-out;
+}
+.mesi-state.s-M {
+  border-color: var(--tone-rose);
+  background: var(--tone-rose-soft);
+}
+.mesi-state.s-E {
+  border-color: var(--tone-blue);
+  background: var(--tone-blue-soft);
+}
+.mesi-state.s-S {
+  border-color: var(--tone-teal);
+  background: var(--tone-teal-soft);
+}
+.mesi-state.s-I {
+  border-style: dashed;
+  color: var(--muted);
+}
+.mesi-desc {
+  color: var(--muted);
+  font-size: var(--text-xs);
+}
+.mesi-bus {
+  margin: 0 0 var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+  text-align: center;
+}
+.mesi-stepper .mesi-script {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.mesi-stepper .mesi-script li {
+  margin: 0;
+  padding: 2px var(--space-2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+.mesi-stepper .mesi-script li.done {
+  background: var(--subtle);
+}
+.mesi-stepper .mesi-script li.next {
+  border: 2px solid var(--accent);
+}
+/* DMA ownership stepper. */
+.dma-stepper .dma-lanes {
+  width: 100%;
+  margin: var(--space-3) 0;
+  border-collapse: separate;
+  border-spacing: 0 3px;
+  table-layout: fixed;
+  font-size: var(--text-xs);
+}
+.dma-stepper .dma-lanes th {
+  padding: var(--space-1) var(--space-2);
+  border-bottom: 1px solid var(--border-strong);
+  color: var(--muted);
+  font-weight: 600;
+  text-align: left;
+}
+.dma-stepper .dma-lanes td {
+  padding: var(--space-1) var(--space-2);
+  border: 0;
+  vertical-align: top;
+}
+.dma-stepper .dma-lanes td.acts {
+  border-radius: 4px;
+  font-weight: 600;
+}
+.dma-stepper .dma-lanes td.driver {
+  background: var(--tone-blue-soft);
+  box-shadow: inset 3px 0 0 var(--chart-1);
+}
+.dma-stepper .dma-lanes td.device {
+  background: var(--tone-amber-soft);
+  box-shadow: inset 3px 0 0 var(--chart-2);
+}
+.dma-stepper .dma-lanes tr.refused td.acts {
+  background: var(--error-soft);
+  box-shadow: inset 3px 0 0 var(--error);
+  color: var(--error);
+}
+.dma-stepper .dma-lanes tr.latest td {
+  animation: cell-in 0.3s ease-out;
+}
+.dma-owner {
+  display: inline-block;
+  min-width: 3.25rem;
+  padding: 0 var(--space-1);
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  text-align: center;
+}
+.dma-owner.o-host {
+  border-color: var(--tone-green);
+  background: var(--tone-green-soft);
+}
+.dma-owner.o-device {
+  border-color: var(--tone-violet);
+  background: var(--tone-violet-soft);
+}
+.dma-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: var(--space-2);
+}
+.dma-stepper .operation-controls {
+  padding-bottom: var(--space-2);
+}

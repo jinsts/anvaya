@@ -1,0 +1,55 @@
+---
+import {
+  MESI_SCRIPT,
+  mesi,
+} from '../../../labs/computer-architecture-execution/multicore/models';
+// The stepper's script as a static table, from the same tested model.
+const steps = mesi(MESI_SCRIPT);
+const core = (c: number) => (c === 0 ? 'A' : 'B');
+---
+
+<div
+  class="table-scroll"
+  tabindex="0"
+  role="region"
+  aria-label="MESI transitions for the stepper's accesses"
+>
+  <table>
+    <caption>
+      The stepper's seven accesses, from the tested MESI model. States are
+      listed A then B.
+    </caption>
+    <thead>
+      <tr>
+        <th scope="col">Access</th>
+        <th scope="col">Before</th>
+        <th scope="col">Message</th>
+        <th scope="col">Other copy</th>
+        <th scope="col">After</th>
+      </tr>
+    </thead>
+    <tbody>
+      {steps.map((s, i) => (
+        <tr>
+          <th scope="row">
+            {i + 1}. {core(s.core)} {s.op}s
+          </th>
+          <td>
+            <code>{s.before.join('')}</code>
+          </td>
+          <td>{s.message}</td>
+          <td>{s.effect === 'none' ? '—' : s.effect}</td>
+          <td>
+            <code>{s.after.join('')}</code>
+          </td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+</div>
+<style>
+  th[scope='row'] {
+    font-weight: 400;
+    white-space: nowrap;
+  }
+</style>

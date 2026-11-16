@@ -1,0 +1,10 @@
+title: Number of 1 Bits
+url: https://leetcode.com/problems/number-of-1-bits/
+difficulty: easy
+lessons: [computer-architecture-execution/binary-and-data-representation]
+topics: [binary, bit-manipulation]
+lists: [blind-75, neetcode-150]
+hints:
+  - The numeric value weights each bit position differently; a count only needs to know whether each position is set.
+  - Inspect the lowest bit, then shift the remaining representation toward that position. Choose a shift that eventually introduces zeros.
+  - Scanning a w-bit representation takes O(w) time and O(1) extra space under constant-cost word operations; the problem's bounded integer width makes w a fixed limit.

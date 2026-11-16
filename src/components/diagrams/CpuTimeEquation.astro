@@ -1,0 +1,150 @@
+---
+import DiagramFrame from '../learning/DiagramFrame.astro';
+import { cpuSeconds } from '../../../labs/computer-architecture-execution/architecture-and-performance/example';
+// The lesson's worked CPU-time comparison, computed by the tested model.
+const HZ = 3_000_000_000;
+const runs = [
+  { name: 'Baseline', instructions: 2_000_000_000, cpi: 1.5 },
+  { name: 'Candidate', instructions: 1_500_000_000, cpi: 1.8 },
+].map((r) => {
+  const seconds = cpuSeconds(r.instructions, r.cpi, HZ);
+  return { ...r, seconds, cycles: seconds * HZ };
+});
+const [base, cand] = runs as [(typeof runs)[0], (typeof runs)[0]];
+const billions = (n: number) => `${(n / 1e9).toFixed(1)} bn`;
+const change = (a: number, b: number) => {
+  const pct = Math.round((b / a - 1) * 100);
+  return `${pct > 0 ? '+' : '−'}${Math.abs(pct)}%`;
+};
+const terms = [
+  {
+    label: 'Instructions',
+    value: (r: typeof base) => billions(r.instructions),
+    raw: (r: typeof base) => r.instructions,
+  },
+  {
+    label: 'CPI',
+    value: (r: typeof base) => r.cpi.toFixed(1),
+    raw: (r: typeof base) => r.cpi,
+  },
+  {
+    label: 'Cycles',
+    value: (r: typeof base) => billions(r.cycles),
+    raw: (r: typeof base) => r.cycles,
+  },
+  {
+    label: 'Time',
+    value: (r: typeof base) => `${r.seconds.toFixed(2)} s`,
+    raw: (r: typeof base) => r.seconds,
+  },
+];
+const ops = ['×', '=', '÷ 3 GHz =', ''];
+const pct = (a: number, b: number) => Math.abs(Math.round((b / a - 1) * 100));
+const caption = `CPU time = instructions × cycles per instruction ÷ clock frequency. The candidate runs ${pct(base.instructions, cand.instructions)}% fewer instructions at a ${pct(base.cpi, cand.cpi)}% higher CPI, so it needs ${pct(base.cycles, cand.cycles)}% fewer cycles and finishes ${pct(base.seconds, cand.seconds)}% sooner. Hypothetical counts, computed by the lesson's tested model.`;
+---
+
+<DiagramFrame caption={caption}>
+  <div class="equation">
+    <div
+      class="table-scroll"
+      tabindex="0"
+      role="region"
+      aria-label="CPU-time terms for both runs"
+    >
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">Term</th>
+            {runs.map((r) => (
+              <th scope="col">{r.name}</th>
+            ))}
+            <th scope="col">Change</th>
+          </tr>
+        </thead>
+        <tbody>
+          {terms.map((t, i) => (
+            <tr class:list={{ result: i === terms.length - 1 }}>
+              <th scope="row">
+                {t.label}
+                {ops[i] && (
+                  <span class="op" aria-hidden="true">
+                    {ops[i]}
+                  </span>
+                )}
+              </th>
+              {runs.map((r) => (
+                <td>
+                  <span class="value">{t.value(r)}</span>
+                  <span class="bar" aria-hidden="true">
+                    <span
+                      style={`width: ${(t.raw(r) / Math.max(t.raw(base), t.raw(cand))) * 100}%`}
+                    />
+                  </span>
+                </td>
+              ))}
+              <td
+                class:list={[
+                  'change',
+                  t.raw(cand) < t.raw(base) ? 'better' : 'worse',
+                ]}
+              >
+                {change(t.raw(base), t.raw(cand))}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</DiagramFrame>
+<style>
+  .equation .table-scroll {
+    margin: 0;
+  }
+  tbody th {
+    font-weight: 600;
+  }
+  .op {
+    display: block;
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-weight: 400;
+  }
+  table {
+    font-size: var(--text-sm);
+  }
+  .equation th,
+  .equation td {
+    padding-inline: var(--space-1);
+  }
+  .value {
+    display: block;
+    font-family: var(--font-mono);
+  }
+  .bar {
+    display: block;
+    height: 8px;
+    margin-top: var(--space-1);
+    border-radius: 0 4px 4px 0;
+    background: var(--subtle);
+  }
+  .bar span {
+    display: block;
+    height: 100%;
+    border-radius: 0 4px 4px 0;
+    background: var(--chart-1);
+  }
+  tr.result .value {
+    font-weight: 700;
+  }
+  .change {
+    font-family: var(--font-mono);
+    font-weight: 700;
+  }
+  .change.better {
+    color: var(--success);
+  }
+  .change.worse {
+    color: var(--error);
+  }
+</style>

@@ -1,0 +1,33 @@
+0000000000001260 T sum_to
+00000000000012a0 T scale_sum
+
+0000000000001260 <sum_to>:
+    1260:	f3 0f 1e fa          	endbr64
+    1264:	85 f6                	test   %esi,%esi
+    1266:	7e 28                	jle    1290 <sum_to+0x30>
+    1268:	48 63 f6             	movslq %esi,%rsi
+    126b:	31 c0                	xor    %eax,%eax
+    126d:	48 8d 14 b7          	lea    (%rdi,%rsi,4),%rdx
+    1271:	0f 1f 40 00          	nopl   0x0(%rax)
+    1275:	66 66 2e 0f 1f 84 00 	data16 cs nopw 0x0(%rax,%rax,1)
+    127c:	00 00 00 00 
+    1280:	03 07                	add    (%rdi),%eax
+    1282:	48 83 c7 04          	add    $0x4,%rdi
+    1286:	48 39 d7             	cmp    %rdx,%rdi
+    1289:	75 f5                	jne    1280 <sum_to+0x20>
+    128b:	c3                   	ret
+    128c:	0f 1f 40 00          	nopl   0x0(%rax)
+    1290:	31 c0                	xor    %eax,%eax
+    1292:	c3                   	ret
+    1293:	66 2e 0f 1f 84 00 00 	cs nopw 0x0(%rax,%rax,1)
+    129a:	00 00 00 
+    129d:	0f 1f 00             	nopl   (%rax)
+
+00000000000012a0 <scale_sum>:
+    12a0:	f3 0f 1e fa          	endbr64
+    12a4:	53                   	push   %rbx
+    12a5:	89 d3                	mov    %edx,%ebx
+    12a7:	e8 b4 ff ff ff       	call   1260 <sum_to>
+    12ac:	0f af c3             	imul   %ebx,%eax
+    12af:	5b                   	pop    %rbx
+    12b0:	c3                   	ret

@@ -1,0 +1,8 @@
+name: What Every Programmer Should Know About Memory
+kind: reference
+by: Ulrich Drepper (Red Hat, 2007)
+url: https://www.akkadia.org/drepper/cpumemory.pdf
+description: >-
+  The author's widely cited paper on DRAM organization and access protocol,
+  CPU caches and memory performance for programmers; its technology figures
+  date from 2007, but the row, bank and channel mechanics still apply.

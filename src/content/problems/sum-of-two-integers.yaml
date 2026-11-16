@@ -1,0 +1,10 @@
+title: Sum of Two Integers
+url: https://leetcode.com/problems/sum-of-two-integers/
+difficulty: medium
+lessons: [computer-architecture-execution/binary-and-data-representation]
+topics: [binary, bit-manipulation]
+lists: [blind-75, neetcode-150]
+hints:
+  - Add two bits without carry and you get their XOR; the positions that produce a carry are where both bits are 1.
+  - Repeat with the partial sum and the carry shifted one position left until no carry remains. This is a ripple-carry adder done a word at a time.
+  - Negative operands are two's complement patterns, so fix the width (32 bits) and mask after each step; in a language with unbounded integers, convert the final pattern back to a signed value. At most 32 rounds, so O(1) for a fixed width.

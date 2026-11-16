@@ -1,0 +1,164 @@
+---
+import DiagramFrame from '../learning/DiagramFrame.astro';
+import { vectorPlan } from '../../../labs/computer-architecture-execution/simd/lanes';
+// The same ten additions as scalar iterations and as four-lane vector
+// iterations plus a scalar remainder, from the tested plan.
+const N = 10;
+const LANES = 4;
+const plan = vectorPlan(N, LANES);
+const scalarIterations = N;
+---
+
+<DiagramFrame
+  caption={`out[i] = a[i] + b[i] for ${N} ints. A scalar loop runs ${scalarIterations} iterations of one addition. A 16-byte vector holds ${LANES} ints, so the vectorized loop runs ${plan.vectorIterations} iterations of one paddd each and finishes the last ${plan.remainder} elements in a scalar remainder loop: ${plan.loopIterations} iterations in all.`}
+>
+  <div class="lanes">
+    <div
+      class="row"
+      role="group"
+      aria-label={`Scalar: ${scalarIterations} iterations, one element each`}
+    >
+      <p class="label">
+        <strong>Scalar</strong> <span>{scalarIterations} iterations</span>
+      </p>
+      <ol class="elements" aria-hidden="true">
+        {Array.from({ length: N }, (_, i) => (
+          <li class="group scalar">
+            <span class="index">{i}</span>
+            <span class="op">add</span>
+          </li>
+        ))}
+      </ol>
+    </div>
+    <div
+      class="row"
+      role="group"
+      aria-label={`Vectorized: ${plan.vectorIterations} vector iterations of ${LANES} elements, then ${plan.remainder} scalar`}
+    >
+      <p class="label">
+        <strong>Vectorized, {LANES} lanes</strong>{' '}
+        <span>{plan.loopIterations} iterations</span>
+      </p>
+      <ol class="elements" aria-hidden="true">
+        {plan.groups.map((g) => (
+          <li class={`group ${g.kind}`} style={`grid-column: span ${g.count}`}>
+            <span class="index">
+              {g.count > 1 ? `${g.first}–${g.first + g.count - 1}` : g.first}
+            </span>
+            <span class="op">
+              {g.kind === 'vector' ? 'paddd: 4 adds' : 'add (remainder)'}
+            </span>
+          </li>
+        ))}
+      </ol>
+    </div>
+    <div
+      class="vector"
+      aria-label="One vector iteration: four lanes added by one instruction"
+      role="group"
+    >
+      <p class="label">
+        <strong>One vector iteration</strong> <span>lanes are independent</span>
+      </p>
+      {(['a', 'b', 'out'] as const).map((name) => (
+        <div class="register" aria-hidden="true">
+          <span class="name">{name === 'out' ? 'out' : name}</span>
+          {Array.from({ length: LANES }, (_, lane) => (
+            <span class:list={['lane', { result: name === 'out' }]}>
+              {name === 'a' ? (
+                `a[${lane}]`
+              ) : name === 'b' ? (
+                `b[${lane}]`
+              ) : (
+                <>
+                  a[{lane}]
+                  <wbr />
+                  +b[{lane}]
+                </>
+              )}
+            </span>
+          ))}
+        </div>
+      ))}
+    </div>
+  </div>
+</DiagramFrame>
+<style>
+  .lanes {
+    display: grid;
+    gap: var(--space-4);
+  }
+  .label {
+    display: flex;
+    justify-content: space-between;
+    margin: 0 0 var(--space-1);
+    font-size: var(--text-sm);
+  }
+  .label span {
+    color: var(--muted);
+    font-size: var(--text-xs);
+  }
+  .elements {
+    display: grid;
+    grid-template-columns: repeat(10, minmax(0, 1fr));
+    gap: 3px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .lanes .elements li {
+    display: grid;
+    gap: 2px;
+    justify-items: center;
+    margin: 0;
+    padding: var(--space-1) 2px;
+    border-radius: 4px;
+    font-size: var(--text-xs);
+    text-align: center;
+  }
+  .group.scalar {
+    border: 1px dashed var(--border-strong);
+    background: var(--bg);
+  }
+  .group.vector {
+    border: 2px solid var(--chart-1);
+    background: var(--tone-blue-soft);
+  }
+  .index {
+    font-family: var(--font-mono);
+    font-weight: 700;
+  }
+  .op {
+    color: var(--muted);
+    overflow-wrap: anywhere;
+  }
+  .register {
+    display: grid;
+    grid-template-columns: 2.5rem repeat(4, minmax(0, 1fr));
+    gap: 3px;
+    margin-top: 3px;
+  }
+  .name {
+    align-self: center;
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+  }
+  .lane {
+    padding: var(--space-1);
+    border: 1px solid var(--border-strong);
+    border-radius: 4px;
+    background: var(--surface);
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    text-align: center;
+  }
+  .lane.result {
+    border: 2px solid var(--chart-1);
+    background: var(--tone-blue-soft);
+  }
+  @media (max-width: 480px) {
+    .op {
+      display: none;
+    }
+  }
+</style>

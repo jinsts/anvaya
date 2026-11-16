@@ -1,0 +1,115 @@
+---
+import DiagramFrame from '../learning/DiagramFrame.astro';
+import {
+  bitsOf,
+  nextDown,
+  nextUp,
+  fromBits,
+} from '../../../labs/computer-architecture-execution/floating-point-representation/example';
+// Two integers that binary32 cannot store, each exactly halfway between two
+// neighbors. Math.fround (ties to even) picks the kept neighbor; the figure
+// reads the neighbors and their low fraction bits from the model.
+const inputs = [2 ** 24 + 1, 2 ** 24 + 3];
+const cases = inputs.map((input) => {
+  const kept = Math.fround(input);
+  const keptBits = bitsOf(kept);
+  const other =
+    kept < input ? fromBits(nextUp(keptBits)) : fromBits(nextDown(keptBits));
+  const [below, above] = kept < input ? [kept, other] : [other, kept];
+  const neighbor = (value: number) => {
+    const bits = bitsOf(value);
+    return {
+      value,
+      low: (bits & 0b111).toString(2).padStart(3, '0'),
+      even: (bits & 1) === 0,
+      kept: value === kept,
+    };
+  };
+  return { input, below: neighbor(below), above: neighbor(above), kept };
+});
+const n = (value: number) => value.toLocaleString('en');
+---
+
+<DiagramFrame caption="Round to nearest, ties to even. Above 2²⁴ binary32 values are 2 apart, so these odd integers sit exactly halfway. Each rounds to the neighbor whose last fraction bit is 0, so ties round down as often as up.">
+  <ol class="ties">
+    {cases.map(({ input, below, above }) => (
+      <li>
+        <p class="input">
+          Store <strong>{n(input)}</strong>: halfway between {n(below.value)}{' '}
+          and {n(above.value)}
+        </p>
+        <div class="pair">
+          {[below, above].map((side, index) => (
+            <div class:list={['neighbor', { kept: side.kept }]}>
+              <span class="value">{n(side.value)}</span>
+              <span class="bits">
+                fraction ends <code>…{side.low}</code>
+              </span>
+              <span class="parity">
+                last bit {side.even ? '0 (even)' : '1 (odd)'}
+              </span>
+              <span class="verdict">
+                {side.kept ? (index === 0 ? '← kept' : 'kept →') : 'not chosen'}
+              </span>
+            </div>
+          ))}
+        </div>
+      </li>
+    ))}
+  </ol>
+</DiagramFrame>
+<style>
+  .ties {
+    display: grid;
+    gap: var(--space-5);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .ties > li {
+    display: grid;
+    gap: var(--space-2);
+  }
+  .diagram-frame .ties > li + li {
+    margin-top: 0;
+  }
+  .input {
+    margin: 0;
+    font-size: var(--text-sm);
+  }
+  .pair {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-2);
+  }
+  .neighbor {
+    display: grid;
+    gap: var(--space-1);
+    padding: var(--space-3);
+    border: 1px dashed var(--border-strong);
+    border-radius: var(--radius);
+    background: var(--diagram-cell);
+    color: var(--muted);
+    font-size: var(--text-xs);
+  }
+  .neighbor.kept {
+    border: 2px solid var(--success);
+    background: var(--success-soft);
+    color: var(--text);
+  }
+  .value {
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: var(--text-base);
+    font-weight: 600;
+  }
+  .neighbor code {
+    padding: 0;
+    border: 0;
+    background: none;
+    font-size: var(--text-xs);
+  }
+  .verdict {
+    font-weight: 700;
+  }
+</style>

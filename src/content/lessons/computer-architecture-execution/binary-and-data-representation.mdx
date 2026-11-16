@@ -1,0 +1,258 @@
+---
+title: 'Binary representation: Give bits a meaning'
+shortTitle: Binary and data representation
+summary: Read one bit pattern as unsigned and two's complement integers, tell carry from signed overflow, and widen, shift and mask bytes without changing what they mean by accident.
+subject: computer-architecture-execution
+path: engineering-fundamentals
+difficulty: foundation
+estimatedMinutes: 30
+learningObjectives:
+  - Decode unsigned and two's complement values from a bit pattern of a given width
+  - Distinguish carry from signed overflow and predict both for a fixed-width addition
+  - Choose sign or zero extension, and logical or arithmetic shifts, to preserve a value's meaning
+  - Read and change individual bits with masks
+prerequisites:
+  - computer-architecture-execution/how-computers-execute-programs
+tags: [binary, representation, debugging]
+skills: [debugging, implementation, complexity-analysis]
+status: draft
+drafter: agent
+interviewQuestions:
+  - prompt: How can the same byte represent both 255 and -1?
+    answer: >-
+      A byte contains a bit pattern, and its type determines the interpretation.
+      Unsigned interpretation gives the eight positions weights from 1 through
+      128, producing 255 for all ones. In eight-bit two's complement the highest
+      position has weight -128, producing -1 for those same bits. Changing the
+      interpretation does not change the stored byte.
+    followUps:
+      - What range can a signed 16-bit two's complement value represent?
+  - prompt: Does a CPU wrapping an addition prove that signed overflow is safe in C?
+    answer: >-
+      No, the machine instruction and the source language have separate contracts.
+      An eight-bit modular adder retains the low eight bits, but ordinary signed
+      overflow in C has undefined behavior. A compiler can optimize on the
+      assumption that defined executions do not overflow. Use checked arithmetic
+      or a suitable unsigned representation when the algorithm needs explicit
+      wraparound, and check the language's conversion rules.
+  - prompt: How would you detect overflow when adding two signed 32-bit integers?
+    answer: >-
+      Check before adding, so the check itself cannot overflow: a positive
+      `b` overflows when `a > MAX - b`, and a negative `b` when `a < MIN - b`.
+      In hardware terms, overflow happens exactly when both operands have the
+      same sign and the result's sign differs. Many languages and compilers
+      also offer checked-add functions that report overflow directly, which
+      is clearer than hand-written tests.
+    followUps:
+      - How would the check change for unsigned addition?
+  - prompt: What is the difference between sign extension and zero extension?
+    answer: >-
+      Both widen a value by adding high bits. Zero extension fills them with 0
+      and preserves the unsigned value; sign extension copies the top bit and
+      preserves the two's complement value. Widening the byte `0xff` gives
+      `0x00ff`, which is 255, or `0xffff`, which is −1. Using the wrong one
+      turns a small negative number into a large positive one, a common bug
+      when bytes from a buffer are converted to wider integers.
+sources:
+  - label: 'Dive into Systems, section 4.3 — Two’s complement and sign extension'
+    url: https://diveintosystems.org/book/C4-Binary/signed.html#_twos_complement
+  - label: 'Dive into Systems, section 4.3 — Sign extension'
+    url: https://diveintosystems.org/book/C4-Binary/signed.html#_sign_extension
+  - label: 'Dive into Systems, section 4.5 — Unsigned and signed overflow'
+    url: https://diveintosystems.org/book/C4-Binary/overflow.html#_binary_integer_overflow
+  - label: 'Dive into Systems, section 4.6 — Bitwise operators and shifts'
+    url: https://diveintosystems.org/book/C4-Binary/bitwise.html#_bit_shifting
+  - label: 'Dive into Systems, section 7.4 — x86-64 condition code flags'
+    url: https://diveintosystems.org/book/C7-x86_64/preliminaries.html#_conditional_comparison_instructions
+---
+
+import ByteExplorer from '../../../components/interactive/ByteExplorer';
+import CarryOverflowGrid from '../../../components/diagrams/CarryOverflowGrid.astro';
+import TwosComplementWheel from '../../../components/diagrams/TwosComplementWheel.astro';
+
+import source from '../../../../labs/computer-architecture-execution/binary-and-data-representation/example.ts?raw';
+
+## A byte needs an interpretation
+
+A sensor sends the byte `11111111`. Is the reading 255, −1, or eight separate
+flags? The bits alone cannot say. Sender and receiver must agree on the
+**width** and on the **interpretation**, and on what happens when a result does
+not fit. A wrong guess turns a valid packet into an impossible measurement
+without changing a single bit.
+
+Think of a label reading `10`: its value changes with the base you assume. The
+analogy stops at overflow. A fixed-width register also decides what to keep
+when a result needs more bits than it has, and two programs can make different
+decisions about the same bits.
+
+The [execution lesson](/learn/computer-architecture-execution/how-computers-execute-programs/)
+traced changing machine state. Here we fix what an integer's bits mean. Two
+later pages extend the same idea to [floating-point numbers](/learn/computer-architecture-execution/floating-point-representation/)
+and to [text, byte order and record layout](/learn/computer-architecture-execution/text-encoding-and-memory-layout/).
+
+## Unsigned and two's complement
+
+A binary digit at position k, counting from zero at the right, weighs 2ᵏ, so
+`00001101` means 8 + 4 + 1 = 13. Hexadecimal writes four bits per digit, so the
+same byte is `0x0d`. Hexadecimal is a way to write bits, not a different kind
+of storage.
+
+An unsigned w-bit integer ranges from 0 to 2ʷ − 1. **Two's complement** gives
+the top bit a negative weight, −2ʷ⁻¹, and keeps every other weight. With eight
+bits, `10000000` is −128 and `01111111` is 127; to read a pattern whose top bit
+is set, subtract 2ʷ from its unsigned value, so `11111111` is 255 − 256 = −1.
+The range is asymmetric because zero takes one of the non-negative patterns.
+
+<TwosComplementWheel />
+
+The wheel shows why one adder serves both readings. Adding 1 always steps one
+position clockwise and keeps the low w bits. The unsigned reading jumps only at
+the top, from 15 back to 0; the signed reading jumps only at the bottom, from 7
+to −8. The same hardware addition is correct for both readings except where it
+crosses that reading's break.
+
+## Carry and overflow answer different questions
+
+**Carry** reports that the unsigned sum needed one more bit. **Signed
+overflow** reports that the signed sum fell outside −2ʷ⁻¹ to 2ʷ⁻¹ − 1, which
+happens exactly when both operands have the same sign and the kept result has
+the other sign. Neither implies the other:
+
+<CarryOverflowGrid />
+
+The adder does not know which reading the program intends. x86-64 therefore
+records both conditions, as the carry flag CF and the overflow flag OF, and a
+later instruction chooses which one to test.
+
+<Callout
+  title="Machine behavior and language behavior are separate"
+  variant="warning"
+>
+  The lab implements modular arithmetic on purpose. In C, unsigned arithmetic is
+  modular, but ordinary signed overflow is undefined behavior, so a compiler may
+  assume it never happens. JavaScript numbers are binary64 floating point, and
+  its bitwise operators first convert to 32-bit integers. The explicit byte
+  checks in the lab keep these language rules from silently defining the model.
+</Callout>
+
+## Widen and shift without changing the meaning
+
+Widening a value adds high bits. **Zero extension** fills them with 0, which
+preserves the unsigned value. **Sign extension** copies the top bit, which
+preserves the two's complement value: `0xff` becomes `0x00ff`, 255, or `0xffff`,
+−1. Converting buffer bytes with the wrong extension turns small negative
+readings into large positive ones.
+
+Right shifts make the same choice. A **logical** shift fills vacated high bits
+with zeros; an **arithmetic** shift copies the sign bit, so a negative value
+stays negative. In JavaScript these are `>>>` and `>>`, applied after the
+operand is converted to 32 bits. An arithmetic shift by k divides by 2ᵏ but
+rounds toward −∞: a byte holding −7 shifted right by 1 gives −4, while C's
+signed division `-7 / 2` rounds toward zero and gives −3.
+
+## Read and change single bits
+
+A **mask** selects positions. `x & mask` keeps only the masked bits, `x | mask`
+sets them, `x & ~mask` clears them and `x ^ mask` flips them. To read bit k,
+shift it down to position 0 and mask with 1: `(x >>> k) & 1`. The lab's
+`bitAt` does exactly this for a checked byte.
+
+Before flipping bits below, predict both readings. Then choose a second
+operand and predict the two flags before adding.
+
+<ByteExplorer client:visible />
+
+<details>
+<summary>Inspect the tested model and expected output</summary>
+
+<CodeExample
+  title="Interpret, add, extend and shift fixed-width patterns"
+  code={source}
+  verified
+  output={
+    '255 as signed byte: -1\n127 + 1: {"unsigned":128,"signed":-128,"carry":false,"signedOverflow":true}\n255 + 1: {"unsigned":0,"signed":0,"carry":true,"signedOverflow":false}\n0xf0 sign-extended: 0xfff0; zero-extended: 0x00f0\n0x96 >> 2: logical 0x25, arithmetic 0xe5'
+  }
+/>
+
+</details>
+
+The tests check every byte against the weighted-bit definition, every one of
+the 65,536 byte pairs against the sign rule for overflow and the carry-out, both
+extensions and both shifts for every byte and shift amount, and invalid input.
+Every operation is O(1) for a fixed width.
+
+## Practice
+
+<LabCard
+  title="01 / Two's complement by hand"
+  command="pnpm lab computer-architecture-execution/binary-and-data-representation"
+>
+  Implement `solve(raw)` in `starter.ts` to read an unsigned byte as two's
+  complement. Predict the results for 173 and 250 before running the tests.
+</LabCard>
+
+<details>
+<summary>Check after attempting</summary>
+
+173 is `10101101`: 173 − 256 = −83. 250 is `11111010`: 250 − 256 = −6. Any
+byte below 128 keeps its value. The tests also check 0 and 128, the two ends of
+the asymmetric range.
+
+</details>
+
+<LabCard
+  title="02 / Predict the flags"
+  command="pnpm exec vitest run labs/computer-architecture-execution/binary-and-data-representation/"
+>
+  Before testing, predict carry and signed overflow for the byte additions 200 +
+  100 and 100 + 100, and the byte each one keeps. Then add assertions with
+  `addBytes`.
+</LabCard>
+
+<details>
+<summary>Check after testing</summary>
+
+200 + 100 = 300 needs a ninth bit, so carry is set and the kept byte is 44. In
+two's complement it is −56 + 100 = 44, which fits: no overflow. 100 + 100 = 200
+fits in eight unsigned bits, so no carry, but two positive operands produce a
+byte with its top bit set, −56: signed overflow.
+
+</details>
+
+## Check your reasoning
+
+<ConceptCheck
+  id="binary-and-data-representation-overflow"
+  question="An eight-bit modular addition keeps 10000000 after adding 01111111 and 00000001. Which conclusion follows?"
+  options={[
+    {
+      label: 'The signed result overflowed, but the unsigned result fits.',
+      correct: true,
+      explanation:
+        '127 + 1 is 128, outside the signed range -128 through 127 but inside the unsigned range 0 through 255. The kept bits represent -128 only under the signed reading.',
+    },
+    {
+      label:
+        'Both signed and unsigned addition overflowed because the top bit is one.',
+      explanation:
+        'The top bit is an ordinary value bit for the unsigned reading. Unsigned overflow, a carry, needs a result above 255, which did not occur.',
+    },
+    {
+      label: 'A C program can safely rely on the signed value becoming -128.',
+      explanation:
+        'The model specifies modular behavior. Ordinary signed overflow in C is undefined, so this machine-level trace does not create a source-language guarantee.',
+    },
+  ]}
+/>
+
+## Two-minute recap
+
+- Width and interpretation give a bit pattern meaning; two's complement gives
+  the top bit weight −2ʷ⁻¹, so its range is asymmetric.
+- One adder serves both readings: carry marks the unsigned break, signed
+  overflow the signed one, and either can occur without the other.
+- Zero extension preserves unsigned values; sign extension preserves signed
+  values. Logical and arithmetic shifts make the same choice.
+- Masks read, set, clear and flip single bits.
+- Language rules, such as undefined signed overflow in C, are separate from
+  what the hardware does.

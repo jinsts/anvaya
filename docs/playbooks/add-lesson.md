@@ -12,6 +12,10 @@ component details are in [AUTHORING_GUIDE.md](../AUTHORING_GUIDE.md).
   terms, tags and cross-links.
 - Find sources in `src/content/sources/`. Register new ones first
   ([add-source.md](add-source.md)).
+- Size the page as one teaching unit: one mechanism, its worked example and its
+  practice, usually 15–30 minutes. If a planned topic holds several mechanisms,
+  propose splitting it into several planned pages before drafting
+  ([ADR 0008](../adr/0008-subject-chapters-and-lesson-pages.md)).
 
 ## Steps
 

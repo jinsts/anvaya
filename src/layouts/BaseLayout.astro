@@ -8,8 +8,8 @@ import {
   categoryUrl,
   pathLabel,
   pathLessonIds,
-  pathSections,
   pathUrl,
+  subjectGroups,
   subjectUrl,
   subjectsInCategory,
   type LearningPath,
@@ -29,8 +29,21 @@ const {
   lessonById,
   pathsByLesson,
   categories,
+  subjectById,
   availableSubjects: subjects,
 } = await getCatalog();
+// In a path that spans subjects, a subject with several chapters is labelled
+// once above them (ADR 0008).
+const sidebarGroups = (path: LearningPath) =>
+  subjectGroups(path)
+    .map((group) => ({
+      label:
+        !path.subject && group.sections.length > 1 && group.subject
+          ? subjectById.get(group.subject)?.title
+          : undefined,
+      sections: group.sections.filter((section) => section.lessons.length),
+    }))
+    .filter((group) => group.sections.length);
 const current = Astro.url.pathname;
 const currentLesson = current.startsWith('/learn/')
   ? lessonById.get(current.slice('/learn/'.length).replace(/\/$/, ''))
@@ -253,60 +266,63 @@ const navItems: {
                   data-progress-bar
                 />
                 <nav aria-label={`Lessons in ${path.title}`}>
-                  {pathSections(path)
-                    .filter((section) => section.lessons.length > 0)
-                    .map((section) => (
-                      <details class="path-section" open>
-                        <summary>
-                          {section.title}
-                          <Icon name="chevron-down" size={14} />
-                        </summary>
-                        <ol>
-                          {section.lessons.map((id) => {
-                            const lesson = lessonById.get(id)!;
-                            return (
-                              <li>
-                                <a
-                                  class="lesson-link"
-                                  href={lessonUrlIn(lesson, path.id)}
-                                  data-lesson-id={id}
-                                  data-label={lessonLabel(lesson)}
-                                  aria-current={
-                                    currentLesson?.id === id
-                                      ? 'page'
-                                      : undefined
-                                  }
-                                >
-                                  <span
-                                    class="lesson-marker"
-                                    aria-hidden="true"
+                  {sidebarGroups(path).map((group) => (
+                    <>
+                      {group.label && <p class="path-subject">{group.label}</p>}
+                      {group.sections.map((section) => (
+                        <details class="path-section" open>
+                          <summary>
+                            {section.title}
+                            <Icon name="chevron-down" size={14} />
+                          </summary>
+                          <ol>
+                            {section.lessons.map((id) => {
+                              const lesson = lessonById.get(id)!;
+                              return (
+                                <li>
+                                  <a
+                                    class="lesson-link"
+                                    href={lessonUrlIn(lesson, path.id)}
+                                    data-lesson-id={id}
+                                    data-label={lessonLabel(lesson)}
+                                    aria-current={
+                                      currentLesson?.id === id
+                                        ? 'page'
+                                        : undefined
+                                    }
                                   >
-                                    <span class="lesson-number">
-                                      {String(
-                                        pathLessonIds(path).indexOf(id) + 1,
-                                      ).padStart(2, '0')}
+                                    <span
+                                      class="lesson-marker"
+                                      aria-hidden="true"
+                                    >
+                                      <span class="lesson-number">
+                                        {String(
+                                          pathLessonIds(path).indexOf(id) + 1,
+                                        ).padStart(2, '0')}
+                                      </span>
+                                      <Icon
+                                        name="check"
+                                        size={13}
+                                        class="lesson-check"
+                                      />
                                     </span>
-                                    <Icon
-                                      name="check"
-                                      size={13}
-                                      class="lesson-check"
-                                    />
-                                  </span>
-                                  {lessonLabel(lesson)}
-                                  <span
-                                    class="sr-only"
-                                    data-complete-label
-                                    hidden
-                                  >
-                                    (completed)
-                                  </span>
-                                </a>
-                              </li>
-                            );
-                          })}
-                        </ol>
-                      </details>
-                    ))}
+                                    {lessonLabel(lesson)}
+                                    <span
+                                      class="sr-only"
+                                      data-complete-label
+                                      hidden
+                                    >
+                                      (completed)
+                                    </span>
+                                  </a>
+                                </li>
+                              );
+                            })}
+                          </ol>
+                        </details>
+                      ))}
+                    </>
+                  ))}
                 </nav>
               </>
             )}
@@ -737,6 +753,15 @@ const navItems: {
   }
   .path-sidebar .progress {
     margin: 0 var(--space-3) var(--space-3);
+  }
+  .path-subject {
+    margin: var(--space-3) var(--space-3) var(--space-1);
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--border);
+    color: var(--text);
+    font-size: var(--text-sm);
+    font-weight: 650;
+    line-height: var(--leading-snug);
   }
   .path-section summary {
     display: flex;

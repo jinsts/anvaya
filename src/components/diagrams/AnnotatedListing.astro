@@ -1,0 +1,213 @@
+---
+import DiagramFrame from '../learning/DiagramFrame.astro';
+import { parseListing } from '../../../labs/computer-architecture-execution/reading-assembly/x86';
+import type { Annotation } from '../../../labs/computer-architecture-execution/reading-assembly/annotations';
+// C source beside a real compiler listing. Numbered groups come from the
+// lab's annotations, which a test keeps in step with the listing.
+interface Props {
+  source: string;
+  listing: string;
+  annotations: Annotation[];
+  caption: string;
+  label: string;
+}
+const { source, listing, annotations, caption, label } = Astro.props;
+const parsed = parseListing(listing);
+// Walk the listing, assigning each instruction the annotation it belongs to.
+const queue = annotations.flatMap((a, group) =>
+  a.instructions.map((text) => ({ text, group })),
+);
+const rows: { kind: 'label' | 'instruction'; text: string; group?: number }[] =
+  [];
+const labelAt = new Map<number, string[]>();
+for (const [name, index] of Object.entries(parsed.labels))
+  if (!/^\.LF[BE]\d+$/.test(name))
+    labelAt.set(index, [...(labelAt.get(index) ?? []), name]);
+parsed.instructions.forEach((instruction, index) => {
+  for (const name of labelAt.get(index) ?? [])
+    rows.push({ kind: 'label', text: `${name}:` });
+  const next = queue[0];
+  const group =
+    next?.text === instruction.text ? queue.shift()!.group : undefined;
+  rows.push({ kind: 'instruction', text: instruction.text, group });
+});
+const sourceRows = source
+  .trimEnd()
+  .split('\n')
+  .filter((line) => !line.startsWith('//'))
+  .map((line) => ({
+    line,
+    groups: annotations.flatMap((a, group) =>
+      a.source.includes(line) ? [group] : [],
+    ),
+  }));
+const tones = ['teal', 'amber', 'violet', 'rose', 'blue', 'green'];
+---
+
+<DiagramFrame caption={caption}>
+  <div class="annotated" role="group" aria-label={label}>
+    <div class="column">
+      <p class="heading">C source</p>
+      <ol class="code" aria-label="C source lines">
+        {sourceRows.map((row) => (
+          <li>
+            <code>{row.line || ' '}</code>
+            {row.groups.map((g) => (
+              <span class={`badge tone-${tones[g]}`}>{g + 1}</span>
+            ))}
+          </li>
+        ))}
+      </ol>
+    </div>
+    <div class="column">
+      <p class="heading">GCC 15.2 -O2, x86-64 (directives omitted)</p>
+      <ol class="code" aria-label="Assembly lines">
+        {rows.map((row) =>
+          row.kind === 'label' ? (
+            <li class="label">
+              <code>{row.text}</code>
+            </li>
+          ) : (
+            <li
+              class:list={[
+                row.group !== undefined && `tone-${tones[row.group]}`,
+              ]}
+            >
+              <code class="instruction">{row.text}</code>
+              {row.group !== undefined ? (
+                <span class={`badge tone-${tones[row.group]}`}>
+                  {row.group + 1}
+                </span>
+              ) : (
+                <span class="aside">landing pad</span>
+              )}
+            </li>
+          ),
+        )}
+      </ol>
+    </div>
+    <ol class="legend">
+      {annotations.map((a, g) => (
+        <li>
+          <span class={`badge tone-${tones[g]}`}>{g + 1}</span>
+          <span>
+            <strong>{a.title}.</strong> {a.note}
+          </span>
+        </li>
+      ))}
+    </ol>
+  </div>
+</DiagramFrame>
+<style>
+  .annotated {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-4);
+  }
+  .heading {
+    margin: 0 0 var(--space-2);
+    color: var(--muted);
+    font-size: var(--text-xs);
+    font-weight: 600;
+  }
+  .code {
+    display: grid;
+    gap: 2px;
+    margin: 0;
+    padding: var(--space-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--code-bg);
+    list-style: none;
+  }
+  .annotated .code li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+    min-height: 1.75rem;
+    margin: 0;
+    padding: 0 var(--space-2);
+    border-left: 3px solid transparent;
+    border-radius: 4px;
+  }
+  .annotated code {
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    background: none;
+    font-size: var(--text-xs);
+    white-space: pre-wrap;
+  }
+  .code li.label code {
+    color: var(--muted);
+  }
+  .code li .instruction {
+    padding-left: var(--space-4);
+  }
+  .badge {
+    display: inline-grid;
+    flex: none;
+    place-items: center;
+    min-width: 1.5rem;
+    height: 1.5rem;
+    border-radius: var(--radius-full);
+    color: var(--text);
+    font-size: var(--text-xs);
+    font-weight: 700;
+  }
+  .aside {
+    color: var(--muted);
+    font-size: var(--text-xs);
+  }
+  .legend {
+    display: grid;
+    grid-column: 1 / -1;
+    gap: var(--space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: var(--text-sm);
+    line-height: var(--leading);
+  }
+  .annotated .legend li {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: var(--space-2);
+    align-items: start;
+    margin: 0;
+  }
+  .annotated li.tone-teal,
+  .badge.tone-teal {
+    border-left-color: var(--tone-teal);
+    background: var(--tone-teal-soft);
+  }
+  .annotated li.tone-amber,
+  .badge.tone-amber {
+    border-left-color: var(--tone-amber);
+    background: var(--tone-amber-soft);
+  }
+  .annotated li.tone-violet,
+  .badge.tone-violet {
+    border-left-color: var(--tone-violet);
+    background: var(--tone-violet-soft);
+  }
+  .annotated li.tone-rose,
+  .badge.tone-rose {
+    border-left-color: var(--tone-rose);
+    background: var(--tone-rose-soft);
+  }
+  .annotated li.tone-blue,
+  .badge.tone-blue {
+    border-left-color: var(--tone-blue);
+    background: var(--tone-blue-soft);
+  }
+  .badge {
+    border: 1px solid var(--border-strong);
+  }
+  @media (max-width: 700px) {
+    .annotated {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
