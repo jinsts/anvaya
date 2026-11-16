@@ -943,3 +943,18 @@ formatting and lint passed; 405 tests in 64 files; 39 pages; 102 browser tests.
 Screenshots of the three figures at 1280 px and 390 px in both themes were
 inspected; review moved the roofline's line labels into a key and compacted its
 table, which collided and overflowed at 390 px.
+
+## Subject records and ArchitectureFlow retirement — 2026-11-16
+
+No lesson uses `ArchitectureFlow` any more, so the component was deleted. The
+subject overview gained objectives for multicore and measurement and now says
+the `perf stat` experiment is owner-run with no recorded output. The audit
+document has a correction to its 2026-11-13 follow-through note, and
+`IMPLEMENTATION.md` ticks the browser-test item for the scaffolding pages (the
+catalog tests cover them in every gate run) and the planned-page drafting
+item, adding an open item for owner review.
+
+Same command as the previous entry: zero type errors, warnings or hints;
+formatting and lint passed; 405 tests in 64 files; 39 pages; 102 browser tests.
+The native drift check, run on its own afterwards, reported all 28 artifacts
+unchanged and 8 checked programs passing.

@@ -305,3 +305,15 @@ checks, actual measurement provenance, browser coverage, and remaining limits.
 The native-enabled quality gate passed 164 unit/lab tests and 56 browser tests.
 Content remains draft; owner promotion and independent pedagogical review are
 still required.
+
+## Correction to the follow-through note — 2026-11-16
+
+The note above overstates the 2026-11-13 revision. Its "primary mechanism
+figures" were `ArchitectureFlow` text cards, boxes of prose rather than
+diagrams of the mechanism, and only three lessons had learner attempt paths.
+A later series of local commits on the `content/computer-architecture` branch
+replaced every text card with a diagram, stepper or chart computed from tested
+models or recorded measurements, retired `ArchitectureFlow`, gave every lesson
+in the subject an attempt lab, and drafted every planned page. Each change's
+checks are in [the verification record](../VERIFICATION.md). Everything remains
+an agent draft awaiting the owner's review.
