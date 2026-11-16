@@ -381,3 +381,26 @@ test('the MESI stepper checks predictions by keyboard', async ({ page }) => {
   await expect(status).toContainText('Ownership requests: 3 of 7 accesses.');
   await expect(status).toContainText('Predictions: 1 of 1.');
 });
+
+test('the DMA stepper refuses an early reclaim by keyboard', async ({
+  page,
+}) => {
+  await page.goto(`/learn/${subject}/io-mechanisms/`);
+  const stepper = page.getByRole('region', {
+    name: 'Interactive DMA ownership stepper',
+  });
+  await stepper.scrollIntoViewIfNeeded();
+  await expect(
+    page.locator('astro-island[component-export="default"]'),
+  ).not.toHaveAttribute('ssr', '');
+  const status = stepper.getByRole('status');
+  await stepper.getByLabel('Predict: owner afterwards').selectOption('device');
+  await stepper.getByRole('button', { name: 'Driver submits' }).focus();
+  await page.keyboard.press('Enter');
+  await expect(status).toContainText('Your prediction was correct.');
+  await stepper.getByLabel('Predict: owner afterwards').selectOption('refused');
+  await stepper.getByRole('button', { name: 'Driver reclaims' }).focus();
+  await page.keyboard.press('Enter');
+  await expect(status).toContainText('Refused: the request is still in flight');
+  await expect(status).toContainText('predictions 2 of 2');
+});

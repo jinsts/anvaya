@@ -1276,3 +1276,70 @@
 .mesi-stepper .mesi-script li.next {
   border: 2px solid var(--accent);
 }
+/* DMA ownership stepper. */
+.dma-stepper .dma-lanes {
+  width: 100%;
+  margin: var(--space-3) 0;
+  border-collapse: separate;
+  border-spacing: 0 3px;
+  table-layout: fixed;
+  font-size: var(--text-xs);
+}
+.dma-stepper .dma-lanes th {
+  padding: var(--space-1) var(--space-2);
+  border-bottom: 1px solid var(--border-strong);
+  color: var(--muted);
+  font-weight: 600;
+  text-align: left;
+}
+.dma-stepper .dma-lanes td {
+  padding: var(--space-1) var(--space-2);
+  border: 0;
+  vertical-align: top;
+}
+.dma-stepper .dma-lanes td.acts {
+  border-radius: 4px;
+  font-weight: 600;
+}
+.dma-stepper .dma-lanes td.driver {
+  background: var(--tone-blue-soft);
+  box-shadow: inset 3px 0 0 var(--chart-1);
+}
+.dma-stepper .dma-lanes td.device {
+  background: var(--tone-amber-soft);
+  box-shadow: inset 3px 0 0 var(--chart-2);
+}
+.dma-stepper .dma-lanes tr.refused td.acts {
+  background: var(--error-soft);
+  box-shadow: inset 3px 0 0 var(--error);
+  color: var(--error);
+}
+.dma-stepper .dma-lanes tr.latest td {
+  animation: cell-in 0.3s ease-out;
+}
+.dma-owner {
+  display: inline-block;
+  min-width: 3.25rem;
+  padding: 0 var(--space-1);
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  text-align: center;
+}
+.dma-owner.o-host {
+  border-color: var(--tone-green);
+  background: var(--tone-green-soft);
+}
+.dma-owner.o-device {
+  border-color: var(--tone-violet);
+  background: var(--tone-violet-soft);
+}
+.dma-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: var(--space-2);
+}
+.dma-stepper .operation-controls {
+  padding-bottom: var(--space-2);
+}

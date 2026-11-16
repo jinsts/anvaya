@@ -60,3 +60,29 @@ export function ioExample(): string {
     `reclaimed: ${owner(reclaimed)} (${reclaimed.transferred} bytes)`,
   ].join('\n');
 }
+
+/** When a poll every `interval` time units, starting at `interval`, first sees
+ * a device that became ready at `readyAt`. Illustrative units, not a device. */
+export function pollingDetection(readyAt: number, interval: number) {
+  if (!Number.isFinite(readyAt) || readyAt < 0) {
+    throw new RangeError('The ready time must be a nonnegative number.');
+  }
+  if (!Number.isFinite(interval) || interval <= 0) {
+    throw new RangeError('The polling interval must be positive.');
+  }
+  const checks = Math.max(1, Math.ceil(readyAt / interval));
+  const checkTimes = Array.from(
+    { length: checks },
+    (_, i) => (i + 1) * interval,
+  );
+  const detectedAt = checkTimes[checks - 1]!;
+  return { checkTimes, checks, detectedAt, delay: detectedAt - readyAt };
+}
+
+/** An interrupt is raised when the device becomes ready: no checks, one entry. */
+export function interruptDetection(readyAt: number) {
+  if (!Number.isFinite(readyAt) || readyAt < 0) {
+    throw new RangeError('The ready time must be a nonnegative number.');
+  }
+  return { checks: 0, handlerEntries: 1, detectedAt: readyAt, delay: 0 };
+}

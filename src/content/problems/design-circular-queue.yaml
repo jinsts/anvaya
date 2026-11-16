@@ -1,0 +1,10 @@
+title: Design Circular Queue
+url: https://leetcode.com/problems/design-circular-queue/
+difficulty: medium
+lessons: [computer-architecture-execution/io-mechanisms]
+topics: [queue, design]
+lists: []
+hints:
+  - A fixed array of capacity k with a head index and a count is enough. Every operation moves an index forward modulo k, so nothing is ever shifted.
+  - Decide how to tell a full queue from an empty one before writing code. Head equal to tail is ambiguous on its own; a separate count, or one deliberately unused slot, resolves it.
+  - The same producer–consumer ring appears in I/O queues, where one side adds entries and the other removes them. Each operation here is O(1) time, with O(k) space for the ring.

@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { advance, ioExample, owner, type Event, type Request } from './example';
+import {
+  advance,
+  interruptDetection,
+  ioExample,
+  owner,
+  pollingDetection,
+  type Event,
+  type Request,
+} from './example';
 
 describe('receive-buffer lifecycle model', () => {
   const ready: Request = { phase: 'ready', capacity: 8, transferred: 0 };
@@ -68,5 +76,38 @@ describe('receive-buffer lifecycle model', () => {
     expect(() =>
       advance({ ...ready, transferred: 9 }, { type: 'submit' }),
     ).toThrow(RangeError);
+  });
+});
+
+describe('polling and interrupt timeline', () => {
+  it('finds a completion at the first check after it is ready', () => {
+    expect(pollingDetection(10, 4)).toEqual({
+      checkTimes: [4, 8, 12],
+      checks: 3,
+      detectedAt: 12,
+      delay: 2,
+    });
+    expect(pollingDetection(10, 2)).toEqual({
+      checkTimes: [2, 4, 6, 8, 10],
+      checks: 5,
+      detectedAt: 10,
+      delay: 0,
+    });
+    expect(pollingDetection(0, 4)).toMatchObject({ checks: 1, delay: 4 });
+    expect(interruptDetection(10)).toEqual({
+      checks: 0,
+      handlerEntries: 1,
+      detectedAt: 10,
+      delay: 0,
+    });
+  });
+
+  it.each([
+    [-1, 4],
+    [10, 0],
+    [Number.NaN, 4],
+    [10, Infinity],
+  ])('rejects ready time %s with interval %s', (ready, interval) => {
+    expect(() => pollingDetection(ready, interval)).toThrow(RangeError);
   });
 });

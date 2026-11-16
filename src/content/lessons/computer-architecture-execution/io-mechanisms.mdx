@@ -58,7 +58,8 @@ sources:
     url: https://docs.kernel.org/core-api/dma-api-howto.html
 ---
 
-import ArchitectureFlow from '../../../components/diagrams/ArchitectureFlow.astro';
+import PollingTimeline from '../../../components/diagrams/PollingTimeline.astro';
+import DmaStepper from '../../../components/interactive/DmaStepper';
 
 import example from '../../../../labs/computer-architecture-execution/io-mechanisms/example.ts?raw';
 
@@ -113,31 +114,23 @@ queue depth, batching, CPU availability, and latency targets all matter.
 
 ## Trace a DMA receive request
 
-<ArchitectureFlow
-  caption="Driver, device and host coordinate ownership; notification is not payload movement."
-  nodes={[
-    {
-      label: 'Host/driver: ready \u2192 submit',
-      detail:
-        'Establish a valid device mapping; publish descriptor and bounds. Host gives up buffer access.',
-    },
-    {
-      label: 'Device: in-flight \u2192 transfer',
-      detail:
-        'DMA writes payload to memory. Polling checks status; an interrupt announces an event. Either can accompany DMA.',
-    },
-    {
-      label: 'Driver: completed \u2192 reclaim',
-      detail:
-        'Confirm the device stopped using the buffer and perform required synchronization. Completed still means reserved until reclamation.',
-    },
-    {
-      label: 'Host: ready again',
-      detail:
-        'Use only the reported received bytes. Timeout alone has no arrow to reuse; cancellation needs confirmed quiescence.',
-    },
-  ]}
-/>
+Choose the events yourself. Before each one, predict who owns the buffer
+afterwards, or whether the protocol refuses the event.
+
+<DmaStepper client:visible />
+
+The normal sequence has four steps:
+
+1. **Submit.** The driver publishes a descriptor with a device-usable address
+   and the buffer's size, then tells the device. The host gives up the buffer.
+2. **Transfer and complete.** The device writes the payload by DMA and posts a
+   completion, or an error. The buffer is still reserved.
+3. **Reclaim.** The driver processes the completion and performs any required
+   DMA synchronization, and only then hands the buffer back.
+4. **Use.** The host reads only the bytes the completion reported.
+
+Trying to reclaim an in-flight request is refused: that is what a timeout
+followed by reuse would do.
 
 The [hardware boundary](/learn/computer-architecture-execution/hardware-software-interaction/)
 established that application pointers and device addresses can belong to
@@ -206,11 +199,20 @@ line. **Throughput** measures completed work per unit of time. **CPU cost**
 measures processor effort spent on submission, transfer, checking, and handling.
 They can move in different directions.
 
-For a hypothetical device that becomes ready 10 time units after submission,
-polling every 4 units observes completion at time 12 if checks occur at 4, 8,
-and 12. That adds 2 units of detection delay and performs three checks. These
-are illustrative arithmetic values, not measurements of the repository or a
-particular device.
+Polling and interrupts trade these against each other. Here one device becomes
+ready at time 10:
+
+<PollingTimeline />
+
+Polling every 4 units finds the completion at 12, two units late, after two
+empty checks. Polling every 2 units finds it at once but checks five times. An
+interrupt costs no checks but enters a handler for every event it announces.
+When completions arrive often, each poll finds work and few come back empty.
+OSTEP's devices chapter adds that a flood of interrupts can leave a system
+handling nothing else, that a hybrid can poll briefly before waiting for an
+interrupt, and that a device can coalesce several completions into one
+interrupt at the cost of latency. The figure uses illustrative units from the
+tested model, not measurements of a device.
 
 Batching several completions can increase throughput by spreading notification
 overhead across requests, while a request waiting for the batch can see higher
@@ -248,20 +250,24 @@ This diagnosis is independent of whether DMA or programmed I/O moved the data.
 ## Practise a request lifecycle
 
 <LabCard
-  title="01 / Complete fewer bytes"
-  command="pnpm exec vitest run labs/computer-architecture-execution/io-mechanisms/"
+  title="01 / Run the buffer protocol"
+  command="pnpm lab computer-architecture-execution/io-mechanisms"
 >
-  Add cases completing an eight-byte buffer with zero, three, and eight bytes.
-  Predict ownership before and after reclamation. Then try nine bytes and verify
-  that the transition rejects the overrun without changing its input.
+  Implement `solve(capacity, events)` in `starter.ts`: run an eight-byte buffer
+  through events such as `'submit'`, `'complete 4'`, `'fail'` and `'reclaim'`,
+  and report the owner, phase and byte count. Before running the tests, predict
+  the results of completing with 0, 8 and 9 bytes, and of reclaiming straight
+  after submitting.
 </LabCard>
 
 <details>
-  <summary>Hint after an attempt</summary>
+  <summary>Check after attempting</summary>
 
-All three in-range completions retain device ownership until reclaimed; nine
-bytes exceeds the buffer capacity and must throw. A short result is a byte count
-to handle, not a reason to read unreceived data.
+Completing with 0 or 8 bytes is allowed and leaves the device as owner until
+reclamation; the buffer then returns to the host with 0 or 8 usable bytes.
+Nine bytes would overrun the buffer, so the model throws a `RangeError` and the
+input is unchanged. Reclaiming an in-flight request throws: nothing has shown
+that the device stopped writing.
 
 </details>
 

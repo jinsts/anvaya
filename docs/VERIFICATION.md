@@ -863,3 +863,24 @@ formatting and lint passed; 364 tests in 60 files; 38 pages; 98 browser tests. S
 1280 px and 390 px in both themes were inspected; review moved the handler box
 so the entry and return arrows attach to the event and the resume point, and
 shortened labels that clipped at 390 px.
+
+## I/O mechanisms figures — 2026-11-16
+
+`io-mechanisms` replaces its text-card figure with a DMA ownership stepper: the
+learner chooses submit, complete, fail or reclaim events, predicts the buffer's
+owner first, and sees each event in driver, device and buffer lanes, with an
+early reclaim refused by the tested model. A numbered list after it gives the
+same sequence without JavaScript. A polling-versus-interrupt timeline renders
+`pollingDetection` and `interruptDetection` (new, tested) for one device ready
+at time 10, in illustrative units. The polling paragraph now reflects what
+OSTEP chapter 36 says about interrupt floods, two-phase waiting and coalescing
+(chapter text read for this change). The first exercise became an attempt lab
+with nine contract cases, cross-checked in Python. Design Circular Queue is
+linked; the NeetCode data lists it in no tracked list.
+
+Same command as the previous entry: zero type errors, warnings or hints;
+formatting and lint passed; 378 tests in 61 files; 38 pages; 100 browser tests, including a
+keyboard test of the stepper. The first run failed the formatting check after a
+late class rename. Screenshots of both visuals at 1280 px and 390 px in both
+themes, and of the stepper after four events, were inspected; review gave
+interrupts their own marker instead of the polling check dot.

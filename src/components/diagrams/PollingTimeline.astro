@@ -1,0 +1,163 @@
+---
+import DiagramFrame from '../learning/DiagramFrame.astro';
+import {
+  interruptDetection,
+  pollingDetection,
+} from '../../../labs/computer-architecture-execution/io-mechanisms/example';
+// One device that becomes ready at time 10, found by polling at two intervals
+// or announced by an interrupt. Illustrative time units from the tested model.
+const READY = 10;
+const polls = [4, 2].map((interval) => ({
+  interval,
+  ...pollingDetection(READY, interval),
+}));
+const irq = interruptDetection(READY);
+const end = 16;
+const x = (t: number) => `${(t / end) * 100}%`;
+const ticks = Array.from({ length: end / 2 + 1 }, (_, i) => i * 2);
+const rows = [
+  ...polls.map((p) => ({
+    name: `Poll every ${p.interval}`,
+    marks: p.checkTimes.map((t) => ({
+      t,
+      found: t === p.detectedAt,
+      irq: false,
+    })),
+    summary: `finds it at ${p.detectedAt}: ${p.checks} checks, ${p.checks - 1} empty, ${p.delay} units late`,
+  })),
+  {
+    name: 'Interrupt',
+    marks: [{ t: irq.detectedAt, found: true, irq: true }],
+    summary: `announced at ${irq.detectedAt}: ${irq.checks} checks, ${irq.handlerEntries} handler entry`,
+  },
+];
+---
+
+<DiagramFrame
+  caption={`One device becomes ready at time ${READY}. Polling checks status at fixed intervals, so it finds the completion at the first check after it and pays for every empty check; an interrupt announces it at once but costs a handler entry. Illustrative time units from the lesson's tested model, not a measurement.`}
+>
+  <div class="timeline">
+    <div class="legend" aria-hidden="true">
+      <span>
+        <i class="dot empty"></i> empty check
+      </span>
+      <span>
+        <i class="dot found"></i> finds the completion
+      </span>
+      <span>
+        <i class="dot irq"></i> interrupt delivered
+      </span>
+      <span>
+        <i class="ready-key"></i> device ready
+      </span>
+    </div>
+    {rows.map((r) => (
+      <div class="row" role="group" aria-label={`${r.name}: ${r.summary}`}>
+        <p class="name">
+          <strong>{r.name}</strong> <span>{r.summary}</span>
+        </p>
+        <div class="track" aria-hidden="true">
+          <span class="ready" style={`left: ${x(READY)}`} />
+          {r.marks.map((m) => (
+            <span
+              class:list={['dot', m.irq ? 'irq' : m.found ? 'found' : 'empty']}
+              style={`left: ${x(m.t)}`}
+              title={`${r.name}: t = ${m.t}${m.irq ? ', interrupt delivered' : m.found ? ', finds the completion' : ', nothing yet'}`}
+            />
+          ))}
+        </div>
+      </div>
+    ))}
+    <div class="axis" aria-hidden="true">
+      {ticks.map((t) => (
+        <span style={`left: ${x(t)}`}>{t}</span>
+      ))}
+    </div>
+  </div>
+</DiagramFrame>
+<style>
+  .timeline {
+    display: grid;
+    gap: var(--space-3);
+    padding: 0 var(--space-2);
+  }
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1) var(--space-4);
+    color: var(--muted);
+    font-size: var(--text-xs);
+  }
+  .legend span {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+  }
+  .legend .dot {
+    position: static;
+    transform: none;
+  }
+  .name {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 var(--space-2);
+    margin: 0 0 var(--space-1);
+    font-size: var(--text-sm);
+  }
+  .name span {
+    color: var(--muted);
+    font-size: var(--text-xs);
+  }
+  .track {
+    position: relative;
+    height: 1.25rem;
+    border-bottom: 1px solid var(--border-strong);
+  }
+  .ready {
+    position: absolute;
+    top: -2px;
+    bottom: -2px;
+    width: 0;
+    border-left: 2px dashed var(--chart-2);
+  }
+  .ready-key {
+    display: inline-block;
+    height: 0.9rem;
+    border-left: 2px dashed var(--chart-2);
+  }
+  .dot {
+    position: absolute;
+    top: 50%;
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border: 2px solid var(--chart-1);
+    border-radius: 50%;
+    background: var(--surface);
+    transform: translate(-50%, -50%);
+  }
+  .dot.irq {
+    border-radius: 2px;
+    background: var(--chart-1);
+    transform: translate(-50%, -50%) rotate(45deg);
+  }
+  .legend .dot.irq {
+    transform: rotate(45deg);
+  }
+  .dot.found {
+    background: var(--chart-1);
+    box-shadow: 0 0 0 2px var(--surface);
+  }
+  .axis {
+    position: relative;
+    height: 1rem;
+    margin-top: calc(-1 * var(--space-2));
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+  }
+  .axis span {
+    position: absolute;
+    transform: translateX(-50%);
+  }
+</style>
