@@ -5,7 +5,7 @@ summary: Trace how privilege, saved resume points, address translation and drive
 subject: computer-architecture-execution
 path: engineering-fundamentals
 difficulty: intermediate
-estimatedMinutes: 55
+estimatedMinutes: 40
 learningObjectives:
   - Distinguish a procedure call, a system call, a synchronous exception, and an interrupt
   - Trace entry into the kernel and the saved state required to resume a program
@@ -55,7 +55,7 @@ sources:
     url: https://docs.kernel.org/core-api/dma-api-howto.html
 ---
 
-import ArchitectureFlow from '../../../components/diagrams/ArchitectureFlow.astro';
+import UserKernelSequence from '../../../components/diagrams/UserKernelSequence.astro';
 
 import example from '../../../../labs/computer-architecture-execution/hardware-software-interaction/example.ts?raw';
 
@@ -77,41 +77,24 @@ levels and instruction names depend on the architecture. A normal function call
 changes control flow within the current privilege context; it does not make the
 callee privileged.
 
-An **application binary interface**, or ABI, defines binary agreements such as
-argument registers, return values, stack alignment, and executable conventions.
-A syscall ABI additionally defines how a request number and arguments reach the
-kernel. Knowing a calling convention does not itself authorize a request.
+A system call also has a binary interface, like the
+[calling convention](/learn/computer-architecture-execution/cpu-registers-and-instructions/)
+for ordinary calls: it defines how the request number and arguments reach the
+kernel. Following it does not authorize the request; the kernel still checks
+it.
 
 ## Three reasons to enter a handler
 
-<ArchitectureFlow
-  caption="Protected entry saves a continuation; an ordinary call grants no privilege."
-  nodes={[
-    {
-      label: 'User mode: ordinary procedure call',
-      detail:
-        'Control changes within user mode; access rights do not increase.',
-    },
-    {
-      label: 'Controlled entry \u2192 kernel handler',
-      detail:
-        'Syscall at instruction index 12 saves 13; restartable fault saves 12; an interrupt saves the already-next index 12 in this model.',
-    },
-    {
-      label: 'Validate \u2192 service \u2192 authorized return',
-      detail:
-        'Kernel entry is not necessarily a process switch. Restore the saved user context rather than trust a caller-supplied destination.',
-    },
-  ]}
-/>
+<UserKernelSequence />
 
 An **exception** is an event associated with executing an instruction. An
 **interrupt** arrives from a source such as a timer or device rather than being
 caused by the program's current instruction. Terminology varies by ISA; here,
 “synchronous” means tied to the instruction stream.
 
-The boundary figure distinguishes deliberate requests, synchronous faults and
-asynchronous notification. The trigger determines which operation can resume.
+The figure follows all three from the same instruction. The trigger decides
+where the program resumes: after a completed request, at an access that must be
+retried, or at an instruction that never started.
 
 A page fault does not always mean a program bug or a storage read. The operating
 system might provide a newly allocated page, establish a mapping, or terminate
@@ -190,20 +173,23 @@ covers them.
 ## Practise the boundary
 
 <LabCard
-  title="01 / Predict three resumptions"
-  command="pnpm exec vitest run labs/computer-architecture-execution/hardware-software-interaction/"
+  title="01 / Choose the resume point"
+  command="pnpm lab computer-architecture-execution/hardware-software-interaction"
 >
-  Add a test starting at instruction index 0. Predict the user index after a
-  syscall, an interrupt, and a restartable fault before running the test.
-  Explain why the handler's own index does not become the return location.
+  Implement `solve(pc, event)` in `starter.ts`: return the user instruction
+  index that runs after the kernel handles the event. Before running the tests,
+  predict the result for each event at index 0, and say what should happen for a
+  system call at the largest safe integer.
 </LabCard>
 
 <details>
-  <summary>Hint after an attempt</summary>
+  <summary>Check after attempting</summary>
 
-The syscall resumes at 1; the other two cases use 0 under this model's
-instruction-boundary convention. The handler index controls execution inside
-the kernel, while the saved context identifies the interrupted user execution.
+A system call at 0 resumes at 1; a restartable fault and an interrupt resume at 0. A system call at `Number.MAX_SAFE_INTEGER` would need a resume index that is
+not a safe integer, so the model rejects it with a `RangeError` instead of
+returning a wrong index. The handler's own index never becomes the resume point:
+it controls execution inside the kernel, while the saved context identifies
+where the user program continues.
 
 </details>
 

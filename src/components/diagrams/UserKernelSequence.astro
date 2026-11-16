@@ -1,0 +1,225 @@
+---
+import DiagramFrame from '../learning/DiagramFrame.astro';
+import {
+  enterKernel,
+  returnToUser,
+  type CpuState,
+  type Entry,
+} from '../../../labs/computer-architecture-execution/hardware-software-interaction/example';
+// Three ways into the kernel from the same user state, run through the tested
+// instruction-index model: where control goes and where it comes back.
+const user: CpuState = { mode: 'user', pc: 12, resumePc: null };
+const cases: {
+  event: Entry;
+  handler: number;
+  name: string;
+  cause: string;
+  why: string;
+}[] = [
+  {
+    event: 'syscall',
+    handler: 100,
+    name: 'System call',
+    cause: 'instruction 12 asks the kernel for a service',
+    why: 'the request was the instruction’s whole job, so it is complete',
+  },
+  {
+    event: 'fault',
+    handler: 200,
+    name: 'Restartable fault',
+    cause: 'instruction 12’s memory access faults',
+    why: 'the access did not happen; once the page is mapped, retry it',
+  },
+  {
+    event: 'interrupt',
+    handler: 300,
+    name: 'Interrupt',
+    cause: 'a timer fires after 11 completes, before 12 starts',
+    why: 'nothing at 12 has run yet, so continue there',
+  },
+];
+const rows = cases.map((c) => {
+  const kernel = enterKernel(user, c.event, c.handler);
+  const back = returnToUser(kernel);
+  return { ...c, kernel, back };
+});
+---
+
+<DiagramFrame caption="The same user program, entering the kernel three ways at instruction 12. Each entry saves a resume point; return restores it rather than trusting an address from the program. Values come from the lesson's tested instruction-index model, not a real ISA.">
+  <div class="sequences">
+    {rows.map((r) => (
+      <section
+        class="sequence"
+        aria-label={`${r.name}: enters the handler at ${r.kernel.pc}, saves ${r.kernel.resumePc}, resumes at ${r.back.pc}`}
+      >
+        <h4>{r.name}</h4>
+        <p class="cause">{r.cause}</p>
+        <ol class="lanes" aria-hidden="true">
+          <li class="user s1">
+            <span class="idx">11</span> runs
+          </li>
+          <li
+            class:list={[
+              'user s2',
+              r.event === 'interrupt' ? 'pending' : 'event',
+            ]}
+          >
+            <span class="idx">12</span>{' '}
+            {r.event === 'syscall'
+              ? 'syscall'
+              : r.event === 'fault'
+                ? 'faults'
+                : 'not started'}
+          </li>
+          <li class="kernel s3">
+            handler <span class="idx">{r.kernel.pc}</span>
+            <span class="save">saves {r.kernel.resumePc}</span>
+          </li>
+          <li class="user s4 resume">
+            resume <span class="idx">{r.back.pc}</span>
+          </li>
+          <li class="lane-label user-label">User</li>
+          <li class="lane-label kernel-label">Kernel</li>
+        </ol>
+        <p class="why">
+          Resume at <strong>{r.back.pc}</strong>: {r.why}.
+        </p>
+      </section>
+    ))}
+  </div>
+</DiagramFrame>
+<style>
+  .sequences {
+    display: grid;
+    gap: var(--space-3);
+  }
+  .sequence {
+    display: grid;
+    gap: var(--space-2);
+    padding: var(--space-3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg);
+  }
+  h4 {
+    margin: 0;
+    font-size: var(--text-sm);
+  }
+  .cause,
+  .why {
+    margin: 0;
+    font-size: var(--text-xs);
+  }
+  .cause {
+    color: var(--muted);
+  }
+  .sequence ol.lanes {
+    display: grid;
+    grid-template-columns: 3rem repeat(8, minmax(0, 1fr));
+    grid-template-rows: auto auto;
+    column-gap: var(--space-1);
+    row-gap: var(--space-5);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .sequence .lanes li {
+    position: relative;
+    margin: 0;
+    padding: var(--space-1) calc(var(--space-1) * 1.5);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    font-size: var(--text-xs);
+    line-height: 1.3;
+  }
+  .sequence .lanes li.lane-label {
+    grid-column: 1;
+    align-self: center;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--muted);
+    font-weight: 600;
+  }
+  .user-label {
+    grid-row: 1;
+  }
+  .kernel-label {
+    grid-row: 2;
+  }
+  /* Eight time columns: the handler starts under the middle of the event and
+     ends under the middle of the resume point, where the arrows attach. */
+  .s1 {
+    grid-area: 1 / 2 / 2 / 4;
+  }
+  .s2 {
+    grid-area: 1 / 4 / 2 / 6;
+  }
+  .s3 {
+    grid-area: 2 / 5 / 3 / 9;
+  }
+  .s4 {
+    grid-area: 1 / 8 / 2 / 10;
+  }
+  .sequence .lanes li.event {
+    border-color: var(--tone-amber);
+    background: var(--tone-amber-soft);
+  }
+  .sequence .lanes li.pending {
+    border-style: dashed;
+    color: var(--muted);
+  }
+  .sequence .lanes li.kernel {
+    border-color: var(--tone-violet);
+    background: var(--tone-violet-soft);
+  }
+  .sequence .lanes li.resume {
+    border-color: var(--tone-green);
+    background: var(--tone-green-soft);
+  }
+  /* Entry: a line from the event down to the handler, with a downward head. */
+  .s3::before,
+  .s4::before {
+    position: absolute;
+    width: 2px;
+    height: var(--space-5);
+    background: var(--text);
+    content: '';
+  }
+  .s3::before {
+    top: calc(-1 * var(--space-5));
+    left: -1px;
+  }
+  .s3::after,
+  .s4::after {
+    position: absolute;
+    width: 10px;
+    height: 6px;
+    background: var(--text);
+    content: '';
+  }
+  .s3::after {
+    top: -6px;
+    left: -5px;
+    clip-path: polygon(0 0, 100% 0, 50% 100%);
+  }
+  /* Return: a line from the handler up to the resume point, head upward. */
+  .s4::before {
+    top: 100%;
+    left: calc(50% - 1px);
+  }
+  .s4::after {
+    top: 100%;
+    left: calc(50% - 5px);
+    clip-path: polygon(50% 0, 100% 100%, 0 100%);
+  }
+  .idx {
+    font-family: var(--font-mono);
+    font-weight: 700;
+  }
+  .save {
+    display: block;
+    font-family: var(--font-mono);
+  }
+</style>

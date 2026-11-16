@@ -844,3 +844,22 @@ expects one; the moved coherence check was dropped. Screenshots of the stepper
 in both themes were inspected; review added per-step values to the lost-update
 trace, kept litmus outcomes on one line, and rewrote the stepper's effect
 sentences.
+
+## Hardware–software boundary figure — 2026-11-16
+
+`hardware-software-interaction` replaces its text-card figure with a user/kernel
+sequence diagram: a system call, a restartable fault and an interrupt at the
+same instruction, each showing the handler, the saved resume point and the
+return, with every index computed by the lesson's tested model. The ABI
+paragraph now links to the calling-convention section instead of restating it.
+The first exercise became an attempt lab (`pnpm lab
+computer-architecture-execution/hardware-software-interaction`) with eight
+hidden contract cases, including index 0 and an unrepresentable resume index;
+the reference model passes them in the ordinary gate and the starter throws
+until implemented.
+
+Same command as the previous entry: zero type errors, warnings or hints;
+formatting and lint passed; 364 tests in 60 files; 38 pages; 98 browser tests. Screenshots at
+1280 px and 390 px in both themes were inspected; review moved the handler box
+so the entry and return arrows attach to the event and the resume point, and
+shortened labels that clipped at 390 px.
