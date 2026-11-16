@@ -59,12 +59,11 @@ sections:
     lessons:
       - computer-architecture-execution/memory-hierarchy-and-caches
       - computer-architecture-execution/cache-organization
+      - computer-architecture-execution/dram-ssd-and-disks
     # cache-organization took associativity and write policies from
     # memory-hierarchy-and-caches, which keeps the hierarchy, locality and
     # access costs. The storage page completes the approved topic "Memory
     # hierarchy, caches, RAM, and storage".
-    planned:
-      - DRAM, SSDs, and disks
   - id: architecture-processor
     title: Inside the processor
     subject: computer-architecture-execution

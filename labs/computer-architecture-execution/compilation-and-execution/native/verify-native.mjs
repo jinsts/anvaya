@@ -31,6 +31,9 @@ const arm64 = process.env.ANVAYA_CC_ARM64 || null;
 // --record-measurements also rewrites the measurement files.
 const record = process.argv.includes('--record');
 const recordMeasurements = process.argv.includes('--record-measurements');
+// --only <text>: limit recorded measurements to files containing <text>.
+const onlyIndex = process.argv.indexOf('--only');
+const only = onlyIndex > 0 ? process.argv[onlyIndex + 1] : null;
 const run = (file, args, options = {}) =>
   execFileSync(file, args, { encoding: 'utf8', ...options });
 
@@ -176,6 +179,31 @@ const CHECKED = [
 
 export const MEASUREMENTS = [
   {
+    source: 'dram-ssd-and-disks/sweep.c',
+    flags: ['-std=c17', '-O2'],
+    file: 'dram-ssd-and-disks/sweep.json',
+    // Quick mode checks correctness in tests; full mode records the sweep.
+    args: { quick: ['quick'], full: [] },
+    parse(csv) {
+      const records = csv
+        .trim()
+        .split('\n')
+        .map((line) => {
+          const [size, rep, loads, ns, end] = line.split(',').map(Number);
+          return { size, rep, loads, nsPerLoad: ns, end };
+        });
+      const ends = new Map();
+      for (const r of records) {
+        if (!Number.isFinite(r.nsPerLoad) || r.nsPerLoad <= 0)
+          throw new Error('Invalid sweep timing');
+        if (ends.has(r.size) && ends.get(r.size) !== r.end)
+          throw new Error(`Sweep chase ended differently for ${r.size}`);
+        ends.set(r.size, r.end);
+      }
+      return { lineBytes: 64, records };
+    },
+  },
+  {
     source: 'architecture-and-performance/locality.c',
     flags: ['-O2', '-fno-loop-interchange'],
     file: 'architecture-and-performance/measurement.json',
@@ -300,7 +328,14 @@ try {
   for (const measurement of MEASUREMENTS) {
     const executable = join(temporary, 'measurement');
     build(measurement.source, measurement.flags, executable);
-    const data = measurement.parse(run(executable, []));
+    const recordThis =
+      recordMeasurements && (!only || measurement.file.includes(only));
+    const args = measurement.args
+      ? recordThis
+        ? measurement.args.full
+        : measurement.args.quick
+      : [];
+    const data = measurement.parse(run(executable, args));
     const result = {
       date: new Date().toISOString(),
       compiler: versionLine,
@@ -312,7 +347,7 @@ try {
       flags: measurement.flags,
       ...data,
     };
-    if (recordMeasurements)
+    if (recordThis)
       writeFileSync(
         join(subject, measurement.file),
         JSON.stringify(result, null, 2) + '\n',

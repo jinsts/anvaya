@@ -1,0 +1,149 @@
+---
+import DiagramFrame from '../learning/DiagramFrame.astro';
+import { LADDER } from '../../../labs/computer-architecture-execution/dram-ssd-and-disks/devices';
+// Approximate latencies from Dive into Systems' table of a typical 2020
+// workstation, on a log scale. Ranges draw as bars, single values as dots.
+const MIN = -1; // 10^-1 ns
+const MAX = 9; // 10^9 ns = 1 s
+const at = (ns: number) => ((Math.log10(ns) - MIN) / (MAX - MIN)) * 100;
+const ticks = [
+  { exp: 0, label: '1 ns' },
+  { exp: 3, label: '1 µs' },
+  { exp: 6, label: '1 ms' },
+  { exp: 9, label: '1 s' },
+];
+const minor = Array.from({ length: MAX - MIN + 1 }, (_, i) => MIN + i);
+---
+
+<DiagramFrame caption="Approximate access latency by level, log scale: each gridline is ten times the one before. Values are Dive into Systems' figures for a typical 2020 workstation, not measurements of this machine; the working-set sweep below measures the first four levels here.">
+  <div class="ladder">
+    <ol class="rows">
+      {LADDER.map((row) => (
+        <li>
+          <p class="label">
+            <strong>{row.level}</strong>
+            <span>
+              {row.bound} · {row.capacity}
+            </span>
+          </p>
+          <div class="track" aria-hidden="true">
+            {minor.map((e) => (
+              <span class="grid" style={`left: ${at(10 ** e)}%`} />
+            ))}
+            {row.low === row.high ? (
+              <span
+                class="dot"
+                style={`left: ${at(row.high)}%`}
+                title={`${row.level}: ${row.bound}`}
+              />
+            ) : (
+              <span
+                class:list={['bar', { open: 'openLow' in row }]}
+                style={`left: ${at(row.low)}%; width: ${at(row.high) - at(row.low)}%`}
+                title={`${row.level}: ${row.bound}`}
+              />
+            )}
+          </div>
+        </li>
+      ))}
+    </ol>
+    <div class="axis" aria-hidden="true">
+      <span class="spacer"></span>
+      <div class="ticks">
+        {ticks.map((t) => (
+          <span style={`left: ${at(10 ** t.exp)}%`}>{t.label}</span>
+        ))}
+      </div>
+    </div>
+  </div>
+</DiagramFrame>
+<style>
+  .ladder {
+    display: grid;
+    gap: var(--space-2);
+  }
+  .rows {
+    display: grid;
+    gap: var(--space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .ladder .rows li,
+  .axis {
+    display: grid;
+    grid-template-columns: 11rem minmax(0, 1fr);
+    gap: var(--space-3);
+    align-items: center;
+    margin: 0;
+  }
+  .label {
+    display: grid;
+    margin: 0;
+    font-size: var(--text-sm);
+    line-height: var(--leading-snug);
+  }
+  .label span {
+    color: var(--muted);
+    font-size: var(--text-xs);
+  }
+  .track {
+    position: relative;
+    height: var(--space-6);
+    border-left: 1px solid var(--border-strong);
+  }
+  .grid {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: var(--border);
+  }
+  .bar,
+  .dot {
+    position: absolute;
+    top: 50%;
+    height: 12px;
+    transform: translateY(-50%);
+    background: var(--chart-1);
+  }
+  .bar {
+    min-width: 12px;
+    border-radius: 4px;
+  }
+  .bar.open {
+    border-radius: 0 4px 4px 0;
+    background: linear-gradient(to right, transparent, var(--chart-1) 60%);
+  }
+  .dot {
+    width: 12px;
+    margin-left: -6px;
+    border-radius: 50%;
+    box-shadow: 0 0 0 2px var(--surface);
+  }
+  .ticks {
+    position: relative;
+    height: var(--space-5);
+  }
+  .ticks span {
+    position: absolute;
+    transform: translateX(-50%);
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    white-space: nowrap;
+  }
+  .ticks span:last-child {
+    transform: translateX(-100%);
+  }
+  @media (max-width: 560px) {
+    .ladder .rows li,
+    .axis {
+      grid-template-columns: 1fr;
+      gap: var(--space-1);
+    }
+    .axis .spacer {
+      display: none;
+    }
+  }
+</style>

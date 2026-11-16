@@ -1,0 +1,153 @@
+---
+import DiagramFrame from '../learning/DiagramFrame.astro';
+import { ftlScenario } from '../../../labs/computer-architecture-execution/dram-ssd-and-disks/devices';
+// Snapshots of a tested log-structured flash translation layer: four blocks
+// of four pages, one block kept erased in reserve.
+const { shots, ftl } = ftlScenario();
+const label = (p: { state: string; page?: number }) =>
+  p.state === 'erased'
+    ? 'erased'
+    : p.state === 'valid'
+      ? `page ${p.page}`
+      : `old ${p.page}`;
+---
+
+<DiagramFrame
+  caption={`A flash translation layer maps logical pages to physical ones. Pages are written once after an erase, and erase works only on whole blocks, so overwrites go elsewhere and garbage collection reclaims space. Here ${ftl.hostWrites} writes from the host cost ${ftl.flashWrites} page programs and ${ftl.erases} erase: write amplification ${ftl.writeAmplification.toFixed(2)}. Toy geometry; real blocks hold hundreds of pages.`}
+>
+  <ol class="shots">
+    {shots.map((shot, i) => (
+      <li>
+        <p class="title">
+          <strong>
+            {i + 1}. {shot.title}
+          </strong>
+        </p>
+        <div class="blocks">
+          {shot.state.blocks.map((block, b) => (
+            <div
+              class:list={['block', { reserve: b === shot.state.reserve }]}
+              role="group"
+              aria-label={`Block ${b}${b === shot.state.reserve ? ', reserve' : ''}: ${block.map(label).join(', ')}`}
+            >
+              <span class="block-name">
+                block {b}
+                {b === shot.state.reserve ? ' · reserve' : ''}
+              </span>
+              <span class="pages" aria-hidden="true">
+                {block.map((p) => (
+                  <span class={`page ${p.state}`}>
+                    {p.state === 'erased'
+                      ? '–'
+                      : p.state === 'invalid'
+                        ? `✕${p.page}`
+                        : p.page}
+                  </span>
+                ))}
+              </span>
+            </div>
+          ))}
+        </div>
+        <p class="note">{shot.note}</p>
+        <p class="counts">
+          host writes {shot.state.hostWrites} · page programs{' '}
+          {shot.state.flashWrites} · erases {shot.state.erases}
+        </p>
+      </li>
+    ))}
+  </ol>
+  <p class="key">
+    Number: valid page holding that logical page · ✕ number: old copy, invalid
+    until its block is erased · –: erased, writable
+  </p>
+</DiagramFrame>
+<style>
+  .shots {
+    display: grid;
+    gap: var(--space-4);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .diagram-frame .shots > li + li {
+    margin-top: 0;
+  }
+  .title,
+  .note,
+  .counts,
+  .key {
+    margin: 0;
+    font-size: var(--text-sm);
+  }
+  .note,
+  .key {
+    color: var(--muted);
+    line-height: var(--leading);
+  }
+  .counts {
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+  }
+  .key {
+    margin-top: var(--space-3);
+    font-size: var(--text-xs);
+  }
+  .blocks {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--space-2);
+    margin: var(--space-2) 0;
+  }
+  .block {
+    display: grid;
+    gap: var(--space-1);
+    padding: var(--space-2);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    background: var(--bg);
+  }
+  .block.reserve {
+    border-style: dashed;
+  }
+  .block-name {
+    color: var(--muted);
+    font-size: var(--text-xs);
+  }
+  .pages {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 2px;
+  }
+  .page {
+    display: grid;
+    place-items: center;
+    min-height: 1.75rem;
+    border-radius: 4px;
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+  }
+  .page.erased {
+    background: var(--surface);
+    color: var(--muted);
+    box-shadow: inset 0 0 0 1px var(--border);
+  }
+  .page.valid {
+    background: var(--tone-blue-soft);
+    box-shadow: inset 0 -3px 0 var(--chart-1);
+    font-weight: 700;
+  }
+  .page.invalid {
+    background: repeating-linear-gradient(
+      135deg,
+      var(--surface) 0 4px,
+      var(--subtle) 4px 8px
+    );
+    color: var(--muted);
+    text-decoration: line-through;
+  }
+  @media (max-width: 480px) {
+    .blocks {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+</style>

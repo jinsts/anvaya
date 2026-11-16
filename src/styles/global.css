@@ -37,6 +37,11 @@
   --diagram-cell: #f0f4fa;
   --diagram-active: #e0f3e8;
   --diagram-edge: #667b94;
+  /* Chart categories, validated with the dataviz palette checks against
+     --surface in each theme (all pairs, three slots). */
+  --chart-1: #2a78d6;
+  --chart-2: #eb6834;
+  --chart-3: #1baf7a;
   --code-bg: #ffffff;
   --focus: #0767c6;
   --backdrop: #0613266b;
@@ -120,6 +125,9 @@
   --diagram-cell: #1f2c3e;
   --diagram-active: #1b4432;
   --diagram-edge: #a0b2c9;
+  --chart-1: #3987e5;
+  --chart-2: #d95926;
+  --chart-3: #199e70;
   --code-bg: #0b0e13;
   --focus: #79b8ff;
   --backdrop: #000000a6;

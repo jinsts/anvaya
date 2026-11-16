@@ -686,3 +686,38 @@ Screenshots of both visuals at 1280 px and 390 px in both themes, including the
 dangling state, were inspected. Review caught a bug before commit: two
 consecutive question steps skipped the second question; answers are now tracked
 per step and a browser test checks that both questions ask.
+
+## DRAM, SSDs and disks lesson — 2026-11-16
+
+Draft of the planned page "DRAM, SSDs, and disks". A new native measurement,
+`sweep.c`, chases pointers through a random single cycle of 64-byte nodes for
+33 working-set sizes from 4 KiB to 256 MiB. A first trial, not recorded, ran
+each size's repetitions back to back and showed one stretch of 200–360 ns at
+12–32 MiB that a second trial did not reproduce; the program now interleaves
+five rounds over all sizes in alternating order, and the recorded run
+(`sweep.json`, with compiler, CPU and `lscpu --caches`) shows medians of
+0.79 ns within L1d, 3.30 ns within L2, 19.9 ns within L3 and 151.8 ns beyond it,
+with the last step starting near 12 MiB. Tests summarize the recording; the
+native test runs the program in quick mode and checks that every chase ends at
+the same node in every repetition. `--record-measurements --only sweep` records
+it without rewriting the locality measurement.
+
+Models for DRAM row hits and conflicts, disk positioning and a log-structured
+flash translation layer with garbage collection are tested, including every
+flash snapshot in the figure and the lesson's estimates against the recording.
+The latency ladder uses Dive into Systems' figures for a typical 2020
+workstation; Drepper's memory paper was registered for DRAM rows, banks and
+channels after reading its access-protocol sections. Three chart color tokens
+were added after the dataviz palette validator passed them, all pairs, against
+`--surface` in both themes (the light aqua's contrast warning is met by direct
+labels and tables).
+
+Same command as the previous entry. The first full run failed one browser test:
+the mobile catalog accessibility test took 31.9 s against its 30 s limit, after
+29.4 s in an isolated rerun (12.9 s at the start of this work) and with a load
+average of 6.5. It performs eight full-page captures and axe scans of pages that
+grow with every lesson, so its timeout is now 90 s. The rerun passed: zero type
+errors, warnings or hints; formatting and lint; 297 tests in 47 files; 34 pages;
+82 browser tests. Screenshots of all five figures at 1280 px and 390 px in both
+themes were inspected; review moved the sweep's axis title out of the tick
+labels and hid alternate size ticks on phones.

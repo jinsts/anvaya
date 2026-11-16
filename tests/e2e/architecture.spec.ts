@@ -11,6 +11,7 @@ const slugs = [
   'compilation-and-execution',
   'memory-hierarchy-and-caches',
   'cache-organization',
+  'dram-ssd-and-disks',
   'stack-and-heap',
   'hardware-software-interaction',
   'io-mechanisms',

@@ -292,6 +292,9 @@ test('a subject with several chapters is grouped on path, subject and lesson pag
 test('catalog and subject pages fit both themes and pass accessibility scans', async ({
   page,
 }, info) => {
+  // Eight full-page captures and axe scans of long catalog pages; the path
+  // page grows with every lesson, so this needs more than the default 30 s.
+  test.setTimeout(90_000);
   for (const [name, url] of [
     ['explore', '/explore/?category=computer-science'],
     ['subject', '/subjects/dsa/'],

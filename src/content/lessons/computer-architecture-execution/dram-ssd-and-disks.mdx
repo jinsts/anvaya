@@ -1,0 +1,308 @@
+---
+title: 'DRAM, SSDs and disks: Price an access at every level'
+shortTitle: DRAM, SSDs, and disks
+summary: Measure where this machine's caches end and DRAM begins, explain what makes DRAM rows, flash blocks and disk seeks cost what they do, and estimate the time of an access at each level.
+subject: computer-architecture-execution
+path: engineering-fundamentals
+difficulty: intermediate
+estimatedMinutes: 35
+learningObjectives:
+  - Estimate the order of magnitude of an access to cache, DRAM, SSD, disk and network
+  - Read a measured working-set sweep and relate its steps to the recorded cache sizes
+  - Explain why DRAM row hits, flash erase blocks and disk positioning make access patterns matter
+  - Compute a disk access time from seek, rotation and transfer
+prerequisites:
+  - computer-architecture-execution/memory-hierarchy-and-caches
+  - computer-architecture-execution/cache-organization
+tags: [memory, caches, performance, io]
+skills: [complexity-analysis, profiling-measurement, trade-off-analysis]
+status: draft
+drafter: agent
+interviewQuestions:
+  - prompt: Roughly how long does a read take from a CPU cache, from DRAM, from an SSD and from a hard disk?
+    answer: >-
+      Orders of magnitude, not exact figures: a cache hit takes about a
+      nanosecond or a few, a DRAM access around 100 nanoseconds, an SSD read
+      on the order of 100 microseconds, and a random hard disk read several
+      milliseconds. Each step is roughly a hundred to a thousand times the one
+      before. They depend on the hardware and on whether requests overlap, so
+      measure the target before relying on a number, but the ratios are what
+      design decisions such as caching and batching rest on.
+    followUps:
+      - How many DRAM accesses fit in the time of one random disk read?
+  - prompt: How would you measure memory latency rather than bandwidth?
+    answer: >-
+      Make each load depend on the previous one, for example by chasing
+      pointers through a random cycle of nodes, one per cache line. The
+      processor cannot start the next load before the current one returns, and
+      the prefetcher cannot guess the next address, so time per load
+      approaches the latency of the level that holds the working set. Sweep the
+      working-set size, repeat and interleave runs, and record the cache sizes
+      and page size beside the results.
+  - prompt: Why are small random reads so slow on a hard disk compared with sequential reads?
+    answer: >-
+      Each random read must move the arm to the right track and wait for the
+      sector to rotate under the head, several milliseconds in total, before
+      any data moves. For a 4 KiB read that positioning is almost the entire
+      time, so the drive delivers well under 1 MB/s. A sequential read pays the
+      positioning once and then streams at the transfer rate, often over
+      100 MB/s.
+  - prompt: Why can an SSD's write performance drop as it fills up?
+    answer: >-
+      Flash pages can be written only after their whole block is erased, so
+      an overwrite goes to a new page and leaves the old one invalid. Garbage
+      collection later copies a block's remaining valid pages elsewhere and
+      erases it. The fuller the device, the more valid data each collected block
+      holds, so each host write causes more internal copying: higher write
+      amplification, lower throughput and more wear. Overprovisioning and TRIM
+      give the device more free space to work with.
+  - prompt: Why is reading DRAM sequentially faster than reading it randomly, even ignoring caches?
+    answer: >-
+      Reading DRAM opens an entire row into the sense amplifiers. Further
+      reads from that open row only select columns, which is much cheaper
+      than closing it and opening another row. Sequential addresses tend to
+      fall in the same open row, and they also let caches use whole lines and
+      prefetchers fetch ahead; random addresses defeat all three.
+sources:
+  - label: 'Dive into Systems, section 11.2 — Storage devices: latency and capacity by level'
+    url: https://diveintosystems.org/book/C11-MemHierarchy/devices.html#_primary_storage
+  - label: 'MIT Computation Structures, L14 — SRAM and DRAM cells, rows, sense amplifiers and refresh'
+    url: https://computationstructures.org/lectures/caches/caches.html
+  - label: 'Drepper, sections 2.2.1–2.2.2 — DRAM read access, precharge and activation'
+    url: https://www.akkadia.org/drepper/cpumemory.pdf
+  - label: 'OSTEP, chapter 44 — Flash-based SSDs: pages, blocks, erase and the FTL'
+    url: https://pages.cs.wisc.edu/~remzi/OSTEP/file-ssd.pdf
+  - label: 'OSTEP, chapter 37 — Hard disk drives: seek, rotation and transfer'
+    url: https://pages.cs.wisc.edu/~remzi/OSTEP/file-disks.pdf
+---
+
+import DiskTime from '../../../components/diagrams/DiskTime.astro';
+import DramRowBuffer from '../../../components/diagrams/DramRowBuffer.astro';
+import FlashBlocks from '../../../components/diagrams/FlashBlocks.astro';
+import LatencyLadder from '../../../components/diagrams/LatencyLadder.astro';
+import WorkingSetSweep from '../../../components/diagrams/WorkingSetSweep.astro';
+
+import model from '../../../../labs/computer-architecture-execution/dram-ssd-and-disks/devices.ts?raw';
+import sweepSource from '../../../../labs/computer-architecture-execution/dram-ssd-and-disks/sweep.c?raw';
+
+## Every miss has a price
+
+A cache miss is not a fixed cost. It is answered by whichever level below holds
+the data: another cache, DRAM, or, after a page fault, an SSD or a disk. Those
+answers differ by factors of a thousand. Knowing the rough price of each level
+lets you estimate before you measure: whether a design that touches DRAM a
+million times is fast enough, or whether one random disk read per request is
+already too many.
+
+Think of fetching a book: from your desk, from the shelf, from the library
+basement, from another city. Each trip is far longer than the one before, so
+you plan which books stay close. The analogy stops at overlap: a processor can
+have several requests in flight at once, and storage devices queue them, so
+throughput can be much better than one trip at a time suggests.
+
+## Each level is a different technology
+
+<LatencyLadder />
+
+Registers and caches are SRAM on the processor die. Main memory is DRAM, which
+stores each bit as charge on a capacitor: about twenty times denser than SRAM,
+and slower. SSDs store bits in flash cells, and hard disks in magnetic regions
+on spinning platters. Capacity grows down the ladder and so does latency, by
+roughly a hundred to a thousand times per step. Those ratios, more than any
+single number, are what to remember.
+
+## Measure the steps on a real machine
+
+The ladder's figures come from a textbook. To see the steps on the machine used
+for this subject's measurements, the native lab chases pointers through a random
+cycle of nodes, one per 64-byte cache line. Each load needs the address the
+previous load returned, and a random order defeats the prefetcher, so the time
+per load approaches the latency of the level that holds the working set.
+
+<WorkingSetSweep />
+
+The steps line up with the recorded cache sizes: flat while the set fits in the
+48 KiB L1 data cache, a second level up to the 3 MiB L2, a third through the L3,
+then a plateau that is DRAM. Two details need care:
+
+- **The last step starts early.** Times climb from around 12 MiB, well before
+  the nominal 24 MiB L3 is full. The L3 is shared with other cores and the
+  operating system, and with 4 KiB pages a random walk over many megabytes also
+  misses the TLB and walks page tables. The sweep cannot separate these causes;
+  hardware counters could.
+- **Runs vary.** This machine runs Linux under WSL2, a virtual machine on a host
+  that schedules it. The program interleaves repetitions, visiting every size
+  once per round in alternating order, so a slow period spreads across sizes
+  rather than distorting one. The band shows the spread.
+
+The [performance lesson](/learn/computer-architecture-execution/architecture-and-performance/)
+sums a 16 MiB matrix. By capacity it fits in the L3, but at 16 MiB this sweep
+already sits partway up the last step, so that experiment's column order may be
+paying for more than L1 and L2 misses.
+
+<details>
+<summary>Inspect the measurement program</summary>
+
+<CodeExample
+  title="sweep.c: dependent loads over a random cycle"
+  code={sweepSource}
+  language="c"
+/>
+
+The native lab compiles it with `-O2`, checks in quick mode that every chase ends
+at the same node in every repetition, and records the full sweep only on
+request, with the compiler, CPU and `lscpu --caches` output in the same file.
+
+</details>
+
+## DRAM reads a whole row at a time
+
+<DramRowBuffer />
+
+A DRAM bank is a grid of cells. A read first **activates** a row, copying the
+whole row into sense amplifiers, then reads the requested **column** from them.
+While the row stays open, more reads from it need only the column step. Reading
+another row first **precharges**, closing the open one. DRAM cells also leak,
+so every row is refreshed periodically.
+
+A memory system has several banks per chip and one or more channels, so a
+controller can overlap work on different banks and channels. That is why
+sequential access is fast twice over: it reuses open rows, and it lets caches
+use whole lines and prefetchers run ahead. Random access pays the full
+activate-and-read sequence and leaves bandwidth idle.
+
+## Flash writes once, then erases a block
+
+<FlashBlocks />
+
+Flash is read and written in **pages** of a few kilobytes, but a page can be
+written again only after its whole **erase block**, often 128 or 256 KiB, is
+erased. Reads take tens of microseconds, writes hundreds, and erases
+milliseconds, and each block survives a limited number of erase cycles.
+
+An SSD hides this behind a **flash translation layer** that maps logical pages
+to physical ones. An overwrite goes to a fresh page and marks the old one
+invalid. **Garbage collection** copies a block's remaining valid pages and
+erases it. Those internal copies are **write amplification**: more flash writes
+than the host asked for, which costs throughput and wear. Spreading erases
+evenly is **wear leveling**. A fuller drive leaves the collector less room, so
+its blocks hold more valid pages to copy.
+
+## A disk read waits for the arm and the platter
+
+<DiskTime />
+
+A hard disk read has three parts: **seek**, moving the arm to the track;
+**rotation**, waiting for the sector to turn under the head, half a revolution
+on average; and **transfer**, reading the data. For small random reads the
+first two are nearly all of it. That is why databases and file systems work so
+hard to read and write disks sequentially and in large pieces.
+
+## Estimate before you measure
+
+Use the ratios. Following a linked list of a million nodes scattered over
+64 MiB is a million dependent DRAM accesses: on this machine's plateau, a
+million times its "larger than L3" median, a fraction of a second. If each
+node instead required a random read from a disk, a million reads at about
+10 ms each would take hours. An SSD falls in between at minutes. The same
+algorithm, in the same big-O class, spans six orders of magnitude depending on
+where its data lives.
+
+<details>
+<summary>Inspect the tested model and expected output</summary>
+
+<CodeExample
+  title="DRAM rows, disk time and a flash translation layer"
+  code={model}
+  verified
+  output={
+    'disk 4 KiB random: 12.19 ms, 0.34 MB/s\ndisk 1 MiB: 19.16 ms, 54.7 MB/s\nDRAM rows 7,7,7,9,7: 8 + 4 + 4 + 12 + 12 cycles\nflash: 13 host writes, 14 page programs, 1 erase, amplification 1.08'
+  }
+/>
+
+</details>
+
+The tests check the three DRAM access cases, the disk formula, every flash
+snapshot in the figure, the reserve block and write amplification, and that the
+recorded sweep has five repetitions of every size with its cache sizes parsed
+correctly. The models use illustrative parameters; only the sweep is measured.
+
+## Practice
+
+<LabCard
+  title="01 / Price a disk read"
+  command="pnpm lab computer-architecture-execution/dram-ssd-and-disks"
+>
+  Implement `solve(averageSeekMs, rpm, transferMBps, bytes)` in `starter.ts`:
+  return the expected milliseconds for one random read. Before running the
+  tests, compute a 4 KiB read on a 10,000 RPM drive with a 5 ms average seek and
+  180 MB/s transfer, and say which term dominates.
+</LabCard>
+
+<details>
+<summary>Check after attempting</summary>
+
+One revolution at 10,000 RPM takes 6 ms, so the average rotational wait is
+3 ms. The transfer is 4,096 bytes at 180 MB/s, about 0.023 ms. The total is
+about 8.02 ms, of which the data transfer is under 0.3%. Positioning dominates;
+use megabytes per second as 10⁶ bytes per second.
+
+</details>
+
+<LabCard
+  title="02 / Estimate from the sweep"
+  command="pnpm exec vitest run labs/computer-architecture-execution/dram-ssd-and-disks/"
+>
+  Using the sweep's table, estimate how long it takes to walk a linked list of
+  100,000 nodes of 64 bytes each, in random order, and the same list after the
+  nodes are copied into an array and visited in order. Which level holds each
+  working set?
+</LabCard>
+
+<details>
+<summary>Check after estimating</summary>
+
+100,000 nodes of 64 bytes is about 6.1 MiB: inside the L3, so a random walk pays
+roughly the table's 6 MiB latency per node, a millisecond or two in total. In array
+order the same bytes stream through cache lines that the prefetcher fetches ahead,
+so the time per element falls far below the dependent-load latency. The sweep
+measures only the random case; a sequential walk needs its own measurement.
+
+</details>
+
+## Check your reasoning
+
+<ConceptCheck
+  id="storage-levels-estimate"
+  question="A service answers each request with one random 4 KiB read. Moving the data from a hard disk to an SSD makes each read about how much faster?"
+  options={[
+    {
+      label: 'Roughly ten to a hundred times faster.',
+      correct: true,
+      explanation:
+        'A random disk read pays milliseconds of seek and rotation; an SSD read takes about a tenth of a millisecond to a millisecond, with no moving parts. The ladder puts them one to two orders of magnitude apart.',
+    },
+    {
+      label: 'About the same, because both are storage devices.',
+      explanation:
+        'The technologies differ in kind. Most of a random disk read is mechanical positioning, which flash does not have.',
+    },
+    {
+      label: 'Roughly a million times faster, like DRAM.',
+      explanation:
+        'That is the gap between a disk and DRAM. Flash is far slower than DRAM: about a hundred microseconds versus about a hundred nanoseconds.',
+    },
+  ]}
+/>
+
+## Two-minute recap
+
+- Cache, DRAM, SSD, disk and network latencies differ by roughly a hundred to a
+  thousand times per step; remember the ratios.
+- Dependent pointer chasing over a random cycle measures latency; the sweep's
+  steps line up with the recorded cache sizes, and the last one starts early.
+- DRAM opens a whole row; row hits are cheaper than closing and opening rows.
+- Flash pages are written once per block erase; garbage collection causes write
+  amplification.
+- Disk time is seek + rotation + transfer; small random reads are almost all
+  positioning.
