@@ -3,7 +3,8 @@
 Anvaya is a static Astro/MDX learning platform with interview practice.
 Content in Git is canonical; the owner reviews and promotes it. Read the guide
 for your task below. Read `ANVAYA_BOOTSTRAP.md` fully only before architectural
-changes; later decisions are recorded in `docs/adr/`.
+changes; later decisions are recorded in `docs/adr/`. Every subject and lesson must
+meet [docs/SUBJECT_STANDARD.md](docs/SUBJECT_STANDARD.md).
 
 ## Rules
 

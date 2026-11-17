@@ -994,3 +994,22 @@ Baseline on unchanged content: zero type errors, warnings or hints; formatting
 and lint passed; 405 tests in 64 files; 39 pages; 102 browser tests. The native
 drift check, run on its own, reported all 28 artifacts unchanged (ARM64
 included), 8 checked programs passing and 5 measurements validated.
+
+## Subject standard and ADR 0009 — 2026-11-17
+
+`docs/SUBJECT_STANDARD.md` writes down the bar set by Computer Architecture &
+Execution as 56 numbered properties in six groups (curriculum, lesson anatomy,
+visuals, evidence, practice, process), each naming what checks it. The
+properties were taken from the subject's lessons and labs, the 2026-11-13 audit
+and its correction, this record's architecture entries and the fix commits of
+PR #9 (for example: reveal answers only after the attempt, keep answers out of
+figures, number labs consecutively, and require a specific error in refusal
+contracts). The promotion checklist moved from `LEARNING_STANDARDS.md` into
+the standard, and that file was removed; the README, the review playbook and
+`AGENTS.md` now link the standard, and the dated audit's link points to the
+file at the audited commit. ADR 0009 records the decision. Nothing in this
+change is enforced yet; the report and browser checks it names arrive in
+later changes.
+
+Same command as the previous entry: zero type errors, warnings or hints;
+formatting and lint passed; 405 tests in 64 files; 39 pages; 102 browser tests.

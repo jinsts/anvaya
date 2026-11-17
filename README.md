@@ -100,7 +100,7 @@ Scaffolds contain `TODO` markers that `pnpm lint` rejects until replaced.
 - `tests/`: unit, component and browser tests.
 - `docs/`: [authoring reference](docs/AUTHORING_GUIDE.md),
   [design system](docs/DESIGN_SYSTEM.md),
-  [learning standards](docs/LEARNING_STANDARDS.md), [playbooks](docs/playbooks/)
+  [subject standard](docs/SUBJECT_STANDARD.md), [playbooks](docs/playbooks/)
   and [ADRs](docs/adr/).
 
 ## Boundaries and troubleshooting

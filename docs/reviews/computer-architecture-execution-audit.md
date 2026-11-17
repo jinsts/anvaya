@@ -141,7 +141,7 @@ The important additions fit inside current lessons:
 
 All nine labs contain only `example.ts` and `example.test.ts`. Their displayed
 commands run already-complete examples. That establishes reference correctness,
-while the [learning standard asks for starter tests checking the attempt](../LEARNING_STANDARDS.md#L11).
+while the [learning standard asked for starter tests checking the attempt](https://github.com/jinsts/Anvaya/blob/d40a5b7/docs/LEARNING_STANDARDS.md#L11).
 The existing [attempt-test configuration](../../vitest.labs.config.ts#L4) and
 lab templates already support that distinction.
 

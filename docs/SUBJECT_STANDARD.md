@@ -1,0 +1,138 @@
+# Subject standard
+
+The quality bar for every subject, chapter and lesson in Anvaya, taken from the
+Computer Architecture & Execution subject (PR #9) and the reviews of it. New
+subjects start at this level. Audits score against these IDs, skills cite them,
+and the owner's promotion review ends with them.
+[ADR 0009](adr/0009-subject-standard-and-authoring-skills.md) records the
+decision.
+
+**How checked** names what enforces a property:
+
+- `build`: the catalog validator or `scripts/validate-build.mjs` fails the
+  build.
+- `lint`: `pnpm lint` fails.
+- `test`: unit or lab tests fail.
+- `e2e`: `tests/e2e/lessons.spec.ts` fails for every lesson.
+- `report`: `pnpm subject:report` flags it, but nothing fails.
+- `manual`: a person or an agent has to check it, and an audit records the
+  evidence.
+
+Counts are guard rails, not goals. A lesson that meets every count can still
+teach badly, and a reviewer may accept a justified exception if the audit
+records why.
+
+## Curriculum (C)
+
+| ID  | Property                                                                                                                                                                                                                                           | How checked      |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------- |
+| C1  | **Coverage.** The subject covers the topics a working engineer needs for the job and for interviews at the target level. An outline or audit maps each core competency and common interview deep dive to the lesson that teaches it.               | manual           |
+| C2  | **Boundary.** The subject states what it leaves out. Each excluded topic names the subject that owns it, or says it is out of scope. No electronics course hides inside a cost-model subject.                                                      | manual           |
+| C3  | **Prerequisite order.** Chapters are path sections in prerequisite order. A lesson's prerequisites come earlier in the path, nothing is used before it is taught, and subject prerequisites come first.                                            | build, manual    |
+| C4  | **One teaching unit per page.** A lesson teaches one mechanism with its worked example and practice. It takes about 15–30 minutes of reading and attempting. Split it above about 45 ([ADR 0008](adr/0008-subject-chapters-and-lesson-pages.md)).  | report (minutes) |
+| C5  | **One teaching home.** Each concept is taught in one lesson. Other lessons give a one-sentence reminder and link to it, and planned titles are unique across all subjects.                                                                         | report (titles)  |
+| C6  | **Running threads.** A few concrete programs, datasets or scenarios recur across lessons (for example the `bump` and `scale_sum` programs), so each lesson extends what the learner already holds instead of starting a new toy.                   | manual           |
+| C7  | **Honest overview.** The overview's objectives, experiments and competencies match what the lessons teach. It never records a competency as achieved or an experiment as run when none was recorded, and it is updated when lessons move material. | manual           |
+| C8  | **One outline.** Path sections are the outline. Once a subject is split into chapters, `overview.chapters` is removed.                                                                                                                             | build            |
+
+## Lesson anatomy (L)
+
+The reading flow is: concrete problem → mechanism figure → short worked trace →
+assumptions and pitfalls → attempt-first practice → reasoning check → recap.
+The layout renders the objectives, prerequisites, interview practice, sources
+and navigation from metadata, so the body does not repeat them.
+
+| ID  | Property                                                                                                                                                                                                                                                                                                                                                             | How checked             |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
+| L1  | **Frontmatter.** A concrete one-sentence `summary`. 2–4 `learningObjectives`, each something the learner can demonstrate by explaining or solving. Accurate `prerequisites`, existing `tags` and `skills`, and `status: draft` with `drafter: agent`.                                                                                                                | build, report           |
+| L2  | **Interview questions.** 3–6 questions that test reasoning, not trivia. Each answer runs 3–5 sentences, states its assumptions and trade-offs, and agrees with the lesson. Use `followUps` where an interviewer would plausibly push deeper.                                                                                                                         | report, manual          |
+| L3  | **Hook.** The first section opens with a small concrete scenario that the mechanism explains. An analogy follows, and then a sentence of the form "The analogy stops at X: …" that says where it breaks. Analogies are not reused across lessons.                                                                                                                    | report, manual          |
+| L4  | **Mechanism, step by step.** Each mechanism section is anchored by a figure (V1) and defines each term before using it. It separates the conceptual model from language, runtime or toolchain behavior.                                                                                                                                                              | manual                  |
+| L5  | **Predict before reveal.** At least one prompt in the body asks the learner to predict before stepping, running or reading on, in addition to the practice tasks.                                                                                                                                                                                                    | report                  |
+| L6  | **Answers stay hidden until the attempt.** An answer appears only in a `<details>` whose summary starts "Check after …" (predicting, attempting, testing, diagnosing). It never appears in plain text next to the prompt, in a figure or caption, or earlier in the lesson. A no-JavaScript fallback table that would give the answer away goes inside a disclosure. | report, manual          |
+| L7  | **Worked example.** At least one complete trace or calculation with concrete values, taken from the tested model or a recorded artifact.                                                                                                                                                                                                                             | manual                  |
+| L8  | **Assumptions and pitfalls.** The model's boundary (what it ignores, which target or version it assumes) is stated next to its figure or code. At least one common mistake or diagnosis is worked through.                                                                                                                                                           | manual                  |
+| L9  | **Tested model disclosure.** The full tested model sits in `<details><summary>Inspect the tested model and expected output</summary>` with a `verified` `CodeExample`, followed by a paragraph that starts "The tests check …". Recorded listings and outputs may be shown inline.                                                                                   | e2e, report             |
+| L10 | **Practice.** A `## Practice` section (or a heading starting "Practi") holds `LabCard`s titled `01 / …`, `02 / …` with consecutive numbers. Card 01 is the attempt lab with `pnpm lab <subject>/<lesson>`. A paper task does not carry a test command that doesn't test it.                                                                                          | report                  |
+| L11 | **Check your reasoning.** `## Check your reasoning` holds exactly one `ConceptCheck` with at least three options. Exactly one is correct, and every option explains why it is right or wrong.                                                                                                                                                                        | e2e, report             |
+| L12 | **Recap.** `## Two-minute recap` holds 3–6 takeaways that a returning learner can scan.                                                                                                                                                                                                                                                                              | build, report           |
+| L13 | **Accurate links.** Links to other lessons name material those lessons actually teach. The previous lesson is linked where the hook builds on it, and the next home of any material that was cut is linked.                                                                                                                                                          | build (targets), manual |
+
+## Visuals (V)
+
+| ID  | Property                                                                                                                                                                                                                                                                               | How checked                           |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
+| V1  | **Real figures.** Every lesson has at least one `DiagramFrame` that draws the mechanism: a diagram, chart, timeline or stepper of real state. Boxes of prose ("text cards") are not figures.                                                                                           | e2e, manual                           |
+| V2  | **Computed values.** A figure's numbers, bits, addresses and states come from the lesson's tested lab model or recorded artifacts. Components import them from `labs/` at build time, so the figure, the tests and the prose cannot disagree. Hand-typed derived values are a finding. | report, manual                        |
+| V3  | **Responsive and themed.** Figures are readable at 390 px and 1280 px in light and dark themes, with no page overflow, clipped labels or collisions. Wide tables scroll in a focusable region.                                                                                         | e2e (overflow), manual (`pnpm shots`) |
+| V4  | **Accessible.** SVGs have a title and description, every control is a native or keyboard-operable element, results are announced with `role="status"`, and colour is never the only cue. Axe scans pass in both themes.                                                                | e2e, test                             |
+| V5  | **Works without JavaScript.** Each widget has a static equivalent (a table, list or figure) that teaches the same mechanism, and the lesson reads completely with JavaScript disabled.                                                                                                 | e2e, manual                           |
+| V6  | **Interaction earns its cost.** A widget reveals state changes that a static figure cannot. It prefers manual stepping, asks for a prediction where useful, and respects reduced motion ([add-interactive.md](playbooks/add-interactive.md)).                                          | manual                                |
+| V7  | **Illustrative material is labelled.** Any invented machine, parameter or timing says "illustrative" in its caption or nearby text, so it cannot be mistaken for a measurement.                                                                                                        | report, manual                        |
+| V8  | **Retire what is replaced.** When a figure replaces a component, the unused component is deleted and the sentences that introduced the old figure are rewritten.                                                                                                                       | manual                                |
+
+## Evidence (E)
+
+| ID  | Property                                                                                                                                                                                                                                                                                                                                                                           | How checked              |
+| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
+| E1  | **Only tested code.** Displayed code comes from files in `labs/` imported with `?raw`. Anything else is labelled illustrative.                                                                                                                                                                                                                                                     | manual, report           |
+| E2  | **Verified outputs are asserted.** Every `CodeExample verified output="…"` literal is asserted exactly by a lab test, usually a `*Example()` function compared with `toBe`.                                                                                                                                                                                                        | report                   |
+| E3  | **Recorded artifacts with drift checks.** Where a toolchain exists, compiler listings, symbol tables and program outputs are regenerated by the subject's native runner and compared with the committed copies. The runner records the toolchain (`toolchain.json`), compares only when the version matches and otherwise reports "skipped". `--record` is used only deliberately. | test (with toolchain)    |
+| E4  | **Measurements carry provenance.** A recorded measurement stores its date, compiler, target, CPU, cache geometry, flags, sizes and every run, with a checksum of the result. Runs alternate between candidates. Timings have no pass thresholds; tests assert only the relationships the prose states about the recorded data.                                                     | test, manual             |
+| E5  | **Limits are stated.** Each measured result names its environment limits (for example WSL2, unpinned, frequency not controlled) beside the numbers, and narrows its claim to what the evidence supports.                                                                                                                                                                           | manual                   |
+| E6  | **Unavailable tools are owner-run.** If a tool cannot run where the agent works (for example `perf`), the subject provides an owner-run script whose refusal path is tested. The lesson shows no output from it until the owner records and reviews some.                                                                                                                          | test, manual             |
+| E7  | **Never fabricated.** No result, timing, list membership, citation or quotation is invented. Anything not run or checked is marked as unverified in the change description.                                                                                                                                                                                                        | manual                   |
+| E8  | **Registered sources the agent read.** Every citation is a specific page within a source registered in `src/content/sources/`, which the agent opened and which supports the claim. No problem statements, editorials or book text are copied; figures are original.                                                                                                               | build (prefixes), manual |
+| E9  | **Claims backed or flagged.** Factual claims in prose agree with a test, a recorded artifact or a cited page. Hypotheses (for example a proposed cause of a measured gap) are labelled as such and listed for owner review.                                                                                                                                                        | manual                   |
+| E10 | **Records stay honest.** When an earlier verification record or audit overstated progress, a dated correction is added beside it rather than silently rewriting it.                                                                                                                                                                                                                | manual                   |
+
+## Practice (P)
+
+| ID  | Property                                                                                                                                                                                                                                                                                                                                                               | How checked     |
+| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------- |
+| P1  | **An attempt lab for every lesson.** `labs/<subject>/<lesson-slug>/` holds `contracts.ts`, `starter.ts`, `exercises.attempt.test.ts`, `practice.test.ts`, the reference model with its own tests, and a `README.md`. The folder name matches the lesson slug.                                                                                                          | report          |
+| P2  | **Hidden contracts.** `contracts(solve)` holds at least five cases named `unseen case N`, covering normal, boundary and invalid inputs. Invalid inputs expect a specific error type or message, never a bare `toThrow()`.                                                                                                                                              | report, manual  |
+| P3  | **The attempt fails first.** `pnpm lab <subject>/<lesson>` fails every case against the unimplemented starter, which throws `Implement your attempt`.                                                                                                                                                                                                                  | manual (run it) |
+| P4  | **Independent cross-check.** `practice.test.ts` runs the same contracts against the reference model inside the gate. The expected values were also checked independently, by a second implementation (for example in Python), a real tool or by hand, and the record says how.                                                                                         | test, manual    |
+| P5  | **The lesson does not give the contract away.** The lesson and the README state the contract and one worked case, not the hidden expected values.                                                                                                                                                                                                                      | manual          |
+| P6  | **README.** The lab README is titled "Independent practice". It states the contract, the run command and what to explain before opening the reference, plus the provenance of any recorded artifacts.                                                                                                                                                                  | report, manual  |
+| P7  | **Genuine problems only.** Link a problem only when it applies an idea the lesson teaches. Title and difficulty are checked against the bank, paid-only problems are not linked, and list memberships come from published list data. Hints are original and contain no code ([add-problem.md](playbooks/add-problem.md)). Lessons without a fitting problem link none. | build, manual   |
+
+## Process (W)
+
+| ID  | Property                                                                                                                                                                                                                                                                                           | How checked |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
+| W1  | **Drafts only.** Agents write `status: draft` and `drafter: agent`, and never set `reviewed`, `published` or `reviewedAt`.                                                                                                                                                                         | build       |
+| W2  | **Approved scope.** Agents draft only topics planned on the main branch or requested by the owner. A new subject outline, a chapter split or new planned topics are proposed first and approved by the owner as a separate planning change.                                                        | manual      |
+| W3  | **One lesson per commit.** Each commit drafts or revises one lesson together with its lab, components, tests, path entry and verification record.                                                                                                                                                  | manual      |
+| W4  | **Lab first.** Build the reference model and its tests, then the contracts and their cross-check, then the figures computed from the model, then the prose. Prose never leads the evidence.                                                                                                        | manual      |
+| W5  | **Full gate and screenshot review.** Before every commit, run `pnpm verify` with the toolchain environment so the native checks run, and review `pnpm shots` captures of every figure and changed widget state at 390 and 1280 px in both themes ([verify-change.md](playbooks/verify-change.md)). | manual      |
+| W6  | **Verification record.** Every change adds a dated `docs/VERIFICATION.md` entry with its scope, evidence, cross-checks, sources and problems checked, command and measured results, first-run failures and fixes, visual review, limits, and items for owner review.                               | manual      |
+| W7  | **Conventional commits.** `type(scope): imperative phrase`, with a short body saying what the learner sees and where its values come from.                                                                                                                                                         | manual      |
+| W8  | **Flag for the owner.** Every report and pull request lists the claims, hypotheses and judgment calls that need the owner's review, separately from what was verified.                                                                                                                             | manual      |
+| W9  | **Keep neighbours consistent.** When material moves between lessons, update the cross-links, the overview, path comments and any hard-coded test lists in the same change.                                                                                                                         | manual      |
+| W10 | **No outward action without authorization.** No push, deploy, license choice or private-material import without the owner's explicit approval.                                                                                                                                                     | manual      |
+
+## Promotion review (owner)
+
+Only the owner promotes a lesson ([review-content.md](playbooks/review-content.md)).
+Before setting `status: reviewed`, the owner confirms:
+
+- Every property above passes for the lesson, or its exception is accepted.
+  An agent's lesson-scoped audit can supply the evidence.
+- The owner attempted the lab and the practice tasks before reading the
+  reference or the reveals.
+- The objectives can be demonstrated from the lesson alone, and the mental model
+  is useful with its limits stated.
+- The interview answers are correct and could be said aloud.
+- Keyboard, theme, mobile and JavaScript-disabled reading were checked on a
+  real browser.
+
+Automated checks do not establish conceptual mastery or replace this review.
+
+## Known exceptions
+
+`dsa/arrays` and `dsa/hash-maps` predate this standard: hash maps has no
+attempt lab, neither has a tested model disclosure, and both are excluded from
+the per-lesson browser checks. They are brought up to the standard by
+enhance-lesson, one change each, before more DSA lessons are drafted.

@@ -5,7 +5,7 @@ findings, but never changes `status` or `reviewedAt`.
 
 ## Review
 
-Work through [LEARNING_STANDARDS.md](../LEARNING_STANDARDS.md) for the lesson,
+Work through the [subject standard](../SUBJECT_STANDARD.md) for the lesson,
 then check its practice material:
 
 - Interview answers agree with the lesson and its sources and state their
