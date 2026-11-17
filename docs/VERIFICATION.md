@@ -1244,3 +1244,18 @@ No content changed.
 
 Same command as the previous entry: zero type errors, warnings or hints;
 formatting and lint passed; 415 tests in 65 files; 39 pages; 104 browser tests.
+
+## Software Engineering & Architecture outline audit — 2026-11-17
+
+First run of the audit-subject skill in its curriculum-only mode:
+`docs/reviews/software-engineering-architecture-audit-2026-11-17.md` scores C1–C8 and feasibility for the
+subject's outline at `6d48b46` (P0 0, P1 3, P2 2, P3 1). Its inventory came from
+`pnpm subject:report software-engineering-architecture`; tool availability was checked with `command -v`
+and `apt-cache policy`. Candidate sources it names were not opened and are
+marked as unverified suggestions; the only external pages fetched during these
+audits were the Google SRE books index and two chapter URLs (HTTP 200), which
+show the registered `google-sre-books` prefix cannot match chapter citations.
+No content changed.
+
+Same command as the previous entry: zero type errors, warnings or hints;
+formatting and lint passed; 415 tests in 65 files; 39 pages; 104 browser tests.
