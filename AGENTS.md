@@ -47,6 +47,16 @@ changes; later decisions are recorded in `docs/adr/` and override it.
 | Change UI, styles or tokens                 | [docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md)                                 |
 | Change architecture                         | `ANVAYA_BOOTSTRAP.md` (fully) and [docs/adr/](docs/adr/)                       |
 
+## Skills
+
+Project skills in `.claude/skills/` run the playbooks and scripts in a fixed
+order with the owner's checkpoints. Any agent can follow them: read the
+`SKILL.md` and the files it links.
+
+| Skill                                                  | Use it to                                                                                |
+| ------------------------------------------------------ | ---------------------------------------------------------------------------------------- |
+| [audit-subject](.claude/skills/audit-subject/SKILL.md) | Score a subject, chapter or lesson against the standard and write a prioritized fix list |
+
 ## Verify
 
 Run `pnpm verify` with the toolchain environment before every commit (setup and

@@ -1139,3 +1139,18 @@ found nothing left.
 
 Same command as the previous entry: zero type errors, warnings or hints;
 formatting and lint passed; 415 tests in 65 files; 39 pages; 104 browser tests.
+
+## audit-subject skill — 2026-11-17
+
+`.claude/skills/audit-subject/` scores a subject, chapter or lesson against the
+standard: inventory from `pnpm subject:report`, full reading of the scope,
+pass/partial/fail/n/a per ID with file:line evidence (`rubric.md`), P0–P3
+priorities, a curriculum-only mode for subjects without lessons, a "standard
+feedback" section for properties that seem wrong, and the document structure
+in `audit-template.md`, modelled on the 2026-11-13 architecture audit.
+`AGENTS.md` gains a skills table so other agents can follow the same files.
+The skill is exercised by the audits recorded later on this branch.
+
+Same command as the previous entry, with only this skill in `.claude/skills/`:
+zero type errors, warnings or hints; formatting and lint passed; 415 tests in
+65 files; 39 pages; 104 browser tests.
