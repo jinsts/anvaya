@@ -1390,3 +1390,12 @@ set, then `pnpm verify`: zero type errors, warnings or hints; formatting and
 lint passed; 420 tests in 65 files; 39 pages; 140 browser tests (38 are the
 per-lesson no-JavaScript checks that replace the two looping tests). The
 native drift check, run on its own, reported all 28 artifacts unchanged.
+
+## Program execution: answers after the attempt — 2026-11-17
+
+Fixes finding F1 of the 2026-11-17 architecture audit with the enhance-lesson
+skill. The datapath stepper's no-JavaScript trace table and its explanation now sit in a "Check after stepping" disclosure, and the accumulator program's branch timeline and run explanation in a "Check after predicting" one; the static and dynamic instruction count definitions stay visible. Beyond what this entry names, no explanation, figure,
+lab or test value changed; the material moved behind the attempt (standard L6).
+
+Same command as the previous entry: zero type errors, warnings or hints;
+formatting and lint passed; 415 tests in 65 files; 39 pages; 104 browser tests.
