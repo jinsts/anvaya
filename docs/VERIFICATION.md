@@ -1013,3 +1013,36 @@ later changes.
 
 Same command as the previous entry: zero type errors, warnings or hints;
 formatting and lint passed; 405 tests in 64 files; 39 pages; 102 browser tests.
+
+## Subject report — 2026-11-17
+
+`pnpm subject:report <subject>[/<lesson>] [--json]` (`scripts/subject-report.ts`,
+run by Node's built-in type stripping) inventories a subject against the
+standard's IDs: chapters and planned topics, duplicate planned titles across
+paths, lessons missing from any path, and for each lesson its minutes,
+objectives, interview questions, sources, predict prompts and whether the next
+block gates the answer, check-after disclosures, the tested model disclosure,
+LabCard numbering and commands, ConceptChecks, recap bullets, imported figures
+and whether they read from `labs/`, whether each verified output's lines appear
+in a lab test, lab files, hidden contract cases and bare `toThrow()` calls, and
+linked problems. It is advisory and never fails the gate. `yaml` 2.9.1, already
+used by Astro, became a direct development dependency.
+
+Ten unit tests cover a lesson that meets the standard (no flags), an answer
+given in prose after a prompt, "predictor" not counting as a prompt, missing
+frontmatter, contract counting, the minute thresholds, numbering, missing labs
+and unasserted outputs, and a temporary repository with an unlisted lesson and
+a planned title duplicated across subjects.
+
+On the current content it agrees with the hand survey made while planning:
+13 of 19 architecture lessons are above 30 minutes and three above 45; the
+three lab folders that differ from their slugs; `measuring-performance` has no
+lab README; `AmdahlBars`, `InstructionFields` and `CachePlacement` import no
+lab model; `memory-hierarchy-and-caches` has two contract cases. On the outline
+subjects it reports "Replication and partitioning" planned under both databases
+and distributed systems. Its signals are prompts for an audit, not findings:
+for example `MeasureWorkflow` and `SpectreSteps` are concept figures with no
+values to compute.
+
+Same command as the previous entry: zero type errors, warnings or hints;
+formatting and lint passed; 415 tests in 65 files; 39 pages; 102 browser tests.
