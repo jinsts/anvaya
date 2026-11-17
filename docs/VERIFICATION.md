@@ -1067,3 +1067,24 @@ Same command as the previous entry, with this change and the screenshot script
 of the next entry in the tree: zero type errors, warnings or hints; formatting
 and lint passed; 415 tests in 65 files; 39 pages; 104 browser tests (the two
 new ones confirm the spec found its lessons).
+
+## Screenshot review script — 2026-11-17
+
+`pnpm shots <subject>/<lesson> [--select css] [--port n]` replaces the
+uncommitted scratchpad script used during the architecture work. Against the
+built site served by `astro preview`, it captures each `.diagram-frame` and
+each hydrated widget at 1280 px and 390 px in light and dark themes (theme set
+through `anvaya:theme:v1`, reduced motion, fonts loaded, the sticky header made
+static), plus the whole page at 390 px without JavaScript, and writes
+`report.json` with page overflow, up to five elements wider than the viewport
+outside scroll regions, and console errors. Output goes to the ignored
+`screenshots/` folder, and the command exits non-zero when the report finds a
+problem.
+
+Run on `computer-architecture-execution/cache-organization`: two captures per
+width and theme (the placement figure and the cache explorer), zero overflow,
+no errors; the 1280 px light placement figure and the 390 px dark explorer were
+opened and read correctly. The first run failed because `astro-island` uses
+`display: contents` and has no box; the script now captures the island's first
+child. Gate results are in the previous entry, which ran with this script in
+the tree.
