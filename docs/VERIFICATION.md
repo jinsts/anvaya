@@ -970,3 +970,27 @@ an attempt (it failed seven), and the reference passes them.
 
 Same command as the previous entry: zero type errors, warnings or hints;
 formatting and lint passed; 405 tests in 64 files; 39 pages; 102 browser tests.
+
+## Local toolchain setup scripts — 2026-11-17
+
+The compiler and browser libraries used for the architecture work were no
+longer under `/tmp`. GCC 15.2 was rebuilt with the existing
+`native/setup-gcc-ubuntu.sh /tmp/anvaya-cc`. Two setups that had only been
+described in this record are now scripts that extract Ubuntu 26.04 packages
+without root: `scripts/setup-browser-deps.sh` (libnspr4, libnss3, ALSA for
+Playwright's Chromium) and `native/setup-gcc-arm64-ubuntu.sh` (the aarch64
+cross-compiler for `-S` listings). Both compilers report
+`(Ubuntu 15.2.0-16ubuntu1) 15.2.0`, matching `toolchain.json`, and `ldd` finds
+every Chromium library with the extracted folder on `LD_LIBRARY_PATH`.
+
+```sh
+PLAYWRIGHT_PORT=4371 \
+  LD_LIBRARY_PATH=/tmp/anvaya-browser-deps/usr/lib/x86_64-linux-gnu \
+  ANVAYA_CC=/tmp/anvaya-cc/compiler ANVAYA_CC_ARM64=/tmp/anvaya-cc-arm64/compiler \
+  pnpm verify
+```
+
+Baseline on unchanged content: zero type errors, warnings or hints; formatting
+and lint passed; 405 tests in 64 files; 39 pages; 102 browser tests. The native
+drift check, run on its own, reported all 28 artifacts unchanged (ARM64
+included), 8 checked programs passing and 5 measurements validated.

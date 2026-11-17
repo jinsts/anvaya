@@ -17,6 +17,17 @@ sh labs/computer-architecture-execution/compilation-and-execution/native/setup-g
 
 GNU `nm` (binutils) must be on the path, and `lscpu` is used when present.
 
+The ARM64 listings come from GCC 15.2 targeting aarch64-linux-gnu, used only
+for `-S` output. Recreate it the same way and select it with `ANVAYA_CC_ARM64`;
+without it the ARM64 comparison is reported as skipped:
+
+```sh
+sh labs/computer-architecture-execution/compilation-and-execution/native/setup-gcc-arm64-ubuntu.sh /tmp/anvaya-cc-arm64
+```
+
+Browser tests need Chromium's shared libraries; on a minimal Ubuntu, extract
+them with `sh scripts/setup-browser-deps.sh /tmp/anvaya-browser-deps`.
+
 ## Run
 
 From the repository root:
