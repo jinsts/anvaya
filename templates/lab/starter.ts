@@ -1,5 +1,5 @@
-/** TODO: Describe the contract the learner implements. */
+// Implement the contract before consulting example.ts.
 export function solve(values: readonly number[]): number {
   void values;
-  throw new Error('TODO: implement solve');
+  throw new Error('Implement your attempt');
 }

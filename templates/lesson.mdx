@@ -4,42 +4,88 @@ shortTitle: '__SHORT_TITLE__'
 summary: 'TODO: One concrete sentence about what the learner will understand.'
 subject: __SUBJECT__
 difficulty: foundation
-estimatedMinutes: 20
+estimatedMinutes: 25
 learningObjectives:
   - 'TODO: An objective the learner can demonstrate by explaining or solving'
+  - 'TODO: A second demonstrable objective (2–4 in total)'
 prerequisites: []
 tags: []
+skills: []
 status: draft
 drafter: agent
 interviewQuestions:
-  - prompt: 'TODO: A question an interviewer would ask about this concept?'
+  - prompt: 'TODO: A question that tests reasoning, not recall (3–6 in total)?'
     answer: >-
-      TODO: A model answer that states its assumptions and trade-offs.
-    followUps: []
+      TODO: Three to five sentences that state assumptions and trade-offs and
+      agree with the lesson.
+    followUps:
+      - 'TODO: A deeper question an interviewer would ask next.'
 sources:
-  - label: 'TODO: A page from a registered source (src/content/sources)'
+  - label: 'TODO: A specific page from a registered source you opened'
     url: 'https://tc39.es/ecma262/'
 ---
 
-{/* Anatomy and rules: docs/playbooks/add-lesson.md. Remove sections that do not help this concept. */}
+{/* Standard: docs/SUBJECT_STANDARD.md. Procedure: docs/playbooks/add-lesson.md. */}
 
-## TODO: Why this matters
+{/* Build the lab first; figures import its model; prose comes last. */}
 
-TODO: Motivate the concept with a small concrete example and an analogy, including where the analogy stops.
+import Figure from '../../../components/diagrams/TODO.astro';
+import model from '../../../../labs/__SUBJECT__/__SLUG__/example.ts?raw';
 
-## TODO: How it works
+## TODO: A concrete problem the mechanism explains
 
-TODO: Explain the mechanism step by step. Add a diagram or interactive component only when it shows the mechanism.
+TODO: Open with a small, concrete scenario. Then an analogy, and where it
+breaks: "The analogy stops at X: …" (L3).
 
-## TODO: Implement it
+## TODO: The mechanism, step by step
 
-TODO: Import tested code from `labs/` with `?raw` and show it in `<CodeExample verified>`.
+<Figure />
 
-## TODO: Costs and trade-offs
+TODO: Explain the mechanism from the figure, whose values come from the tested
+model. Define each term before using it, and state the model's boundary near
+the figure (L4, L8, V2).
 
-TODO: State complexity with its assumptions. Use `<ComplexityTable>` for several operations.
+TODO: Ask the learner to predict before reading on (L5).
 
-## TODO: Pitfalls and when to use it
+<details>
+<summary>Check after predicting</summary>
+
+TODO: The answer and why, never in plain text next to the prompt (L6).
+
+</details>
+
+## TODO: A worked example
+
+TODO: One complete trace or calculation with concrete values from the model
+(L7), then a common mistake or diagnosis (L8).
+
+<details>
+<summary>Inspect the tested model and expected output</summary>
+
+<CodeExample
+  title="TODO: What the model does"
+  code={model}
+  verified
+  output={'TODO: the exact string its example test asserts'}
+/>
+
+</details>
+
+The tests check TODO: every claim the lesson makes about the model.
+
+## Practice
+
+<LabCard title="01 / TODO: The attempt" command="pnpm lab __SUBJECT__/__SLUG__">
+  TODO: State the contract and ask for a prediction on one case before running
+  the tests. Do not reveal the hidden contract values.
+</LabCard>
+
+<details>
+<summary>Check after attempting</summary>
+
+TODO: Reasoning for the predicted case.
+
+</details>
 
 ## Check your reasoning
 
@@ -54,6 +100,10 @@ TODO: State complexity with its assumptions. Use `<ComplexityTable>` for several
     },
     {
       label: 'TODO: A plausible misconception',
+      explanation: 'TODO: Why it is wrong.',
+    },
+    {
+      label: 'TODO: Another plausible misconception',
       explanation: 'TODO: Why it is wrong.',
     },
   ]}

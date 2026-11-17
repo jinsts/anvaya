@@ -1088,3 +1088,30 @@ opened and read correctly. The first run failed because `astro-island` uses
 `display: contents` and has no box; the script now captures the island's first
 child. Gate results are in the previous entry, which ran with this script in
 the tree.
+
+## Lab and lesson templates in the attempt pattern — 2026-11-17
+
+`templates/lab/` now produces the architecture lab pattern instead of a
+`solution.ts` lab with visible cases: a README titled "Independent practice",
+`contracts(solve)` with five hidden "unseen case N" contracts including a
+refusal that expects `RangeError`, a starter that throws
+`Implement your attempt`, `exercises.attempt.test.ts`, a `practice.test.ts`
+that runs the contracts against the reference, and `example.ts` with an
+`*Example()` output asserted by `example.test.ts`. `templates/lesson.mdx`
+follows the standard's anatomy (hook with the analogy's limit, figure,
+predict and check-after disclosure, worked example, tested model disclosure,
+`## Practice` with card `01 /`, a three-option concept check, recap). `pnpm
+new:lesson` always creates the lab (`--lab` is no longer needed) and its next
+steps name the report, the failing attempt, the gate and the screenshots. The
+placeholder lint now checks every lab `.ts`, `.c`, `.sh` and `.mjs` file except
+`starter.ts`; the existing labs pass it.
+
+Scaffolding `computer-architecture-execution/zz-scaffold-check` (then deleted):
+the placeholder lint reported 37 markers; `pnpm lab` failed all 5 contracts;
+the reference passed its 7 tests; the tools type check passed.
+
+Same command as the previous entry: zero type errors, warnings or hints;
+formatting and lint passed; 415 tests in 65 files; 39 pages; 104 browser tests.
+Prettier then turned the template's two-line MDX comment into emphasis; it is
+now two one-line comments, and the format check passed again. Templates are not
+part of the build.
