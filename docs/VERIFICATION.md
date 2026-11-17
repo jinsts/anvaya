@@ -1289,3 +1289,27 @@ No content changed.
 
 Same command as the previous entry: zero type errors, warnings or hints;
 formatting and lint passed; 415 tests in 65 files; 39 pages; 104 browser tests.
+
+## create-subject dry run: Operating Systems & Runtime Internals — 2026-11-17
+
+The create-subject skill's first run, stopped after Phase 3 as requested:
+three intake batches and a summary read-back with the owner (who chose three
+full runtime case studies over the agent's two-deep, one-light suggestion, and
+dropped Python), then `docs/proposals/operating-systems-runtime-internals.md`:
+38 pages in 10 chapters (965 minutes), a coverage map, two running threads, a
+toolchain and evidence plan, a duplication table, decisions for the owner and
+risks. No path, subject or lesson file changed. The proposal resolves the
+outline audit's findings: broad titles split, the architecture boundary
+stated, containers and signals added.
+
+Thirty-three candidate source pages were fetched and returned HTTP 200 with the
+expected titles (OSTEP chapters, man7 pages, kernel cgroup-v2, EEVDF and memory
+concepts, Node.js, libuv, V8, Oracle GC tuning and JVM specification, JEPs 439
+and 444, `jcmd`, Go GC guide, memory model, runtime package and `proc.go`'s
+scheduler comment, Brendan Gregg's USE method and flame graphs, Python free
+threading). They were not read in depth per claim; the proposal says so. Tool
+availability was checked: `strace`, OpenJDK 21 and Go 1.26/1.24 are available
+as Ubuntu packages to extract; `perf` is not; Docker's daemon answers.
+
+Same command as the previous entry: zero type errors, warnings or hints;
+formatting and lint passed; 415 tests in 65 files; 39 pages; 104 browser tests.
