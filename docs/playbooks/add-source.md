@@ -27,8 +27,13 @@ sources are always a visible, reviewable change.
    description: What it is and why it is trustworthy, in one sentence.
    ```
 
-3. Cite specific pages in a lesson's `sources` with a descriptive label.
-4. Run `pnpm build`.
+3. Cite specific pages in a lesson's `sources` with a descriptive label. Open
+   each cited page and confirm it supports the claim you attach to it; never
+   cite a page you have not read ([standard](../SUBJECT_STANDARD.md) E8).
+4. Check that the page URLs you will cite start with one of the `prefixes`; a
+   site whose chapters live under a different path needs those paths listed.
+5. Run `pnpm build`, and name the pages you opened in the change's
+   `docs/VERIFICATION.md` entry.
 
 Problem lists (`kind: problem-list`) also need a published membership record
 that agents can check ([add-problem.md](add-problem.md)).

@@ -114,10 +114,28 @@ Owner request, proposed in [ADR 0008](docs/adr/0008-subject-chapters-and-lesson-
 - [x] Lesson sizing guidance: one teaching unit per page, usually 15–30 minutes.
 - [x] Computer Architecture & Execution restructured into six chapters. Its nine
       lessons keep their URLs; ten planned pages hold split or missing material.
-- [ ] Owner review of the ADR and the restructured outline (approve by merging).
+- [x] Owner review of the ADR and the restructured outline: approved by merging
+      PR #9.
 - [x] Draft the planned pages, one lesson per change, moving material out of the
       existing lessons named in the path's YAML comments: every planned Computer
-      Architecture & Execution page is now an agent draft on the
-      `content/computer-architecture` branch (not pushed), and no planned entry
-      remains in its chapters.
+      Architecture & Execution page is now an agent draft, merged in PR #9, and
+      no planned entry remains in its chapters (19 lessons).
 - [ ] Owner review and promotion of those drafts.
+
+## Subject standard and agent skills — 2026-11-17
+
+Owner request, proposed in [ADR 0009](docs/adr/0009-subject-standard-and-authoring-skills.md).
+
+- [x] Write the bar set by Computer Architecture & Execution as
+      [SUBJECT_STANDARD.md](docs/SUBJECT_STANDARD.md), replacing
+      `LEARNING_STANDARDS.md`.
+- [x] Tooling: `pnpm subject:report`, `pnpm shots`, browser checks for every
+      lesson, attempt-pattern lab and lesson templates, toolchain setup scripts.
+- [x] Reconcile AGENTS.md, playbooks, the authoring guide and the design system
+      with the standard; add `verify-change.md`.
+- [ ] Project skills: `create-subject`, `draft-lesson`, `enhance-lesson`,
+      `audit-subject`.
+- [ ] Prove them: outline audits of six subjects, a create-subject dry run, and
+      an audit of Computer Architecture & Execution.
+- [ ] Owner review of the standard, the skills and ADR 0009 (approve by
+      merging).

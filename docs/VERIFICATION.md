@@ -1115,3 +1115,27 @@ formatting and lint passed; 415 tests in 65 files; 39 pages; 104 browser tests.
 Prettier then turned the template's two-line MDX comment into emphasis; it is
 now two one-line comments, and the format check passed again. Templates are not
 part of the build.
+
+## Guidance aligned with the subject standard — 2026-11-17
+
+`AGENTS.md`, the playbooks, the authoring guide, the design system, the README
+and `IMPLEMENTATION.md` now agree with the standard. New
+`docs/playbooks/verify-change.md` holds the environment setup, the gate
+command, the screenshot review and its recurring problems from PR #9, the test
+lists that still need hand updates, the verification entry's structure and the
+commit conventions. `add-lesson.md` names the architecture lessons as
+references, requires a lab and builds it first, and replaces "link 3–6
+problems" with linking only genuine ones. `add-interactive.md` points figures
+and widgets at tested lab models instead of `src/lib/`. `add-problem.md` adds
+the bank metadata and paid-only checks used in PR #9; `add-source.md` requires
+opening every cited page; `add-subject-or-path.md` plans a curriculum through a
+proposal before drafting; `review-content.md` starts from the report and the
+standard. The authoring guide gains the `c` and `text` languages, LabCard
+numbering, the lab layout and the new commands. ADR 0008's status is accepted,
+as PR #9 merged it, and `IMPLEMENTATION.md` no longer describes those drafts as
+unpushed. A search for `--lab`, "3–6 practice", "solution.ts",
+`LEARNING_STANDARDS` and the old `lint && test && build` gate in the guidance
+found nothing left.
+
+Same command as the previous entry: zero type errors, warnings or hints;
+formatting and lint passed; 415 tests in 65 files; 39 pages; 104 browser tests.
