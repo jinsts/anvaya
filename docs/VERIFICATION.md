@@ -1168,3 +1168,17 @@ and reports verified facts separately from items for the owner. It drives
 Same command as the previous entry, with the audit and draft skills in the
 tree: zero type errors, warnings or hints; formatting and lint passed; 415
 tests in 65 files; 39 pages; 104 browser tests.
+
+## enhance-lesson skill — 2026-11-17
+
+`.claude/skills/enhance-lesson/` makes small changes to one lesson while the
+owner studies it: restate the request, read the lesson with its lab, tests,
+components and history, pick the single teaching home or propose a split, then
+apply a recipe (`recipes.md`) that lists everything that moves together for a
+point, figure, worked example, lab case, practice task, problem, interview
+question or source, and for bringing a legacy lesson up to the standard
+(including removing it from the browser spec's exception list).
+
+Same command as the previous entry, with the audit, draft and enhance skills in
+the tree: zero type errors, warnings or hints; formatting and lint passed; 415
+tests in 65 files; 39 pages; 104 browser tests.
