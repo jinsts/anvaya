@@ -1318,7 +1318,7 @@ formatting and lint passed; 415 tests in 65 files; 39 pages; 104 browser tests.
 
 The audit-subject skill's full mode on the reference subject:
 `docs/reviews/computer-architecture-execution-audit-2026-11-17.md` scores all
-56 properties (40 pass, 16 partial or fail) and lists 13 findings (P0 0, P1 1,
+56 properties (41 pass, 14 partial, 1 fail) and lists 13 findings (P0 0, P1 1,
 P2 6, P3 6) and four items of standard feedback for the owner. All 53 report
 flags were read at their lines. Three were false signals (two prose uses of
 "predict", and concept figures with nothing to compute). The report also
