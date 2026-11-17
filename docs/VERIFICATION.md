@@ -1046,3 +1046,24 @@ values to compute.
 
 Same command as the previous entry: zero type errors, warnings or hints;
 formatting and lint passed; 415 tests in 65 files; 39 pages; 102 browser tests.
+
+## Per-lesson browser checks for every lesson — 2026-11-17
+
+The per-lesson checks that `tests/e2e/architecture.spec.ts` ran over a
+hard-coded list of 19 slugs now live in `tests/e2e/lessons.spec.ts`, which
+finds every `.mdx` file under `src/content/lessons`. For each lesson, in both
+projects, it checks a visible `.diagram-frame`, no horizontal overflow and an
+axe scan (WCAG 2.2 AA tags) in light and dark themes, that the "Inspect the
+tested model" disclosure opens by keyboard and shows code, and that there is
+exactly one concept check (new) whose correct answer is accepted by keyboard.
+With JavaScript disabled, it checks every lesson's figure, recap, overflow and
+disclosure. `dsa/arrays` and `dsa/hash-maps` are excluded as known exceptions
+to the standard. The subject spec keeps its twelve widget keyboard tests; its
+unasserted `cpu-registers-and-instructions` screenshot was dropped in favour
+of `pnpm shots`. A new subject's lessons are now covered without editing a
+test list.
+
+Same command as the previous entry, with this change and the screenshot script
+of the next entry in the tree: zero type errors, warnings or hints; formatting
+and lint passed; 415 tests in 65 files; 39 pages; 104 browser tests (the two
+new ones confirm the spec found its lessons).
