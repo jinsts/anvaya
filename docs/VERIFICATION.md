@@ -1331,3 +1331,19 @@ sweep at 390 px. Counts in the audit were taken from `pnpm subject:report
 
 Same command as the previous entry: zero type errors, warnings or hints;
 formatting and lint passed; 415 tests in 65 files; 39 pages; 104 browser tests.
+
+## Standard adjusted after the architecture audit — 2026-11-17
+
+The owner decided the audit's standard feedback. C4 keeps 15–30 minutes as the
+target, accepts 31–45 for a page that is still one mechanism, and requires a
+split above 45; `pnpm subject:report` now reports 31–45 as information rather
+than a warning (its test was updated), and the playbook, authoring guide and
+skills say the same. L9 accepts wording other than "The tests check" that says
+what the tests assert. P1 records the three existing architecture lab folders
+as known exceptions. L10 is unchanged: making `LabCard`'s `command` optional,
+as the owner chose, is left for a follow-up component change with its own
+browser test. The audit gained a dated "Owner decisions" section; its findings
+were not rewritten.
+
+Same command as the previous entry: zero type errors, warnings or hints;
+formatting and lint passed; 415 tests in 65 files; 39 pages; 104 browser tests.

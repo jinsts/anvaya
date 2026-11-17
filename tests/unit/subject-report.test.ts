@@ -203,8 +203,13 @@ describe('lessonFlags', () => {
   });
 
   it('flags long pages, with a split above 45 minutes', () => {
-    expect(lessonFlags(context(35)).map((f) => f.message)).toEqual([
-      '35 minutes: above the 15–30 minute unit',
+    expect(lessonFlags(context(35))).toEqual([
+      {
+        id: 'C4',
+        level: 'info',
+        message:
+          '35 minutes: above the 15–30 target; acceptable up to 45 if one mechanism',
+      },
     ]);
     expect(lessonFlags(context(50))[0]?.message).toContain('split the page');
   });

@@ -24,7 +24,8 @@ static equivalent). `dsa/arrays` predates the standard.
   cite. Register new sources first ([add-source.md](add-source.md)).
 - Write a one-paragraph plan in your scratch notes: the mechanism, the 2–4
   objectives, the worked example, each figure and what computes it, the lab
-  contract, and any native evidence. Estimate 15–30 minutes.
+  contract, and any native evidence. Estimate 15–30 minutes;
+  31–45 only if it is still one mechanism.
 
 ## Steps
 

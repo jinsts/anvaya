@@ -268,7 +268,10 @@ export function lessonFlags(context: LessonContext): Flag[] {
   if (l.minutes > 45)
     warn('C4', `${l.minutes} minutes: above about 45, split the page`);
   else if (l.minutes > 30)
-    warn('C4', `${l.minutes} minutes: above the 15–30 minute unit`);
+    info(
+      'C4',
+      `${l.minutes} minutes: above the 15–30 target; acceptable up to 45 if one mechanism`,
+    );
   else if (l.minutes < 15) info('C4', `${l.minutes} minutes: below 15`);
   if (l.objectives < 2 || l.objectives > 4)
     warn('L1', `${l.objectives} learning objectives (expected 2–4)`);

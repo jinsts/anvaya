@@ -84,5 +84,6 @@ What could not be checked, tools that are unavailable here, sources not yet
 opened, and assumptions that need the owner's review.
 ```
 
-Size each lesson at 15–30 minutes of reading and attempting. If a topic needs
-more, split it into pages now rather than later.
+Size each lesson at 15–30 minutes of reading and attempting (up to 45 for a
+page that is still one mechanism). If a topic needs more, split it into pages
+now rather than later.

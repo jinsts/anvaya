@@ -51,7 +51,7 @@ validates references across files on every build.
 | `subject`            | yes      | Subject ID; must match the folder                                                  |
 | `path`               | no       | Default path ID; that path must list the lesson                                    |
 | `difficulty`         | yes      | `foundation`, `intermediate` or `advanced`                                         |
-| `estimatedMinutes`   | yes      | Reading plus attempting, usually 15–30; split above about 45                       |
+| `estimatedMinutes`   | yes      | Reading plus attempting: target 15–30, at most 45 for one unit                     |
 | `learningObjectives` | yes      | 2–4 outcomes the learner can demonstrate                                           |
 | `prerequisites`      | no       | Lesson IDs; cycles are rejected                                                    |
 | `tags`               | no       | Kebab-case; reuse existing tags                                                    |

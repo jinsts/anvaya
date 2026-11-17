@@ -339,6 +339,17 @@ entries record the pages opened when each lesson was drafted.
   but costly to retrofit here. Accept documented exceptions for existing labs,
   or rename them.
 
+## Owner decisions — 2026-11-17
+
+- **S1:** option (b). C4 now targets 15–30 minutes, accepts 31–45 for one
+  mechanism, and requires a split above 45. F2 therefore covers only memory,
+  I/O and stack.
+- **S2:** make `LabCard`'s `command` optional; F4 stands as a component change
+  followed by removing the four commands.
+- **S3:** L9 accepts equivalent wording; F13 remains a P3 suggestion.
+- **S4:** the three existing lab folders are documented exceptions; F11's
+  rename is dropped, and its README items remain.
+
 ## Recommended sequence
 
 1. F1 and F13, one enhance-lesson change per lesson, about ten lessons.

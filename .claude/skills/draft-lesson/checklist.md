@@ -32,6 +32,6 @@ is either fixed or reported to the owner with a reason.
 - [ ] Measured claims state their environment limits and claim no more than the
       data shows (E5, E9).
 - [ ] Every cited page was opened and supports its claim (E8).
-- [ ] `estimatedMinutes` is honest for reading plus attempting, within 15–30 (C4).
+- [ ] `estimatedMinutes` is honest for reading plus attempting, 15–30 as the target and never above 45 (C4).
 - [ ] Removed figures left no dangling introduction; replaced components were
       deleted (V8).
