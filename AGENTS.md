@@ -55,6 +55,7 @@ order with the owner's checkpoints. Any agent can follow them: read the
 
 | Skill                                                    | Use it to                                                                                                                                |
 | -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| [create-subject](.claude/skills/create-subject/SKILL.md) | Interview the owner, propose a full outline, and after approval plan and draft a subject lesson by lesson                                |
 | [draft-lesson](.claude/skills/draft-lesson/SKILL.md)     | Draft one planned or requested lesson with its lab, figures and record, and commit it alone                                              |
 | [enhance-lesson](.claude/skills/enhance-lesson/SKILL.md) | Add a point, figure, worked example, lab case, problem or source to a lesson while studying, or bring a legacy lesson up to the standard |
 | [audit-subject](.claude/skills/audit-subject/SKILL.md)   | Score a subject, chapter or lesson against the standard and write a prioritized fix list                                                 |

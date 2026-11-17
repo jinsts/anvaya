@@ -1182,3 +1182,20 @@ question or source, and for bringing a legacy lesson up to the standard
 Same command as the previous entry, with the audit, draft and enhance skills in
 the tree: zero type errors, warnings or hints; formatting and lint passed; 415
 tests in 65 files; 39 pages; 104 browser tests.
+
+## create-subject skill — 2026-11-17
+
+`.claude/skills/create-subject/` plans and builds a subject in five phases:
+intake (`intake.md`, three batches of questions on goals, level, roles,
+depth, toolchains, hardware, exclusions, sources, time and checkpoints, each
+tied to the outline decision it drives) with no repository changes; survey and
+research; a proposal in `docs/proposals/<subject>.md` from
+`outline-template.md`, committed on its own, then a stop for approval; one
+planning change to the path and subject YAML; and draft-lesson for each page
+with a checkpoint after every lesson and audit-subject after every chapter.
+The skills table in `AGENTS.md` now lists all four, and `IMPLEMENTATION.md`
+ticks the skills item.
+
+Same command as the previous entry, with all four skills in the tree: zero
+type errors, warnings or hints; formatting and lint passed; 415 tests in 65
+files; 39 pages; 104 browser tests.

@@ -133,7 +133,7 @@ Owner request, proposed in [ADR 0009](docs/adr/0009-subject-standard-and-authori
       lesson, attempt-pattern lab and lesson templates, toolchain setup scripts.
 - [x] Reconcile AGENTS.md, playbooks, the authoring guide and the design system
       with the standard; add `verify-change.md`.
-- [ ] Project skills: `create-subject`, `draft-lesson`, `enhance-lesson`,
+- [x] Project skills: `create-subject`, `draft-lesson`, `enhance-lesson`,
       `audit-subject`.
 - [ ] Prove them: outline audits of six subjects, a create-subject dry run, and
       an audit of Computer Architecture & Execution.
