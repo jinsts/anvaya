@@ -1313,3 +1313,21 @@ as Ubuntu packages to extract; `perf` is not; Docker's daemon answers.
 
 Same command as the previous entry: zero type errors, warnings or hints;
 formatting and lint passed; 415 tests in 65 files; 39 pages; 104 browser tests.
+
+## Computer Architecture & Execution audit against the standard — 2026-11-17
+
+The audit-subject skill's full mode on the reference subject:
+`docs/reviews/computer-architecture-execution-audit-2026-11-17.md` scores all
+56 properties (40 pass, 16 partial or fail) and lists 13 findings (P0 0, P1 1,
+P2 6, P3 6) and four items of standard feedback for the owner. All 53 report
+flags were read at their lines. Three were false signals (two prose uses of
+"predict", and concept figures with nothing to compute). The report also
+missed five answer reveals that sit after a widget, which the audit found by
+reading. `pnpm shots` ran on all 19 lessons: 251 captures, no overflow or
+console errors; the four opened images found one label collision in the DRAM
+sweep at 390 px. Counts in the audit were taken from `pnpm subject:report
+--json`, after correcting three hand-written totals in the first draft
+(minutes, figures and verified outputs). No content changed.
+
+Same command as the previous entry: zero type errors, warnings or hints;
+formatting and lint passed; 415 tests in 65 files; 39 pages; 104 browser tests.
