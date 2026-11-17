@@ -53,9 +53,10 @@ Project skills in `.claude/skills/` run the playbooks and scripts in a fixed
 order with the owner's checkpoints. Any agent can follow them: read the
 `SKILL.md` and the files it links.
 
-| Skill                                                  | Use it to                                                                                |
-| ------------------------------------------------------ | ---------------------------------------------------------------------------------------- |
-| [audit-subject](.claude/skills/audit-subject/SKILL.md) | Score a subject, chapter or lesson against the standard and write a prioritized fix list |
+| Skill                                                  | Use it to                                                                                   |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------- |
+| [draft-lesson](.claude/skills/draft-lesson/SKILL.md)   | Draft one planned or requested lesson with its lab, figures and record, and commit it alone |
+| [audit-subject](.claude/skills/audit-subject/SKILL.md) | Score a subject, chapter or lesson against the standard and write a prioritized fix list    |
 
 ## Verify
 

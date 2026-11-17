@@ -1154,3 +1154,17 @@ The skill is exercised by the audits recorded later on this branch.
 Same command as the previous entry, with only this skill in `.claude/skills/`:
 zero type errors, warnings or hints; formatting and lint passed; 415 tests in
 65 files; 39 pages; 104 browser tests.
+
+## draft-lesson skill — 2026-11-17
+
+`.claude/skills/draft-lesson/` drafts one lesson in the order the architecture
+work settled on (scaffold, lab and its cross-check, native evidence, figures
+from the model, prose, sources and genuine problems, neighbours), then runs a
+pre-commit self-review (`checklist.md`) that turns the PR #9 fix commits into
+checks, verifies and records with `verify-change.md`, commits the lesson alone
+and reports verified facts separately from items for the owner. It drives
+`add-lesson.md` rather than restating it.
+
+Same command as the previous entry, with the audit and draft skills in the
+tree: zero type errors, warnings or hints; formatting and lint passed; 415
+tests in 65 files; 39 pages; 104 browser tests.
