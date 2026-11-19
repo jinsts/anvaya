@@ -116,9 +116,16 @@ work with the independent `or` moved between the load and its use.
 
 <PipelineStepper client:visible />
 
+<details>
+<summary>Check after stepping</summary>
+
 With forwarding, the reordered program loses no cycles: the `or` fills the slot
-the bubble would have taken. Compilers schedule instructions this way, and
-out-of-order processors do it in hardware.
+the bubble would have taken.
+
+</details>
+
+Compilers move independent instructions into the slots a
+bubble would waste, and out-of-order processors do the same in hardware.
 
 ## Control hazards flush wrong-path work
 
