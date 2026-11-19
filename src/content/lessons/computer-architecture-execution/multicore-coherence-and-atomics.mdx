@@ -121,10 +121,17 @@ Before each access below, predict both cores' states afterwards.
 
 <MesiStepper client:visible />
 
+<details>
+<summary>Check after stepping: the same trace without JavaScript</summary>
+
 <MesiTransitions />
 
 Accesses 3, 5 and 6 each need a request for ownership; access 7 hits on a line
-its core already holds Modified. Real processors add states and optimizations,
+its core already holds Modified.
+
+</details>
+
+Real processors add states and optimizations,
 such as letting a cache supply data directly, but the rule that a write first
 needs exclusive ownership is the part that shapes performance.
 
