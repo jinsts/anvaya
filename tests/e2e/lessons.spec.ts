@@ -34,7 +34,10 @@ for (const id of lessons) {
   test(`lesson standard: ${id}`, async ({ page }) => {
     await page.goto(`/learn/${id}/`);
     const article = page.locator('article.prose');
-    await expect(article.locator('.diagram-frame').first()).toBeVisible();
+    // A figure may also sit in a check-after disclosure; one must be visible.
+    await expect(
+      article.locator('.diagram-frame').filter({ visible: true }).first(),
+    ).toBeVisible();
     for (const theme of ['light', 'dark']) {
       await page
         .getByRole('combobox', { name: 'Color theme' })
@@ -92,7 +95,10 @@ for (const id of lessons) {
       `http://127.0.0.1:${process.env.PLAYWRIGHT_PORT || 4321}/learn/${id}/`,
     );
     await expect(
-      page.locator('article.prose .diagram-frame').first(),
+      page
+        .locator('article.prose .diagram-frame')
+        .filter({ visible: true })
+        .first(),
     ).toBeVisible();
     await expect(
       page.getByRole('heading', { name: 'Two-minute recap', exact: true }),
