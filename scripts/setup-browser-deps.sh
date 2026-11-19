@@ -11,6 +11,8 @@
 set -eu
 root=${1:-/tmp/anvaya-browser-deps}
 mkdir -p "$root/debs"
+# Absolute, because the steps below run from "$root/debs".
+root=$(cd "$root" && pwd)
 cd "$root/debs"
 apt-get download libnspr4 libnss3 libasound2t64
 for package in *.deb; do dpkg-deb -x "$package" "$root"; done

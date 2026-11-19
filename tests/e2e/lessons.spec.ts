@@ -75,20 +75,19 @@ for (const id of lessons) {
   });
 }
 
-test('every lesson keeps its figures, recap and source disclosure without JavaScript', async ({
-  browser,
-}, info) => {
-  test.setTimeout(120_000);
-  const context = await browser.newContext({
-    javaScriptEnabled: false,
-    reducedMotion: 'reduce',
-    viewport:
-      info.project.name === 'mobile'
-        ? { width: 390, height: 844 }
-        : { width: 1440, height: 1000 },
-  });
-  const page = await context.newPage();
-  for (const id of lessons) {
+// One test per lesson, so a failure names its lesson, later lessons are still
+// checked, and the suite parallelizes as subjects are added.
+for (const id of lessons) {
+  test(`lesson without JavaScript: ${id}`, async ({ browser }, info) => {
+    const context = await browser.newContext({
+      javaScriptEnabled: false,
+      reducedMotion: 'reduce',
+      viewport:
+        info.project.name === 'mobile'
+          ? { width: 390, height: 844 }
+          : { width: 1440, height: 1000 },
+    });
+    const page = await context.newPage();
     await page.goto(
       `http://127.0.0.1:${process.env.PLAYWRIGHT_PORT || 4321}/learn/${id}/`,
     );
@@ -112,6 +111,6 @@ test('every lesson keeps its figures, recap and source disclosure without JavaSc
     await disclosure.locator('summary').focus();
     await page.keyboard.press('Enter');
     await expect(disclosure.locator('pre').first()).toBeVisible();
-  }
-  await context.close();
-});
+    await context.close();
+  });
+}

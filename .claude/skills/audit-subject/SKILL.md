@@ -12,8 +12,10 @@ An audit proposes; it changes no lesson and never promotes content.
 
 ## 1. Scope
 
-- **Subject** (`<subject>`), **chapter** (one path section) or **lesson**
-  (`<subject>/<slug>`, the pre-promotion review).
+- **Subject** (`<subject>`), **chapter** (one path section,
+  `<subject>#<section-id>`) or **lesson** (`<subject>/<slug>`, the
+  pre-promotion review). The report rejects a lesson or section that does not
+  exist, so a typo cannot produce an empty inventory.
 - If the subject has no lessons, audit the curriculum only: C1–C8, plus how
   feasible the evidence and labs will be (sources, toolchains). Mark L, V, E
   and P as not applicable rather than failed.
@@ -21,8 +23,8 @@ An audit proposes; it changes no lesson and never promotes content.
 ## 2. Inventory (never hand-count)
 
 Record `git rev-parse --short HEAD`. Run
-`pnpm subject:report <scope> --json > <scratch>/report.json` and the Markdown
-form. Its counts are your inventory; its flags are leads, not findings.
+`pnpm -s subject:report <scope> --json > <scratch>/report.json` (`-s` keeps
+pnpm's banner out of the JSON) and the Markdown form. Its counts are your inventory; its flags are leads, not findings.
 
 ## 3. Read everything in scope
 

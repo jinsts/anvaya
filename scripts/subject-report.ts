@@ -1,6 +1,6 @@
 // Inventory a subject (or one lesson) against docs/SUBJECT_STANDARD.md.
 //
-//   pnpm subject:report <subject>[/<lesson>] [--json]
+//   pnpm subject:report <subject>[/<lesson> | #<chapter-section-id>] [--json]
 //
 // Advisory: it counts and flags what a script can see, so audits and
 // self-checks never hand-count. It never fails the build; a flag is a prompt
@@ -80,15 +80,28 @@ function sectionsOf(body: string): { heading: string; text: string }[] {
 /** Text with line breaks and runs of spaces collapsed. */
 const flat = (text: string) => text.replace(/\s+/g, ' ');
 
-/** Text with every <LabCard>…</LabCard> block removed. */
+/** An opening JSX tag's attributes: quoted strings and {…} may contain `>`. */
+const ATTRIBUTES = String.raw`((?:[^>"'{]|"[^"]*"|'[^']*'|\{[^}]*\})*)`;
+const LAB_CARD = new RegExp(String.raw`<LabCard\b${ATTRIBUTES}>`, 'g');
+
+/**
+ * Text with each <LabCard>…</LabCard> replaced by an empty card, so its text
+ * is not read as prose but the card still counts as a gate after a prompt.
+ */
 function withoutLabCards(text: string) {
-  return text.replace(/<LabCard[\s\S]*?<\/LabCard>/g, '');
+  return text.replace(
+    new RegExp(
+      String.raw`<LabCard\b${ATTRIBUTES}(?:\/>|>[\s\S]*?<\/LabCard>)`,
+      'g',
+    ),
+    '\n\n<LabCard></LabCard>\n\n',
+  );
 }
 
 function attribute(tag: string, name: string): string {
   const match = tag.match(
     new RegExp(
-      `${name}=(?:"([^"]*)"|'([^']*)'|\\{\\s*['"]([^'"]*)['"]\\s*\\})`,
+      `(?:^|\\s)${name}=(?:"([^"]*)"|'([^']*)'|\\{\\s*['"]([^'"]*)['"]\\s*\\})`,
     ),
   );
   return match ? (match[1] ?? match[2] ?? match[3] ?? '') : '';
@@ -100,12 +113,14 @@ function outputLiteral(tag: string): string | null {
     /output=(?:\{\s*(['"`])([\s\S]*?)\1\s*\}|(['"])([\s\S]*?)\3)/,
   );
   if (!match) return null;
-  const text = match[2] ?? match[4] ?? '';
-  return text
-    .replace(/\\n/g, '\n')
-    .replace(/\\'/g, "'")
-    .replace(/\\"/g, '"')
-    .replace(/\\\\/g, '\\');
+  // A JSX attribute string ("…") keeps backslashes literally; a JS string
+  // literal resolves its escapes, in one pass so that \\n stays \ and n.
+  if (match[4] !== undefined) return match[4];
+  const escapes: Record<string, string> = { n: '\n', t: '\t', r: '\r' };
+  return (match[2] ?? '').replace(
+    /\\(.)/g,
+    (_, character: string) => escapes[character] ?? character,
+  );
 }
 
 export function inspectLessonSource(source: string): LessonSource {
@@ -143,7 +158,7 @@ export function inspectLessonSource(source: string): LessonSource {
       predictsWithoutGate++;
   });
 
-  const labCards = [...body.matchAll(/<LabCard\b([\s\S]*?)>/g)].map((m) => {
+  const labCards = [...body.matchAll(LAB_CARD)].map((m) => {
     const tag = m[1] ?? '';
     const title = attribute(tag, 'title');
     const number = title.match(/^(\d{2}) \//);
@@ -169,7 +184,9 @@ export function inspectLessonSource(source: string): LessonSource {
   const codeTags = [...body.matchAll(/<CodeExample\b([\s\S]*?)\/>/g)].map(
     (m) => m[1] ?? '',
   );
-  const verified = codeTags.filter((tag) => /\bverified\b/.test(tag));
+  const verified = codeTags.filter((tag) =>
+    /(?:^|\s)verified(?:=\{\s*true\s*\})?(?=\s|$)/.test(tag),
+  );
 
   return {
     minutes: Number(data.estimatedMinutes ?? 0),
@@ -416,6 +433,8 @@ export interface Chapter {
 
 export interface SubjectReport {
   subject: string;
+  /** `subject`, `chapter <section id>` or `lesson <id>`. */
+  scope: string;
   title: string;
   hasOverview: boolean;
   overviewChapters: number;
@@ -429,8 +448,11 @@ export interface SubjectReport {
 }
 
 export function buildReport(root: string, target: string): SubjectReport {
-  const [subject, only] = target.split('/');
+  const [subjectPart, chapterId] = target.split('#');
+  const [subject, only] = (subjectPart ?? '').split('/');
   if (!subject) throw new Error('Name a subject, such as dsa');
+  if (only !== undefined && chapterId !== undefined)
+    throw new Error('Name a lesson or a chapter, not both');
   const subjectFile = join(root, 'src/content/subjects', `${subject}.yaml`);
   if (!existsSync(subjectFile)) throw new Error(`Unknown subject ${subject}`);
   const subjectData = readYaml<{
@@ -439,7 +461,7 @@ export function buildReport(root: string, target: string): SubjectReport {
   }>(subjectFile);
 
   const chapters: Chapter[] = [];
-  const plannedPlaces = new Map<string, string[]>();
+  const plannedPlaces = new Map<string, { title: string; places: string[] }>();
   const pathDir = join(root, 'src/content/paths');
   for (const name of readdirSync(pathDir).filter((n) => n.endsWith('.yaml'))) {
     const pathId = name.replace(/\.yaml$/, '');
@@ -457,10 +479,9 @@ export function buildReport(root: string, target: string): SubjectReport {
       const sectionSubject = section.subject ?? data.subject;
       for (const title of section.planned ?? []) {
         const key = title.trim().toLowerCase();
-        plannedPlaces.set(key, [
-          ...(plannedPlaces.get(key) ?? []),
-          `${pathId}#${section.id ?? pathId} (${title})`,
-        ]);
+        const entry = plannedPlaces.get(key) ?? { title, places: [] };
+        entry.places.push(`${pathId}#${section.id ?? pathId} (${title})`);
+        plannedPlaces.set(key, entry);
       }
       if (sectionSubject !== subject) continue;
       chapters.push({
@@ -472,17 +493,26 @@ export function buildReport(root: string, target: string): SubjectReport {
       });
     }
   }
-  const duplicatePlanned = [...plannedPlaces.entries()]
-    .filter(([, places]) => places.length > 1)
-    .filter(([key]) =>
-      chapters.some((c) =>
-        c.planned.some((p) => p.trim().toLowerCase() === key),
+  if (
+    chapterId !== undefined &&
+    !chapters.some((chapter) => chapter.id === chapterId)
+  )
+    throw new Error(
+      `No chapter section ${chapterId} for ${subject}; sections: ${chapters.map((c) => c.id).join(', ') || 'none'}`,
+    );
+  const scopedChapters =
+    chapterId === undefined
+      ? chapters
+      : chapters.filter((chapter) => chapter.id === chapterId);
+  const duplicatePlanned = [...plannedPlaces.values()]
+    .filter(({ places }) => places.length > 1)
+    .filter(({ title }) =>
+      scopedChapters.some((c) =>
+        c.planned.some(
+          (p) => p.trim().toLowerCase() === title.trim().toLowerCase(),
+        ),
       ),
-    )
-    .map(([, places]) => ({
-      title: places[0]!.replace(/^.*\((.*)\)$/, '$1'),
-      places,
-    }));
+    );
 
   const lessonDir = join(root, 'src/content/lessons', subject);
   const lessonIds = walk(lessonDir)
@@ -512,82 +542,94 @@ export function buildReport(root: string, target: string): SubjectReport {
     .filter((f) => f.endsWith('.test.ts'))
     .map((f) => readFileSync(f, 'utf8'));
 
-  const lessons = lessonIds
-    .filter((id) => !only || id === `${subject}/${only}`)
-    .map((id) => {
-      const file = join(root, 'src/content/lessons', `${id}.mdx`);
-      const lesson = inspectLessonSource(readFileSync(file, 'utf8'));
-      const attempt = lesson.labCards
-        .map((c) => c.command.match(/^pnpm lab (\S+)$/)?.[1])
-        .find(Boolean);
-      const labId = attempt ?? id;
-      const labDirectory = `labs/${labId}`;
-      const lab = inspectLab(labDirectory, filesIn(join(root, labDirectory)));
-      const components: Record<string, boolean> = {};
-      for (const imported of lesson.componentImports) {
-        const base = resolve(dirname(file), imported);
-        const candidate = [base, `${base}.tsx`, `${base}.astro`].find(
-          (p) => existsSync(p) && statSync(p).isFile(),
-        );
-        const text = candidate ? readFileSync(candidate, 'utf8') : '';
-        components[relative(root, candidate ?? base)] =
-          /from ['"][^'"]*\/labs\//.test(text);
-      }
-      const unresolvedCommands = lesson.labCards
-        .map((c) => c.command)
-        .filter((command) => {
-          const labMatch = command.match(/^pnpm lab (\S+)$/);
-          if (labMatch)
-            return !existsSync(
-              join(root, 'labs', labMatch[1]!, 'exercises.attempt.test.ts'),
-            );
-          const vitest = command.match(/^pnpm exec vitest run (\S+)$/);
-          if (vitest) return !existsSync(join(root, vitest[1]!));
-          return false;
-        });
-      const outputsInTests = lesson.verifiedOutputs.map((output) =>
-        output
-          .split('\n')
-          .filter((line) => line.trim())
-          .every((line) => labTests.some((test) => test.includes(line))),
+  const inScope = (id: string) =>
+    only !== undefined
+      ? id === `${subject}/${only}`
+      : chapterId === undefined ||
+        scopedChapters.some((chapter) => chapter.lessons.includes(id));
+  if (only !== undefined && !lessonIds.includes(`${subject}/${only}`))
+    throw new Error(
+      `Unknown lesson ${subject}/${only}; no src/content/lessons/${subject}/${only}.mdx`,
+    );
+  const lessons = lessonIds.filter(inScope).map((id) => {
+    const file = join(root, 'src/content/lessons', `${id}.mdx`);
+    const lesson = inspectLessonSource(readFileSync(file, 'utf8'));
+    const attempt = lesson.labCards
+      .map((c) => c.command.match(/^pnpm lab (\S+)$/)?.[1])
+      .find(Boolean);
+    const labId = attempt ?? id;
+    const labDirectory = `labs/${labId}`;
+    const lab = inspectLab(labDirectory, filesIn(join(root, labDirectory)));
+    const components: Record<string, boolean> = {};
+    for (const imported of lesson.componentImports) {
+      const base = resolve(dirname(file), imported);
+      const candidate = [base, `${base}.tsx`, `${base}.astro`].find(
+        (p) => existsSync(p) && statSync(p).isFile(),
       );
-      const context: LessonContext = {
-        id,
-        lesson,
-        lab,
-        components,
-        outputsInTests,
-        unresolvedCommands,
-        problems: problems
-          .filter((p) => (p.lessons ?? []).includes(id))
-          .map((p) => ({ id: p.id, lists: p.lists ?? [] })),
-      };
-      return { ...context, flags: lessonFlags(context) };
-    });
+      const text = candidate ? readFileSync(candidate, 'utf8') : '';
+      components[relative(root, candidate ?? base)] =
+        /from ['"][^'"]*\/labs\//.test(text);
+    }
+    const unresolvedCommands = lesson.labCards
+      .map((c) => c.command)
+      .filter((command) => {
+        const labMatch = command.match(/^pnpm lab (\S+)$/);
+        if (labMatch)
+          return !existsSync(
+            join(root, 'labs', labMatch[1]!, 'exercises.attempt.test.ts'),
+          );
+        const vitest = command.match(/^pnpm exec vitest run (\S+)$/);
+        if (vitest) return !existsSync(join(root, vitest[1]!));
+        return false;
+      });
+    const outputsInTests = lesson.verifiedOutputs.map((output) =>
+      output
+        .split('\n')
+        .filter((line) => line.trim())
+        .every((line) => labTests.some((test) => test.includes(line))),
+    );
+    const context: LessonContext = {
+      id,
+      lesson,
+      lab,
+      components,
+      outputsInTests,
+      unresolvedCommands,
+      problems: problems
+        .filter((p) => (p.lessons ?? []).includes(id))
+        .map((p) => ({ id: p.id, lists: p.lists ?? [] })),
+    };
+    return { ...context, flags: lessonFlags(context) };
+  });
 
+  // Subject-wide flags belong to a subject report; a chapter report keeps
+  // only its own duplicate titles, and a lesson report has none.
   const flags: Flag[] = [];
+  const wholeSubject = only === undefined && chapterId === undefined;
   const unlisted = lessonIds.filter((id) => !listed.has(id));
-  for (const id of unlisted)
-    flags.push({
-      id: 'C3',
-      level: 'warn',
-      message: `${id} is in no path section`,
-    });
-  for (const duplicate of duplicatePlanned)
-    flags.push({
-      id: 'C5',
-      level: 'warn',
-      message: `planned title "${duplicate.title}" appears in ${duplicate.places.join(', ')}`,
-    });
+  if (wholeSubject)
+    for (const id of unlisted)
+      flags.push({
+        id: 'C3',
+        level: 'warn',
+        message: `${id} is in no path section`,
+      });
+  if (only === undefined)
+    for (const duplicate of duplicatePlanned)
+      flags.push({
+        id: 'C5',
+        level: 'warn',
+        message: `planned title "${duplicate.title}" appears in ${duplicate.places.join(', ')}`,
+      });
   const overviewChapters = subjectData.overview?.chapters?.length ?? 0;
-  if (overviewChapters > 0 && chapters.length > 1)
+  if (wholeSubject && overviewChapters > 0 && chapters.length > 1)
     flags.push({
       id: 'C8',
       level: 'warn',
       message:
         'overview.chapters remains while path sections divide the subject',
     });
-  if (chapters.length === 0)
+  if (wholeSubject && chapters.length === 0)
     flags.push({
       id: 'C3',
       level: 'warn',
@@ -596,10 +638,16 @@ export function buildReport(root: string, target: string): SubjectReport {
 
   return {
     subject,
+    scope:
+      only !== undefined
+        ? `lesson ${subject}/${only}`
+        : chapterId !== undefined
+          ? `chapter ${chapterId}`
+          : 'subject',
     title: subjectData.title,
     hasOverview: Boolean(subjectData.overview),
     overviewChapters,
-    chapters,
+    chapters: scopedChapters,
     lessons,
     unlisted,
     duplicatePlanned,
@@ -618,7 +666,10 @@ export function toMarkdown(report: SubjectReport): string {
     (n, c) => n + c.planned.length,
     0,
   );
-  out.push(`# Subject report: ${report.title} (\`${report.subject}\`)`, '');
+  out.push(
+    `# Subject report: ${report.title} (\`${report.subject}\`)${report.scope === 'subject' ? '' : `, ${report.scope}`}`,
+    '',
+  );
   out.push(
     `${report.chapters.length} chapter section(s), ${report.lessons.length} lesson(s) reported, ${plannedCount} planned topic(s). Overview: ${report.hasOverview ? 'yes' : 'no'}${report.overviewChapters ? ` (with ${report.overviewChapters} sketched chapters)` : ''}. Advisory; see docs/SUBJECT_STANDARD.md for each ID.`,
     '',
@@ -677,7 +728,9 @@ if (
   const args = process.argv.slice(2);
   const target = args.find((a) => !a.startsWith('--'));
   if (!target) {
-    console.error('Usage: pnpm subject:report <subject>[/<lesson>] [--json]');
+    console.error(
+      'Usage: pnpm subject:report <subject>[/<lesson> | #<chapter-section-id>] [--json]',
+    );
     process.exit(1);
   }
   const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');

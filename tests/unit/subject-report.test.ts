@@ -1,7 +1,7 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
-import { afterAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
   buildReport,
   inspectLab,
@@ -146,6 +146,43 @@ describe('inspectLessonSource', () => {
     expect(inspectLessonSource(frontmatter(25) + body).predictPrompts).toBe(0);
   });
 
+  it('counts a lab card as the gate after a prompt', () => {
+    const body = goodBody.replace(
+      '<details>\n<summary>Check after predicting</summary>\n\nIt is 4.\n\n</details>',
+      '<LabCard title="01 / Try" command="pnpm lab demo/thing">\n  Predict it.\n</LabCard>\n\nIt is 4.',
+    );
+    const lesson = inspectLessonSource(frontmatter(25) + body);
+    expect(lesson.predictPrompts).toBe(1);
+    expect(lesson.predictsWithoutGate).toBe(0);
+  });
+
+  it('reads attributes that contain > and ignores verified={false}', () => {
+    const body = goodBody
+      .replace(
+        '<LabCard title="01 / Attempt" command="pnpm lab demo/thing">',
+        '<LabCard command="pnpm lab demo/thing > log" title="01 / Attempt">',
+      )
+      .replace('code={model} verified', 'code={model} verified={false}');
+    const lesson = inspectLessonSource(frontmatter(25) + body);
+    expect(lesson.labCards[0]).toEqual({
+      title: '01 / Attempt',
+      command: 'pnpm lab demo/thing > log',
+      number: 1,
+    });
+    expect(lesson.verifiedOutputs).toEqual([]);
+    expect(lesson.verifiedWithoutOutput).toBe(0);
+  });
+
+  it('resolves escapes in one pass', () => {
+    const body = goodBody.replace(
+      "output={'a: 1\\nb: 2'}",
+      "output={'C:\\\\new\\npath'}",
+    );
+    expect(inspectLessonSource(frontmatter(25) + body).verifiedOutputs).toEqual(
+      ['C:\\new\npath'],
+    );
+  });
+
   it('rejects a file without frontmatter', () => {
     expect(() => inspectLessonSource('## No frontmatter')).toThrow(
       'no frontmatter',
@@ -228,41 +265,47 @@ describe('lessonFlags', () => {
 });
 
 describe('buildReport', () => {
-  const root = mkdtempSync(join(tmpdir(), 'anvaya-report-'));
+  let root = '';
   const write = (file: string, text: string) => {
     mkdirSync(dirname(join(root, file)), { recursive: true });
     writeFileSync(join(root, file), text);
   };
+  beforeAll(() => {
+    root = mkdtempSync(join(tmpdir(), 'anvaya-report-'));
+    writeFixture();
+  });
   afterAll(() => rmSync(root, { recursive: true, force: true }));
 
-  write('src/content/subjects/demo.yaml', 'title: Demo\n');
-  write('src/content/subjects/other.yaml', 'title: Other\n');
-  write(
-    'src/content/paths/main.yaml',
-    [
-      'title: Main',
-      'sections:',
-      '  - id: demo-one',
-      '    title: One',
-      '    subject: demo',
-      '    lessons: [demo/thing]',
-      '    planned: [Shared topic]',
-      '  - id: other',
-      '    title: Other',
-      '    subject: other',
-      '    planned: [shared topic]',
-      '',
-    ].join('\n'),
-  );
-  write('src/content/problems/p.yaml', 'lessons: [demo/thing]\nlists: [x]\n');
-  write('src/content/lessons/demo/thing.mdx', frontmatter(25) + goodBody);
-  write('src/content/lessons/demo/stray.mdx', frontmatter(20) + goodBody);
-  write(
-    'src/components/diagrams/Figure.astro',
-    "---\nimport { m } from '../../../labs/demo/thing/example';\n---\n",
-  );
-  write('labs/demo/thing/exercises.attempt.test.ts', '');
-  write('labs/demo/thing/example.test.ts', "expect(x).toBe('a: 1\\nb: 2');");
+  const writeFixture = () => {
+    write('src/content/subjects/demo.yaml', 'title: Demo\n');
+    write('src/content/subjects/other.yaml', 'title: Other\n');
+    write(
+      'src/content/paths/main.yaml',
+      [
+        'title: Main',
+        'sections:',
+        '  - id: demo-one',
+        '    title: One',
+        '    subject: demo',
+        '    lessons: [demo/thing]',
+        "    planned: ['Shared topic (part 1)']",
+        '  - id: other',
+        '    title: Other',
+        '    subject: other',
+        "    planned: ['shared topic (part 1)']",
+        '',
+      ].join('\n'),
+    );
+    write('src/content/problems/p.yaml', 'lessons: [demo/thing]\nlists: [x]\n');
+    write('src/content/lessons/demo/thing.mdx', frontmatter(25) + goodBody);
+    write('src/content/lessons/demo/stray.mdx', frontmatter(20) + goodBody);
+    write(
+      'src/components/diagrams/Figure.astro',
+      "---\nimport { m } from '../../../labs/demo/thing/example';\n---\n",
+    );
+    write('labs/demo/thing/exercises.attempt.test.ts', '');
+    write('labs/demo/thing/example.test.ts', "expect(x).toBe('a: 1\\nb: 2');");
+  };
 
   it('collects chapters, lessons, problems and subject-level flags', () => {
     const report = buildReport(root, 'demo');
@@ -280,11 +323,26 @@ describe('buildReport', () => {
     expect(thing.problems).toEqual([{ id: 'p', lists: ['x'] }]);
     expect(report.unlisted).toEqual(['demo/stray']);
     expect(report.flags.map((f) => f.id)).toEqual(['C3', 'C5']);
+    expect(report.duplicatePlanned[0]?.title).toBe('Shared topic (part 1)');
     expect(toMarkdown(report)).toContain('| thing | 25 |');
   });
 
-  it('reports one lesson and rejects unknown subjects', () => {
-    expect(buildReport(root, 'demo/thing').lessons).toHaveLength(1);
+  it('reports one lesson without subject-wide flags', () => {
+    const report = buildReport(root, 'demo/thing');
+    expect(report.lessons).toHaveLength(1);
+    expect(report.flags).toEqual([]);
+  });
+
+  it('reports one chapter with its own duplicate titles', () => {
+    const report = buildReport(root, 'demo#demo-one');
+    expect(report.scope).toBe('chapter demo-one');
+    expect(report.lessons.map((l) => l.id)).toEqual(['demo/thing']);
+    expect(report.flags.map((f) => f.id)).toEqual(['C5']);
+  });
+
+  it('rejects unknown subjects, lessons and chapters', () => {
     expect(() => buildReport(root, 'missing')).toThrow('Unknown subject');
+    expect(() => buildReport(root, 'demo/thnig')).toThrow('Unknown lesson');
+    expect(() => buildReport(root, 'demo#nope')).toThrow('No chapter section');
   });
 });

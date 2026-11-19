@@ -6,7 +6,7 @@
 // widget in the lesson at 1280 px and 390 px in light and dark themes, plus
 // the page at 390 px with JavaScript disabled. Writes PNGs and report.json
 // (page overflow, elements wider than the viewport, console errors) to
-// screenshots/<lesson>/, which Git ignores. Look at every image: the report
+// screenshots/<subject>--<lesson>/, which Git ignores. Look at every image: the report
 // catches overflow, not clipped labels or collisions.
 import { spawn } from 'node:child_process';
 import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
@@ -84,13 +84,52 @@ function overflow(page: Page) {
   });
 }
 
+async function portAnswers(url: string) {
+  try {
+    await fetch(url);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+if (await portAnswers(`${base}/`)) {
+  console.error(
+    `✖ Something already serves ${base}; stop it (astro preview stop) or pass --port.`,
+  );
+  process.exit(1);
+}
 rmSync(out, { recursive: true, force: true });
 mkdirSync(out, { recursive: true });
+// --ignore-lock keeps the preview in the foreground: without it Astro starts a
+// background server that outlives this script and blocks later runs on other
+// ports. playwright.config.ts starts its preview the same way.
 const server = spawn(
   'pnpm',
-  ['exec', 'astro', 'preview', '--host', '127.0.0.1', '--port', String(port)],
+  [
+    'exec',
+    'astro',
+    'preview',
+    '--host',
+    '127.0.0.1',
+    '--port',
+    String(port),
+    '--ignore-lock',
+  ],
   { stdio: 'ignore', detached: true },
 );
+const stopServer = () => {
+  try {
+    if (server.pid) process.kill(-server.pid);
+  } catch {
+    // The preview already exited.
+  }
+};
+for (const signal of ['SIGINT', 'SIGTERM'] as const)
+  process.once(signal, () => {
+    stopServer();
+    process.exit(130);
+  });
 const report: Record<string, unknown>[] = [];
 let failed = false;
 try {
@@ -148,11 +187,7 @@ try {
   await context.close();
   await browser.close();
 } finally {
-  try {
-    if (server.pid) process.kill(-server.pid);
-  } catch {
-    // The preview already exited.
-  }
+  stopServer();
 }
 writeFileSync(join(out, 'report.json'), JSON.stringify(report, null, 2) + '\n');
 for (const row of report)

@@ -11,6 +11,8 @@
 set -eu
 root=${1:-/tmp/anvaya-cc-arm64}
 mkdir -p "$root/debs" "$root/root"
+# Absolute, because the steps below run from "$root/debs".
+root=$(cd "$root" && pwd)
 cd "$root/debs"
 apt-get download gcc-15-aarch64-linux-gnu cpp-15-aarch64-linux-gnu \
   gcc-15-aarch64-linux-gnu-base libgcc-15-dev-arm64-cross libisl23 libmpc3 \

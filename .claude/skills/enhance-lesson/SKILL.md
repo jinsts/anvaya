@@ -27,8 +27,9 @@ one clarifying question before changing anything.
 ## 3. Decide where it belongs
 
 - If the material belongs in another lesson, enhance that one and link to it.
-- If it would push the lesson past about 30 minutes, or adds a second
-  mechanism, propose a split as a planning change instead.
+- If it adds a second mechanism, or would push the lesson past 45 minutes,
+  propose a split as a planning change instead (C4: 15–30 is the target, 31–45
+  is acceptable for one mechanism).
 - If it changes a claim, find the test or recording that will back it first.
 
 ## 4. Make the change

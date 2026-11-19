@@ -149,6 +149,6 @@ recap` is required.
 | `pnpm new:problem <slug> --title … --url … --difficulty … --lesson …` | Scaffold a problem reference                               |
 | `pnpm lab <subject>/<slug>`                                           | Run the learner's attempt for one lab (fails until solved) |
 | `pnpm lint`                                                           | ESLint, design-token and placeholder checks                |
-| `pnpm subject:report <subject>[/<slug>] [--json]`                     | Inventory against the standard's IDs (advisory)            |
+| `pnpm subject:report <subject>[/<slug> \| #<section>] [--json]`       | Inventory against the standard's IDs (advisory)            |
 | `pnpm shots <subject>/<slug> [--select css]`                          | Capture figures at 390/1280 px in both themes for review   |
 | `pnpm verify`                                                         | Every quality gate, including the build and browser tests  |

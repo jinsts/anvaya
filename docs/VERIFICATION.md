@@ -1347,3 +1347,46 @@ were not rewritten.
 
 Same command as the previous entry: zero type errors, warnings or hints;
 formatting and lint passed; 415 tests in 65 files; 39 pages; 104 browser tests.
+
+## Review fixes for the subject standard tooling — 2026-11-19
+
+Fixes from a code review of this branch:
+
+- **`pnpm shots`:** the preview now starts with `--ignore-lock`, like
+  `playwright.config.ts`. Before this fix, Astro 7 ran it as a background
+  server that outlived the script, and any later run on another port failed
+  with "Preview did not start". The script now also stops the preview on
+  Ctrl-C, and refuses to start when something already serves the port.
+- **`pnpm subject:report`:** an unknown lesson or chapter is now an error
+  instead of an empty report. A new chapter scope, `<subject>#<section-id>`,
+  serves audit-subject's chapter audits. Lesson and chapter reports no longer
+  carry subject-wide flags. Parsing fixes:
+  - A lab card after a prompt now counts as a gate.
+  - Output escapes are resolved in one pass.
+  - Attributes containing `>` are read correctly.
+  - `verified={false}` is not counted as verified.
+  - Duplicate planned titles keep their parentheses.
+- **Skills and standard:** audit-subject redirects JSON with `pnpm -s`.
+  enhance-lesson follows C4 (split above 45 minutes). L8 again requires
+  complexity and cost claims to name their assumptions, which was dropped with
+  `LEARNING_STANDARDS.md`. V7 is marked manual, since the report has no V7
+  check.
+- **Setup scripts:** all three resolve their folder to an absolute path, so a
+  relative argument works.
+- **Browser and unit tests:** the no-JavaScript browser check runs once per
+  lesson instead of in one loop. The unit test's temporary repository is
+  created in `beforeAll`.
+
+On the current content the subject report is unchanged: 53 flags for
+Computer Architecture & Execution. Five new unit tests cover the parsing
+fixes, the chapter scope and the unknown-target errors. With a dummy local
+package, both browser and ARM64 setup scripts now work with a relative folder,
+and all three setup scripts recreated the toolchain used below. `pnpm shots`
+on `cache-organization` ran twice, on ports 4361 and 4362, and once
+interrupted; no preview process was left afterwards.
+
+`PLAYWRIGHT_PORT=4371`, `LD_LIBRARY_PATH`, `ANVAYA_CC` and `ANVAYA_CC_ARM64`
+set, then `pnpm verify`: zero type errors, warnings or hints; formatting and
+lint passed; 420 tests in 65 files; 39 pages; 140 browser tests (38 are the
+per-lesson no-JavaScript checks that replace the two looping tests). The
+native drift check, run on its own, reported all 28 artifacts unchanged.
