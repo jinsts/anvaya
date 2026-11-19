@@ -139,6 +139,9 @@ created it returns, and what a variable holds after the allocation is freed.
 
 <CallStackStepper client:visible />
 
+<details>
+<summary>Check after stepping: the same trace without JavaScript</summary>
+
 <div className="table-scroll" tabIndex={0} role="region" aria-label="The call stack story, event by event">
 
 | Event                  | Stack, newest first         | Heap                  |
@@ -157,6 +160,8 @@ The temporary reference in the callee and the buffer it names have separate
 lifetimes. Returning or copying a reference does not copy the whole target.
 The API must say who may use the target, who releases it and when that release
 is allowed.
+
+</details>
 
 In C, returning a pointer to an automatic local object whose lifetime ends on
 return produces an invalid access if the caller later dereferences it. Returning
