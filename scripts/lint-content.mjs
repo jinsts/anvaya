@@ -3,11 +3,12 @@ import { readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
 
 const roots = [path.resolve('src/content'), path.resolve('labs')];
-// Starter files intentionally contain TODOs for the learner.
+// Every content and lab file, except the learner's starter.
 const checked = (file) =>
   /\.(mdx|md|ya?ml)$/.test(file) ||
   (file.includes(`${path.sep}labs${path.sep}`) &&
-    /(contracts|solution|examples?)\.ts$/.test(file));
+    /\.(ts|c|sh|mjs)$/.test(file) &&
+    path.basename(file) !== 'starter.ts');
 const markers =
   /\b(TODO|TBD|FIXME|XXX|lorem ipsum)\b|example\.(com|org)|replace-before/i;
 

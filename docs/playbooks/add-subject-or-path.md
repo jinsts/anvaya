@@ -122,17 +122,31 @@ that is really a subject, and do not repeat a skill's text in subjects.
 
 ## Start a subject's detailed curriculum
 
-1. Pick a topic from a section's `planned` list, or one the owner requests.
-2. Follow [add-lesson.md](add-lesson.md): scaffold with
-   `pnpm new:lesson <subject>/<slug> --path <path-id>`.
-3. Move the topic from the section's `planned` list to its `lessons` list.
-4. Add the lesson's `skills` and `prerequisites`, then run `pnpm verify`.
+Plan before drafting. The `create-subject` skill
+(`.claude/skills/create-subject/`) does this in order, and any agent can
+follow its files:
 
-One lesson per change. Overview text may need a small edit once a lesson
-teaches part of it; keep it accurate.
+1. Interview the owner about goals, level, target roles, depth, toolchains,
+   trusted sources, time and exclusions.
+2. Propose a full outline in `docs/proposals/<subject>.md`: chapters in
+   prerequisite order, one teaching unit per planned page, and for each page its
+   figures, lab and evidence, as required by the
+   [standard](../SUBJECT_STANDARD.md) (C1–C8).
+3. Wait for the owner's approval.
+4. Make one planning change: divide the subject into chapter sections with
+   planned pages, remove `overview.chapters`, update the overview and register
+   the sources the outline needs.
+5. Draft the planned pages one lesson per change with
+   [add-lesson.md](add-lesson.md), checking in with the owner between lessons.
+
+Overview text may need a small edit once a lesson teaches part of it; keep it
+accurate (C7).
 
 ## Verify
 
 Run `pnpm build`. The catalog validator rejects unknown references, category
-or prerequisite cycles, duplicate entries and empty sections. Then check the
-Explore, subject and path pages.
+or prerequisite cycles, duplicate entries and empty sections. It does not check
+that planned titles are unique across subjects; `pnpm subject:report <subject>`
+does. Then check the Explore, subject and path pages, and verify with
+[verify-change.md](verify-change.md). A new chapter also needs the chapter list
+in `tests/e2e/catalog.spec.ts` updated.

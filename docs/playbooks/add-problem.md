@@ -6,10 +6,15 @@ interviews. Problems never contain statements, editorials or solutions.
 
 ## Steps
 
-1. Choose problems that apply an idea the linked lesson teaches. Take them
-   from a registered problem bank (`kind: problem-bank`, LeetCode today), and
-   prefer problems on registered curated lists.
-2. Scaffold with the bank's own slug, title and difficulty:
+1. Link a problem only when it genuinely applies an idea the linked lesson
+   teaches ([standard](../SUBJECT_STANDARD.md) P7). A lesson with no fitting
+   problem links none; never pad. Take problems from a registered problem bank
+   (`kind: problem-bank`, LeetCode today), prefer ones on registered curated
+   lists, and do not link paid-only problems.
+2. Check the bank's own slug, title, difficulty and whether the problem is
+   paid-only. For LeetCode, its public GraphQL endpoint's `question(titleSlug:)`
+   query returns `title`, `difficulty` and `isPaidOnly`; record that you
+   checked. If you cannot reach it, say so and do not guess. Then scaffold:
 
    ```sh
    pnpm new:problem two-sum --title "Two Sum" --url https://leetcode.com/problems/two-sum/ --difficulty easy --lesson dsa/hash-maps
@@ -30,11 +35,14 @@ interviews. Problems never contain statements, editorials or solutions.
 
 5. Write 2–3 original hints that escalate from the key observation to the
    approach and its complexity. Do not include code.
-6. Run `pnpm lint && pnpm build`.
+6. Update the problem counts and the mock-interview list in
+   `tests/e2e/practice.spec.ts`, then verify with
+   [verify-change.md](verify-change.md).
 
 ## Done when
 
-- [ ] The URL starts with a registered prefix, and the title and difficulty
-      match the source.
+- [ ] The problem applies the lesson's idea, is not paid-only, and its URL
+      starts with a registered prefix; title and difficulty were checked
+      against the bank.
 - [ ] Every listed membership was checked against published list data.
 - [ ] Hints are original, contain no code, and agree with the linked lesson.

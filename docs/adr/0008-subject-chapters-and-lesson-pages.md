@@ -1,6 +1,6 @@
 # 0008 — Subject chapters and lesson pages
 
-Date: 2026-11-13. Status: proposed; implemented locally for owner review.
+Date: 2026-11-13. Status: accepted; approved by merging PR #9.
 
 ## Context
 

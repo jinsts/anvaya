@@ -2,16 +2,19 @@
 
 Connect concepts. Build understanding.
 
-A personal engineering learning platform: learn → visualize → experiment →
-practise → recall → revisit. The library has a substantial Arrays lesson and a
-smaller Hash Maps lesson, both drafts awaiting owner review, plus interview
-practice: problems from reputable lists, a question drill and timed mock
-interviews.
+A personal engineering learning platform. Each lesson moves from a concrete
+problem to a figure of the mechanism, a worked trace, an attempt lab with hidden
+contracts, a reasoning check and a recap. The Engineering Fundamentals path has
+a complete draft of Computer Architecture & Execution (19 lessons) and outlines
+for six more subjects; DSA has two early lessons. Interview practice adds
+problems from reputable lists, a question drill and timed mock interviews. All
+content is an agent draft until the owner reviews it.
 
 The approved architecture is in [ANVAYA_BOOTSTRAP.md](ANVAYA_BOOTSTRAP.md), with
 later decisions in [docs/adr/](docs/adr/). Progress and measured results are in
 [IMPLEMENTATION.md](IMPLEMENTATION.md) and [VERIFICATION.md](docs/VERIFICATION.md).
-Agents start at [AGENTS.md](AGENTS.md).
+Agents start at [AGENTS.md](AGENTS.md); the quality bar is
+[docs/SUBJECT_STANDARD.md](docs/SUBJECT_STANDARD.md).
 
 ## Run locally
 
@@ -59,7 +62,10 @@ pnpm verify
   themes.
 
 On a fresh Linux CI machine, use `pnpm exec playwright install --with-deps chromium`
-to install browser system libraries too. The E2E suite starts its own production
+to install browser system libraries too. Without root, extract them with
+`sh scripts/setup-browser-deps.sh /tmp/anvaya-browser-deps` and set
+`LD_LIBRARY_PATH`; native lab tests also need `ANVAYA_CC`
+([verify-change.md](docs/playbooks/verify-change.md)). The E2E suite starts its own production
 preview on `127.0.0.1:4321` (or reuses one already there). Build first.
 Screenshots and traces go to the ignored `test-results/` and
 `playwright-report/`. Real iOS/WebKit and manual screen-reader certification are
@@ -67,19 +73,22 @@ not implied.
 
 ## Practise
 
-- **Lessons:** read [the Arrays lab](labs/dsa/arrays/README.md), implement its
-  `starter.ts`, then run `pnpm lab dsa/arrays`. It fails until your
-  implementation passes; `pnpm test:labs` checks the reference solutions.
+- **Lessons:** each lesson's first practice card names its lab, for example
+  `pnpm lab computer-architecture-execution/cache-organization`. Read the lab's
+  README, implement `starter.ts`, and run the command; it fails until your
+  implementation meets the hidden contracts. `pnpm test:labs` checks the
+  reference models against the same contracts.
 - **Interview practice:** `/practice/` lists problems with filters, status and a
   timed mock interview. `/practice/questions/` drills each subject's interview
   questions, and each lesson ends with its own questions and problems.
 
 ## Add content
 
-Follow the playbooks in [docs/playbooks/](docs/playbooks/):
+Follow the playbooks in [docs/playbooks/](docs/playbooks/), or the agent
+skills in `.claude/skills/` listed in [AGENTS.md](AGENTS.md):
 
 ```sh
-pnpm new:lesson dsa/two-pointers --title "Two pointers: Walk from both ends" --path dsa-foundations --lab
+pnpm new:lesson dsa/two-pointers --title "Two pointers: Walk from both ends" --path dsa-foundations
 pnpm new:problem two-sum --title "Two Sum" --url https://leetcode.com/problems/two-sum/ --difficulty easy --lesson dsa/hash-maps
 ```
 
@@ -95,12 +104,16 @@ Scaffolds contain `TODO` markers that `pnpm lint` rejects until replaced.
 - `src/lib/`: schemas, catalog validation, array and practice logic.
 - `src/components/`: shell, catalog, learning and interactive components.
 - `src/scripts/`: progress, practice, drill, search and path-context enhancements.
-- `labs/`: exercises, contracts, solutions and worked examples.
-- `templates/`, `scripts/`: generators, linters and build validation.
+- `labs/`: attempt labs, hidden contracts, tested reference models, native
+  programs and recorded artifacts.
+- `templates/`, `scripts/`: generators, linters, build validation, the subject
+  report, screenshot capture and local toolchain setup.
+- `.claude/skills/`: agent skills for creating, drafting, enhancing and
+  auditing subjects.
 - `tests/`: unit, component and browser tests.
 - `docs/`: [authoring reference](docs/AUTHORING_GUIDE.md),
   [design system](docs/DESIGN_SYSTEM.md),
-  [learning standards](docs/LEARNING_STANDARDS.md), [playbooks](docs/playbooks/)
+  [subject standard](docs/SUBJECT_STANDARD.md), [playbooks](docs/playbooks/)
   and [ADRs](docs/adr/).
 
 ## Boundaries and troubleshooting
