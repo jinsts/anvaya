@@ -1408,3 +1408,12 @@ lab or test value changed; the material moved behind the attempt (standard L6).
 
 Same command as the previous entry: zero type errors, warnings or hints;
 formatting and lint passed; 415 tests in 65 files; 39 pages; 104 browser tests.
+
+## Text encodings and memory layout: answers after the attempt — 2026-11-17
+
+Fixes finding F1 of the 2026-11-17 architecture audit with the enhance-lesson
+skill. The struct-layout answer (24 bytes declared, 16 sorted) and the real ABI's output now follow the explorer in a "Check after predicting" disclosure; the reordering trade-offs stay visible. Beyond what this entry names, no explanation, figure,
+lab or test value changed; the material moved behind the attempt (standard L6).
+
+Same command as the previous entry: zero type errors, warnings or hints;
+formatting and lint passed; 415 tests in 65 files; 39 pages; 104 browser tests.
