@@ -217,6 +217,12 @@ line, each miss fills the line, and no prefetch or overlapping execution occurs.
 
 </details>
 
+The tests check this output exactly and the block, slot and result of every
+access in a trace that crosses a line boundary and conflicts in one slot. They
+also check cold and empty traces, the average at the all-hit and all-miss
+extremes, and that invalid geometry, addresses, times and miss rates are
+refused. A separate test checks the lines the traversal figure marks.
+
 <details>
 <summary>Model contract and simulator costs</summary>
 

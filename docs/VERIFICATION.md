@@ -1863,3 +1863,20 @@ Same command and environment as the first entry of 2026-11-25: zero type
 errors, warnings or hints; formatting and lint passed; 442 tests in 65 files,
 none skipped, including the native drift check; 39 pages; 142 browser tests.
 No figure changed, so no screenshots were taken.
+
+## Memory hierarchy: what the tests check — 2026-11-25
+
+Fixes finding F13 of the 2026-11-17 architecture audit for this lesson with the
+enhance-lesson skill (standard L9). After the cache model's disclosure, a
+paragraph now says what the lab's tests assert: the output exactly, the block,
+slot and result of every access in a trace that crosses a line boundary and
+conflicts in one slot, cold and empty traces, the average at the all-hit and
+all-miss extremes, the refusal of invalid geometry, addresses, times and miss
+rates, and, in `traversal.test.ts`, the lines the traversal figure marks.
+`pnpm subject:report` no longer raises L9 for the lesson; C4, L3 and L10 belong
+to F2, F9 and F8, and L6 is the audit's known false signal.
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 442 tests in 65 files,
+none skipped, including the native drift check; 39 pages; 142 browser tests.
+No figure changed, so no screenshots were taken.
