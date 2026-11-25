@@ -1391,6 +1391,87 @@ lint passed; 420 tests in 65 files; 39 pages; 140 browser tests (38 are the
 per-lesson no-JavaScript checks that replace the two looping tests). The
 native drift check, run on its own, reported all 28 artifacts unchanged.
 
+## Program execution: answers after the attempt — 2026-11-17
+
+Fixes finding F1 of the 2026-11-17 architecture audit with the enhance-lesson
+skill. The datapath stepper's no-JavaScript trace table and its explanation now sit in a "Check after stepping" disclosure, and the accumulator program's branch timeline and run explanation in a "Check after predicting" one; the static and dynamic instruction count definitions stay visible. Beyond what this entry names, no explanation, figure,
+lab or test value changed; the material moved behind the attempt (standard L6).
+
+Same command as the previous entry: zero type errors, warnings or hints;
+formatting and lint passed; 415 tests in 65 files; 39 pages; 104 browser tests.
+
+## CPU, registers and instructions: answers after the attempt — 2026-11-17
+
+Fixes finding F1 of the 2026-11-17 architecture audit with the enhance-lesson
+skill. The "Predict" about adding one to a register holding an address no longer answers itself; the answer moved into a "Check after predicting" disclosure. Beyond what this entry names, no explanation, figure,
+lab or test value changed; the material moved behind the attempt (standard L6).
+
+Same command as the previous entry: zero type errors, warnings or hints;
+formatting and lint passed; 415 tests in 65 files; 39 pages; 104 browser tests.
+
+## Text encodings and memory layout: answers after the attempt — 2026-11-17
+
+Fixes finding F1 of the 2026-11-17 architecture audit with the enhance-lesson
+skill. The struct-layout answer (24 bytes declared, 16 sorted) and the real ABI's output now follow the explorer in a "Check after predicting" disclosure; the reordering trade-offs stay visible. Beyond what this entry names, no explanation, figure,
+lab or test value changed; the material moved behind the attempt (standard L6).
+
+Same command as the previous entry: zero type errors, warnings or hints;
+formatting and lint passed; 415 tests in 65 files; 39 pages; 104 browser tests.
+
+## Reading assembly: answers after the attempt — 2026-11-17
+
+Fixes finding F1 of the 2026-11-17 architecture audit with the enhance-lesson
+skill. The -O2 loop's iteration table, which answered how often jne jumps back, is now the stepper's no-JavaScript equivalent inside a "Check after stepping" disclosure. Beyond what this entry names, no explanation, figure,
+lab or test value changed; the material moved behind the attempt (standard L6).
+
+Same command as the previous entry: zero type errors, warnings or hints;
+formatting and lint passed; 415 tests in 65 files; 39 pages; 104 browser tests.
+
+## Stack and heap: answers after the attempt — 2026-11-17
+
+Fixes finding F1 of the 2026-11-17 architecture audit with the enhance-lesson
+skill. The call-stack event table and the lifetime explanation after the stepper are now in a "Check after stepping" disclosure. Beyond what this entry names, no explanation, figure,
+lab or test value changed; the material moved behind the attempt (standard L6).
+
+Same command as the previous entry: zero type errors, warnings or hints;
+formatting and lint passed; 415 tests in 65 files; 39 pages; 104 browser tests.
+
+## Cache organization: answers after the attempt — 2026-11-17
+
+Fixes finding F1 of the 2026-11-17 architecture audit with the enhance-lesson
+skill. The 2-way hit/miss trace after the cache explorer is now in a "Check after stepping" disclosure. Beyond what this entry names, no explanation, figure,
+lab or test value changed; the material moved behind the attempt (standard L6).
+
+Same command as the previous entry: zero type errors, warnings or hints;
+formatting and lint passed; 415 tests in 65 files; 39 pages; 104 browser tests.
+
+## Pipelining and hazards: answers after the attempt — 2026-11-17
+
+Fixes finding F1 of the 2026-11-17 architecture audit with the enhance-lesson
+skill. The reordered program's cycle count after the stepper is in a "Check after stepping" disclosure, and the following sentence about compiler scheduling no longer depends on it. Beyond what this entry names, no explanation, figure,
+lab or test value changed; the material moved behind the attempt (standard L6).
+
+Same command as the previous entry: zero type errors, warnings or hints;
+formatting and lint passed; 415 tests in 65 files; 39 pages; 104 browser tests.
+
+## Multicore coherence and atomics: answers after the attempt — 2026-11-17
+
+Fixes finding F1 of the 2026-11-17 architecture audit with the enhance-lesson
+skill. The MESI transitions table and which accesses need ownership requests now sit in a "Check after stepping" disclosure after the stepper. The per-lesson browser check now requires the first visible figure, since this lesson's first figure moved into a disclosure. Beyond what this entry names, no explanation, figure,
+lab or test value changed; the material moved behind the attempt (standard L6).
+
+Same command as the previous entry: zero type errors, warnings or hints;
+formatting and lint passed; 415 tests in 65 files; 39 pages; 104 browser tests.
+
+## I/O mechanisms: answers after the attempt — 2026-11-17
+
+Fixes finding F1 of the 2026-11-17 architecture audit with the enhance-lesson
+skill. The four-step DMA ownership sequence after the stepper is now in a "Check after stepping" disclosure; the visibility and coherence caveats stay visible. Beyond what this entry names, no explanation, figure,
+lab or test value changed; the material moved behind the attempt (standard L6).
+
+Same command as the previous entry: zero type errors, warnings or hints;
+formatting and lint passed; 415 tests in 65 files; 39 pages; 104 browser tests.
+
 ## Optional LabCard command — 2026-11-25
 
 Audit finding F4 and owner decision S2: `LabCard`'s `command` is optional, and
