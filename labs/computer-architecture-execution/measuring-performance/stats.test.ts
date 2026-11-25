@@ -50,6 +50,11 @@ describe('timing summaries', () => {
     expect(Math.min(...cold)).toBeLessThan(Math.max(...warm));
     for (const runs of [warm, cold])
       expect(Math.max(...runs) / Math.min(...runs)).toBeGreaterThan(1.5);
+    // The prediction's answer: the cold penalty (the gap between medians) is
+    // smaller than the run-to-run spread within either series.
+    const penalty = summarize(cold).median - summarize(warm).median;
+    for (const runs of [warm, cold])
+      expect(penalty).toBeLessThan(Math.max(...runs) - Math.min(...runs));
     const share = shareFaster(warm, cold);
     expect(share).toBeGreaterThan(0.5);
     expect(share).toBeLessThan(1);
