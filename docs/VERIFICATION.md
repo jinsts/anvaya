@@ -1552,3 +1552,55 @@ together: zero type errors, warnings or hints; formatting and lint passed; 421
 tests passed and 1 skipped in 65 files (the native drift check, which needs
 `ANVAYA_CC`); 39 pages; 142 browser tests. No figure changed, so no
 screenshots were taken.
+
+## Memory hierarchy: a hidden cache contract — 2026-11-25
+
+Fixes finding F5 of the 2026-11-17 architecture audit for this lesson with the
+enhance-lesson skill (standard P2, P5). The attempt lab's contract grows from
+two cases to seven: the two existing streams, a line boundary (addresses 15 and
+16, 31 and 32), an empty stream, a conflict in slot 0 while slot 1 keeps its
+line, and two refusals that expect a `RangeError` (a negative address after a
+valid one; a fractional address and 2⁵³). The practice card now states the
+contract, including the refusal, and names the kinds of hidden case without
+their inputs; the learner traces a new stream, 32, 36, 0, 48, 32, by hand. Its
+reveal is now a "Check after attempting" disclosure (the summary read "Check
+the reasoning after attempting", which the subject report did not count) and
+explains that trace and the 4×4 matrix addresses it already gave. Two new model
+tests assert the trace's blocks, slots and results, and the matrix addresses
+and line counts.
+
+Cross-check: a separate Python implementation of a cold two-slot, 16-byte
+direct-mapped cache, written from the definition, gives every contract value and
+the practice trace, refuses the three invalid addresses, and reproduces the
+lesson's displayed trace (miss hit hit hit miss miss); each value was also
+traced by hand. `pnpm vitest run
+labs/computer-architecture-execution/memory-hierarchy-and-caches/` passes 15
+tests in 3 files, and `pnpm lab
+computer-architecture-execution/memory-hierarchy-and-caches` fails all 7 cases
+against the starter (the refusal cases because the starter's `Error` is not a
+`RangeError`). `pnpm subject:report` now counts 7 cases and one check-after
+reveal and no longer raises P2 for the lesson. Its other flags belong to later
+findings (C4, L3, L9, L10), and its L6 flag is the audit's known false signal
+at "…to predict whole-program time".
+
+The gate's toolchain was rebuilt in this container, which runs Ubuntu 24.04,
+with the scripts from verify-change.md, unmodified. `APT_CONFIG` pointed
+`apt-get download` at private package lists: noble for
+`scripts/setup-browser-deps.sh`, and Ubuntu 26.04 (`resolute`), which has
+`gcc-15 15.2.0-16ubuntu1`, for both GCC setup scripts. Both compilers report
+`(Ubuntu 15.2.0-16ubuntu1) 15.2.0`. `toolchain.json` also records binutils 2.46,
+the system binutils where the artifacts were recorded, while this container's
+is 2.42, so the runner would have reported every x86-64 comparison as
+skipped. Binutils 2.46 from the same archive was therefore extracted into
+`/tmp/anvaya-binutils` and put first on `PATH`: GCC then assembles and links
+with it (`-print-prog-name`, `-Wl,-v`), and the runner's `objdump` and `nm`
+report 2.46. The native runner on its own found all 28 artifacts the same,
+checked 8 programs and validated 5 measurements, and the unchanged branch
+passed the full gate (422 tests in 65 files, none skipped; 39 pages; 142
+browser tests).
+
+`PLAYWRIGHT_PORT=4371`, `LD_LIBRARY_PATH`, `ANVAYA_CC`, `ANVAYA_CC_ARM64` and
+binutils 2.46 on `PATH`, then `pnpm verify`: zero type errors, warnings or
+hints; formatting and lint passed; 429 tests in 65 files, none skipped,
+including the native drift check; 39 pages; 142 browser tests. No figure
+changed, so no screenshots were taken.

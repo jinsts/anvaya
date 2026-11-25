@@ -43,6 +43,22 @@ describe('a cold direct-mapped cache', () => {
     expect(() => averageAccessTime(1, 0.1, Infinity)).toThrow(RangeError);
   });
 
+  it('gives the practice answer: three cold misses and one conflict miss', () => {
+    expect(
+      traceCache([32, 36, 0, 48, 32], 16, 2).map(({ block, slot, result }) => [
+        block,
+        slot,
+        result,
+      ]),
+    ).toEqual([
+      [2, 0, 'miss'],
+      [2, 0, 'hit'],
+      [0, 0, 'miss'],
+      [3, 1, 'miss'],
+      [2, 0, 'miss'],
+    ]);
+  });
+
   it('checks the exact output displayed by the lesson', () => {
     expect(cacheExample()).toBe(
       'miss hit hit hit miss miss\naverage model time: 6 ns',

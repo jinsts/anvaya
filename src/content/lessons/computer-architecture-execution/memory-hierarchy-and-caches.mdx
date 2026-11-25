@@ -231,20 +231,29 @@ row-major matrix occupies.
 
 ## Predict unfamiliar accesses
 
-<LabCard title="Independent cache attempt" command="pnpm lab computer-architecture-execution/memory-hierarchy-and-caches">
-Implement `solve` in `starter.ts`: return hit/miss decisions for a cold two-slot,
-16-byte-line direct-mapped cache. Explain why 16,20,48,16 differs from 0,16,0,16.
-For a row-major 4×4 matrix of four-byte elements at base zero, write the addresses
-of its first row and first column before predicting line reuse.
+<LabCard
+  title="Independent cache attempt"
+  command="pnpm lab computer-architecture-execution/memory-hierarchy-and-caches"
+>
+  Implement `solve(addresses)` in `starter.ts`: for a cold, direct-mapped cache
+  with two 16-byte lines, return `'hit'` or `'miss'` for each byte address in
+  order, and throw a `RangeError` for an address that is not a nonnegative safe
+  integer. The hidden cases cover line boundaries, an empty stream, conflicting
+  blocks and refused addresses. Before running them, trace 32, 36, 0, 48, 32 by
+  hand and say which misses are cold and which is a conflict. For a row-major
+  4×4 matrix of four-byte elements at base zero, write the addresses of its
+  first row and first column before predicting line reuse.
 </LabCard>
-<details>
-<summary>Check the reasoning after attempting</summary>
 
-The first stream gives miss, hit, miss, miss: addresses 16 and 48 are blocks 1
-and 3, which both map to slot 1, so 48 evicts the line that 16 needs. The second
-gives miss, miss, hit, hit because blocks 0 and 1 use different slots. The first
-row uses addresses 0,4,8,12; the first column uses 0,16,32,48. The row uses one
-line, while the column touches four.
+<details>
+<summary>Check after attempting</summary>
+
+32 and 36 are both in block 2, which maps to slot 0: a cold miss, then a hit. 0
+is block 0, also slot 0, so it misses cold and evicts block 2. 48 is block 3 in
+slot 1, another cold miss. The final 32 is a conflict miss: block 0 displaced
+block 2 from its only permitted slot, while slot 1 held block 3. The first row
+uses addresses 0, 4, 8, 12; the first column uses 0, 16, 32, 48. The row uses
+one line, while the column touches four.
 
 </details>
 
