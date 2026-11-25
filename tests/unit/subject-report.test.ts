@@ -239,6 +239,32 @@ describe('lessonFlags', () => {
     expect(lessonFlags(context(25))).toEqual([]);
   });
 
+  it('reads a paper task card without a command', () => {
+    const body = goodBody.replace(
+      '<LabCard title="02 / Extend" command="pnpm exec vitest run labs/demo/thing/">',
+      '<LabCard title="02 / Extend">',
+    );
+    expect(inspectLessonSource(frontmatter(25) + body).labCards[1]).toEqual({
+      title: '02 / Extend',
+      command: '',
+      number: 2,
+    });
+    expect(lessonFlags(context(25, body))).toEqual([]);
+  });
+
+  it('flags a first card without a command', () => {
+    const body = goodBody.replace(
+      '<LabCard title="01 / Attempt" command="pnpm lab demo/thing">',
+      '<LabCard title="01 / Attempt">',
+    );
+    expect(lessonFlags(context(25, body))).toContainEqual({
+      id: 'L10',
+      level: 'warn',
+      message:
+        'first LabCard has no command; it should run "pnpm lab demo/thing"',
+    });
+  });
+
   it('flags long pages, with a split above 45 minutes', () => {
     expect(lessonFlags(context(35))).toEqual([
       {

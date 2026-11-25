@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 const subject = 'computer-architecture-execution';
 // Per-lesson checks for every lesson are in lessons.spec.ts; these are the
-// keyboard tests for this subject's widgets.
+// keyboard tests for this subject's widgets and its paper-task cards.
 test.use({ reducedMotion: 'reduce' });
 
 test('the cache explorer takes a prediction and changes organization by keyboard', async ({
@@ -295,4 +295,16 @@ test('the DMA stepper refuses an early reclaim by keyboard', async ({
   await page.keyboard.press('Enter');
   await expect(status).toContainText('Refused: the request is still in flight');
   await expect(status).toContainText('predictions 2 of 2');
+});
+
+test('a paper task card shows no test command', async ({ page }) => {
+  await page.goto(`/learn/${subject}/hardware-software-interaction/`);
+  const cards = page.locator('article.prose .lab-card');
+  const attempt = cards.filter({ hasText: '01 /' });
+  const paper = cards.filter({ hasText: '02 / Audit a device handoff' });
+  await expect(attempt.locator('.lab-run code')).toHaveText(
+    `pnpm lab ${subject}/hardware-software-interaction`,
+  );
+  await expect(paper).toBeVisible();
+  await expect(paper.locator('.lab-run')).toHaveCount(0);
 });
