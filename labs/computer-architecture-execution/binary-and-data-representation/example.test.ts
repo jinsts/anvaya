@@ -36,6 +36,11 @@ describe('an explicit fixed-width integer model', () => {
       }
   });
 
+  it('gives the practice answers for 156 and 100', () => {
+    expect(signedByte(0b10011100)).toBe(-100);
+    expect(signedByte(0b01100100)).toBe(100);
+  });
+
   it('shows all four carry/overflow combinations', () => {
     expect(addBytes(1, 2)).toMatchObject({
       carry: false,

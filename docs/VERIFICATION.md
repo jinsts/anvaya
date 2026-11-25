@@ -1633,3 +1633,31 @@ Same command and environment as the previous entry: zero type errors, warnings
 or hints; formatting and lint passed; 434 tests in 65 files, none skipped,
 including the native drift check; 39 pages; 142 browser tests. No figure
 changed, so no screenshots were taken.
+
+## Binary representation: a hidden two's complement contract — 2026-11-25
+
+Fixes finding F5 of the 2026-11-17 architecture audit for this lesson with the
+enhance-lesson skill (standard P2, P5). The attempt lab's contract grows from
+four cases to seven: the existing 0, 128, 173 and 250, the top of the signed
+range (127), and refusals that expect a `RangeError` for 256, −1 and 1.5. The
+first practice card asked the learner to predict 173 and 250, two hidden cases,
+and its reveal named the other two. It now states the contract, including the
+refusal, names the kinds of hidden case, and asks for 156 and 100, which no
+hidden case uses; the reveal explains those two and why values outside 0–255
+are refused rather than wrapped. A new model test asserts both practice
+answers, and the existing test still checks every byte against the
+weighted-bit definition.
+
+Cross-check: Python's `struct` module, packing each value as an unsigned byte
+and unpacking it as a signed one, gives every contract value and both practice
+answers and refuses 256, −1 and 1.5; each was also computed by hand as raw −
+256 for patterns with the top bit set. `pnpm vitest run
+labs/computer-architecture-execution/binary-and-data-representation/` passes
+15 tests, and `pnpm lab computer-architecture-execution/binary-and-data-representation`
+fails all 7 cases against the starter. `pnpm subject:report` raises no flag for
+the lesson.
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 438 tests in 65 files,
+none skipped, including the native drift check; 39 pages; 142 browser tests.
+No figure changed, so no screenshots were taken.
