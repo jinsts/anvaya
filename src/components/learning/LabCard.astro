@@ -2,7 +2,8 @@
 import Icon from '../ui/Icon.astro';
 interface Props {
   title: string;
-  command: string;
+  /** Omit for a paper task: no test checks it, so no command is shown. */
+  command?: string;
 }
 const { title, command } = Astro.props;
 ---
@@ -20,10 +21,12 @@ const { title, command } = Astro.props;
   <div class="lab-body">
     <slot />
   </div>
-  <p class="lab-run">
-    <span>Run locally from the repository root</span>
-    <code>{command}</code>
-  </p>
+  {command && (
+    <p class="lab-run">
+      <span>Run locally from the repository root</span>
+      <code>{command}</code>
+    </p>
+  )}
 </section>
 <style>
   .lab-card {

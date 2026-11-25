@@ -19,6 +19,7 @@ export interface Flag {
 
 export interface LabCardInfo {
   title: string;
+  /** Empty for a paper task, which carries no command. */
   command: string;
   number: number | null;
 }
@@ -325,7 +326,12 @@ export function lessonFlags(context: LessonContext): Flag[] {
   });
   const first = l.labCards[0];
   if (first && !first.command.startsWith('pnpm lab '))
-    warn('L10', `first LabCard runs "${first.command}", not "pnpm lab ${id}"`);
+    warn(
+      'L10',
+      first.command
+        ? `first LabCard runs "${first.command}", not "pnpm lab ${id}"`
+        : `first LabCard has no command; it should run "pnpm lab ${id}"`,
+    );
   for (const command of context.unresolvedCommands)
     warn('L10', `LabCard command points at nothing: ${command}`);
   if (l.conceptChecks.length !== 1)

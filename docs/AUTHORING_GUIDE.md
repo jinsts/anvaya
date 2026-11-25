@@ -88,14 +88,14 @@ with one of them; defaults to `url`) and `description`. See
 
 These are available in every lesson without an import:
 
-| Component         | Contract                                                                                                    |
-| ----------------- | ----------------------------------------------------------------------------------------------------------- |
-| `Callout`         | `title`, optional `variant` `info` / `warning` / `success`; prose children                                  |
-| `CodeExample`     | `title`, `code` (import with `?raw`), optional `language` `ts`/`js`/`bash`/`c`/`text`, `output`, `verified` |
-| `ComplexityTable` | `caption`, `rows: { operation, time, notes }[]`, optional `label`; children become a footnote               |
-| `ConceptCheck`    | unique `id`, `question`, `options: { label, explanation, correct? }[]` with exactly one correct             |
-| `DiagramFrame`    | `caption`; wraps an SVG or HTML figure                                                                      |
-| `LabCard`         | `title` numbered `01 / …`, `command` (card 01: `pnpm lab <subject>/<slug>`); task as children               |
+| Component         | Contract                                                                                                             |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `Callout`         | `title`, optional `variant` `info` / `warning` / `success`; prose children                                           |
+| `CodeExample`     | `title`, `code` (import with `?raw`), optional `language` `ts`/`js`/`bash`/`c`/`text`, `output`, `verified`          |
+| `ComplexityTable` | `caption`, `rows: { operation, time, notes }[]`, optional `label`; children become a footnote                        |
+| `ConceptCheck`    | unique `id`, `question`, `options: { label, explanation, correct? }[]` with exactly one correct                      |
+| `DiagramFrame`    | `caption`; wraps an SVG or HTML figure                                                                               |
+| `LabCard`         | `title` numbered `01 / …`, `command` (card 01: `pnpm lab <subject>/<slug>`; omit for a paper task); task as children |
 
 Import lesson-specific components explicitly, such as `CachePlacement` and the
 `CacheExplorer` island (`client:visible`). Import code and recorded artifacts

@@ -1390,3 +1390,19 @@ set, then `pnpm verify`: zero type errors, warnings or hints; formatting and
 lint passed; 420 tests in 65 files; 39 pages; 140 browser tests (38 are the
 per-lesson no-JavaScript checks that replace the two looping tests). The
 native drift check, run on its own, reported all 28 artifacts unchanged.
+
+## Optional LabCard command — 2026-11-25
+
+Audit finding F4 and owner decision S2: `LabCard`'s `command` is optional, and
+a card without one renders no "Run locally" footer. The four paper tasks the
+audit named (hardware-software interaction 02, I/O mechanisms 02, DRAM 02,
+architecture and performance 03) no longer show a reference-test command.
+Architecture and performance 02 keeps its command: it is a calculation against
+the tested model, which the audit did not flag. The subject report reads a
+missing command as empty and words the card-01 warning for that case.
+
+`pnpm verify` without the toolchain variables: zero type errors, warnings or
+hints; formatting and lint passed; 421 tests passed and 1 skipped in 65 files
+(the native drift check, which needs `ANVAYA_CC`); 39 pages; 142 browser tests,
+including the new paper-task card check on desktop and mobile. Two new unit
+tests cover a command-less card and a command-less first card.
