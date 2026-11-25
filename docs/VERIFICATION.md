@@ -1513,3 +1513,16 @@ together: zero type errors, warnings or hints; formatting and lint passed; 421
 tests passed and 1 skipped in 65 files (the native drift check, which needs
 `ANVAYA_CC`); 39 pages; 142 browser tests. No figure changed, so no
 screenshots were taken.
+
+## Hardware-software interaction: predict before practice — 2026-11-25
+
+Fixes finding F3 of the 2026-11-17 architecture audit with the enhance-lesson
+skill (standard L5). The resume indices for a syscall, a restartable fault and an interrupt at index 12 were stated before the model; the learner now predicts them, and the existing sentences moved into a "Check after predicting" disclosure. The model's verified output prints the same three. Beyond what this entry names, no explanation, figure,
+lab or test value changed. `pnpm subject:report` no longer raises L5 for the
+lesson and raises no new flag.
+
+`pnpm verify` without the toolchain variables, run once on all five F3 lessons
+together: zero type errors, warnings or hints; formatting and lint passed; 421
+tests passed and 1 skipped in 65 files (the native drift check, which needs
+`ANVAYA_CC`); 39 pages; 142 browser tests. No figure changed, so no
+screenshots were taken.
