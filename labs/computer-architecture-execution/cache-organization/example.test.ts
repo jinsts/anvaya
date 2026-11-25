@@ -31,6 +31,23 @@ describe('address fields', () => {
     expect(splitAddress(8192 + 64, l1d).set).toBe(1);
   });
 
+  it('splits address 64 as the placement figure draws it', () => {
+    // The same four 16-byte lines: direct-mapped, 2-way, fully associative.
+    const direct = { lineBytes: 16, sets: 4, ways: 1 };
+    const twoWay = { lineBytes: 16, sets: 2, ways: 2 };
+    const full = { lineBytes: 16, sets: 1, ways: 4 };
+    expect([direct, twoWay, full].map(fieldBits)).toEqual([
+      { offset: 4, set: 2 },
+      { offset: 4, set: 1 },
+      { offset: 4, set: 0 },
+    ]);
+    expect([direct, twoWay, full].map((g) => splitAddress(64, g))).toEqual([
+      { block: 4, offset: 0, set: 0, tag: 1 },
+      { block: 4, offset: 0, set: 0, tag: 2 },
+      { block: 4, offset: 0, set: 0, tag: 4 },
+    ]);
+  });
+
   it('gives a fully associative cache no set bits', () => {
     const full = { lineBytes: 16, sets: 1, ways: 4 };
     expect(fieldBits(full)).toEqual({ offset: 4, set: 0 });

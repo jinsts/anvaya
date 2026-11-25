@@ -1725,3 +1725,37 @@ Visual review: `pnpm shots` with a selector for the figure, at 1280 and 390 px
 in light and dark themes, plus the page without JavaScript; report.json shows
 no overflow or console errors. The figure matches the previous layout,
 including the 1 : 1 : 2 field columns and the wrapped field labels at 390 px.
+
+## Cache organization: placement figure from the cache model — 2026-11-25
+
+Fixes finding F6 of the 2026-11-17 architecture audit for this lesson with the
+enhance-lesson skill (standard V2). `CachePlacement` recomputed the block, tag,
+set and offset of address 64 inline. It now checks each of its three
+geometries with the cache lab's `checkGeometry`, takes the field widths from
+`fieldBits` and the tag, set, offset and block from `splitAddress`, and its
+caption and list label compute the address, its block and the address width
+instead of typing them. The learner sees the same figure. A new test asserts
+the widths and splits the figure draws for address 64 in the direct-mapped,
+2-way and fully associative arrangements of four 16-byte lines (tags 1, 2 and
+4; set 0; offset 0; block 4).
+
+Cross-check: by hand, 64 = 0100 0000, so with four offset bits the block is 4;
+4 mod 4, 4 mod 2 and 4 mod 1 put it in set 0 each time, and the remaining tag
+bits read 1, 2 and 4. `pnpm vitest run labs/computer-architecture-execution/cache-organization/`
+passes 21 tests, and `pnpm lab computer-architecture-execution/cache-organization`
+still fails all 5 cases. `pnpm subject:report` no longer raises V2 for the
+lesson; its other flags are C4 (40 minutes, one mechanism) and L10, which F8
+addresses.
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 441 tests in 65 files,
+none skipped, including the native drift check; 39 pages; 142 browser tests.
+
+Visual review: `pnpm shots` with a selector for the figure, at 1280 and 390 px
+in light and dark themes, plus the page without JavaScript; report.json shows
+no overflow or console errors, and the figure matches its previous rendering.
+
+For owner review: while reading this lesson, the audit's follow-up noticed that
+the first practice card asks for two streams that are hidden contract cases (3
+and 4), and that the replacement section works the first of them in the body.
+That is outside F6 and is recorded for the final audit of this branch.

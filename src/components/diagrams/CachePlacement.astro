@@ -1,43 +1,65 @@
 ---
 import DiagramFrame from '../learning/DiagramFrame.astro';
+import {
+  checkGeometry,
+  fieldBits,
+  splitAddress,
+} from '../../../labs/computer-architecture-execution/cache-organization/example';
 // One 8-bit address, 64, in three organizations of the same four 16-byte
-// lines. Fields and candidate lines are computed, not typed by hand.
+// lines. The tag, set and offset come from the tested cache model.
 const address = 64;
+const addressBits = 8;
 const lineBytes = 16;
-const block = address / lineBytes;
 const panels = [
   { name: 'Direct-mapped', sets: 4, ways: 1 },
   { name: '2-way set-associative', sets: 2, ways: 2 },
   { name: 'Fully associative', sets: 1, ways: 4 },
 ].map(({ name, sets, ways }) => {
-  const offsetBits = Math.log2(lineBytes);
-  const setBits = Math.log2(sets);
-  const tagBits = 8 - offsetBits - setBits;
-  const bits = address.toString(2).padStart(8, '0');
-  const set = block % sets;
+  const geometry = { lineBytes, sets, ways };
+  checkGeometry(geometry);
+  const widths = fieldBits(geometry);
+  const split = splitAddress(address, geometry);
+  const tagBits = addressBits - widths.set - widths.offset;
+  const bits = address.toString(2).padStart(addressBits, '0');
   const fields = [
-    { label: 'tag', bits: bits.slice(0, tagBits), value: block >> setBits },
-    ...(setBits
+    { label: 'tag', bits: bits.slice(0, tagBits), value: split.tag },
+    ...(widths.set
       ? [
           {
             label: 'set',
-            bits: bits.slice(tagBits, 8 - offsetBits),
-            value: set,
+            bits: bits.slice(tagBits, tagBits + widths.set),
+            value: split.set,
           },
         ]
       : []),
-    { label: 'offset', bits: bits.slice(8 - offsetBits), value: address % 16 },
+    {
+      label: 'offset',
+      bits: bits.slice(tagBits + widths.set),
+      value: split.offset,
+    },
   ];
   const candidates = ways;
   const shape = `${sets} ${sets === 1 ? 'set' : 'sets'} × ${ways} ${ways === 1 ? 'way' : 'ways'}`;
   // Name a line by whatever varies: the set, the way, or both.
   const lineName = (s: number, w: number) =>
     sets === 1 ? `way ${w}` : ways === 1 ? `set ${s}` : `set ${s} · way ${w}`;
-  return { name, sets, ways, set, fields, candidates, shape, lineName };
+  return {
+    name,
+    sets,
+    ways,
+    set: split.set,
+    block: split.block,
+    fields,
+    candidates,
+    shape,
+    lineName,
+  };
 });
 ---
 
-<DiagramFrame caption="The same four 16-byte lines arranged three ways. Address 64 is in block 4; only the lines marked “candidate” can store it.">
+<DiagramFrame
+  caption={`The same four ${lineBytes}-byte lines arranged three ways. Address ${address} is in block ${panels[0]!.block}; only the lines marked “candidate” can store it.`}
+>
   <div class="placement">
     {panels.map((panel) => (
       <div
@@ -49,7 +71,10 @@ const panels = [
           <strong>{panel.name}</strong>
           <span>{panel.shape}</span>
         </p>
-        <ol class="fields" aria-label="Address 64 as 8 bits">
+        <ol
+          class="fields"
+          aria-label={`Address ${address} as ${addressBits} bits`}
+        >
           {panel.fields.map((field) => (
             <li style={`flex-grow: ${field.bits.length}`}>
               <code>{field.bits}</code>
