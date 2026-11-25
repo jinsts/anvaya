@@ -215,6 +215,20 @@ and column order, alternates which comes first, and checks identical checksums
 outside the timed region. Allocation and initialization are outside timing.
 Six observations per order are recorded, with no speed threshold in the tests.
 
+Predict before looking at the runs: both orders add the same four million
+values. Which order will be faster, and will the two orders' times overlap
+across runs?
+
+<details>
+<summary>Check after predicting</summary>
+
+Row order is faster. Consecutive row-order loads share each 64-byte cache line,
+while each column-order load lands on a new one. In this recording the ranges
+do not overlap: every column-order run was slower than every row-order run. The
+figure and the notes below show the runs and what they do and do not establish.
+
+</details>
+
 <LocalityStrip />
 
 Every column-order run was slower than every row-order run. The matrix is 16 MiB,
