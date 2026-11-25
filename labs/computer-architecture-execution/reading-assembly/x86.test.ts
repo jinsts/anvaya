@@ -11,6 +11,7 @@ import {
   parseOperand,
   run,
   toSigned,
+  x86Example,
 } from './x86';
 
 const lab = 'labs/computer-architecture-execution';
@@ -117,6 +118,24 @@ it('counts executed instructions: -O2 runs fewer for the same input', () => {
     true,
     false,
   ]);
+});
+
+it('checks the exact output displayed by the lesson', () => {
+  const text = (file: string) =>
+    readFileSync(`${lab}/reading-assembly/${file}`, 'utf8');
+  expect(
+    x86Example({
+      sumO0: text('sum-O0.txt'),
+      sumO2: text('sum-O2.txt'),
+      scaleO0: text('scale-O0.txt'),
+      scaleO2: text('scale-O2.txt'),
+    }),
+  ).toBe(
+    'sum_to({3, 5, 7, 9}, 4) at -O0: 58 instructions, returns 24\n' +
+      'sum_to({3, 5, 7, 9}, 4) at -O2: 23 instructions, returns 24\n' +
+      'sum_to({3, 5, 7, 9}, 0): returns 0 at -O0 and 0 at -O2\n' +
+      'scale_sum({3, 5, 7, 9}, 4, 2): returns 48 at -O0 and 48 at -O2',
+  );
 });
 
 it('backs the lesson’s loop trace table', () => {

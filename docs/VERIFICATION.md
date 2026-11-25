@@ -1759,3 +1759,36 @@ For owner review: while reading this lesson, the audit's follow-up noticed that
 the first practice card asks for two streams that are hidden contract cases (3
 and 4), and that the replacement section works the first of them in the body.
 That is outside F6 and is recorded for the final audit of this branch.
+
+## Reading assembly: a verified interpreter output — 2026-11-25
+
+Fixes finding F7 of the 2026-11-17 architecture audit with the enhance-lesson
+skill (standard L9, E2). The x86-64 interpreter was the only tested model shown
+without an output. A new `x86Example()` takes the four committed listings as
+text, so the model still reads no files, runs them on {3, 5, 7, 9} and prints
+what the tests already asserted: `sum_to` with four values executes 58
+instructions at -O0 and 23 at -O2 and returns 24; with no values it returns 0
+at both levels; `scale_sum` with factor 2 returns 48 at both. A new test reads
+the listings and compares the output exactly. The lesson's model disclosure is
+now titled "Inspect the tested model and expected output" and shows the
+interpreter with that verified output; the -O0 listings and `main.c` moved to
+their own disclosure, "Inspect the -O0 listings and the native program's
+checks". The paragraph after them now begins "The tests check the output
+above exactly", so the lesson also meets F13. The example leaves out the
+`jne` count the stepper asks the learner to predict and practice 02's
+`scale_sum` result for factor 3.
+
+Cross-check: every printed value was already asserted by existing tests (58
+and 23 instructions, 24, 0, 48), and a separate script ran the same listings
+through the interpreter to confirm them before the test was written.
+`pnpm vitest run labs/computer-architecture-execution/reading-assembly/`
+passes 21 tests, and `pnpm lab computer-architecture-execution/reading-assembly`
+still fails all 9 cases. `pnpm subject:report` now counts one verified output
+asserted by a test and raises only C4 (35 minutes, one mechanism).
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 442 tests in 65 files,
+none skipped, including the native drift check, which also confirmed the four
+listings unchanged; 39 pages; 142 browser tests, including the per-lesson check
+that opens the model disclosure by keyboard. No figure changed, so no
+screenshots were taken.

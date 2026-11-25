@@ -494,6 +494,38 @@ export function run(
   };
 }
 
+/** The runs the tests check, as the lesson displays them: GCC's four
+ * committed listings executed on the array {3, 5, 7, 9}. It takes the listing
+ * texts as arguments so the model itself reads no files. */
+export function x86Example(listings: {
+  sumO0: string;
+  sumO2: string;
+  scaleO0: string;
+  scaleO2: string;
+}): string {
+  const sumO0 = parseListing(listings.sumO0);
+  const sumO2 = parseListing(listings.sumO2);
+  const scaleO0 = parseListing(listings.scaleO0);
+  const scaleO2 = parseListing(listings.scaleO2);
+  const array = 0x5000n;
+  const memory = [{ address: array, bytes: int32Bytes([3, 5, 7, 9]) }];
+  const eax = (value: bigint) => value & 0xffffffffn;
+  const sum = (listing: Listing, count: bigint) =>
+    run([listing], 'sum_to', { args: [array, count], memory });
+  const scale = (caller: Listing, callee: Listing) =>
+    eax(
+      run([caller, callee], 'scale_sum', { args: [array, 4n, 2n], memory })
+        .result,
+    );
+  const [o0, o2] = [sum(sumO0, 4n), sum(sumO2, 4n)];
+  return [
+    `sum_to({3, 5, 7, 9}, 4) at -O0: ${o0.steps.length} instructions, returns ${eax(o0.result)}`,
+    `sum_to({3, 5, 7, 9}, 4) at -O2: ${o2.steps.length} instructions, returns ${eax(o2.result)}`,
+    `sum_to({3, 5, 7, 9}, 0): returns ${eax(sum(sumO0, 0n).result)} at -O0 and ${eax(sum(sumO2, 0n).result)} at -O2`,
+    `scale_sum({3, 5, 7, 9}, 4, 2): returns ${scale(scaleO0, sumO0)} at -O0 and ${scale(scaleO2, sumO2)} at -O2`,
+  ].join('\n');
+}
+
 /** Little-endian bytes of 32-bit integers, for loading an int array. */
 export function int32Bytes(values: readonly number[]): number[] {
   return values.flatMap((v) =>
