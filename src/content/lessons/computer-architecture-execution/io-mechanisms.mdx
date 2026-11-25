@@ -119,6 +119,9 @@ afterwards, or whether the protocol refuses the event.
 
 <DmaStepper client:visible />
 
+<details>
+<summary>Check after stepping: the same trace without JavaScript</summary>
+
 The normal sequence has four steps:
 
 1. **Submit.** The driver publishes a descriptor with a device-usable address
@@ -131,6 +134,8 @@ The normal sequence has four steps:
 
 Trying to reclaim an in-flight request is refused: that is what a timeout
 followed by reuse would do.
+
+</details>
 
 The [hardware boundary](/learn/computer-architecture-execution/hardware-software-interaction/)
 established that application pointers and device addresses can belong to

@@ -164,6 +164,9 @@ Before you use the explorer, predict the size of the declared order: where does
 
 <StructLayoutExplorer client:visible />
 
+<details>
+<summary>Check after predicting: the layout, and the real ABI's output</summary>
+
 The declared order wastes 10 of 24 bytes: seven before `ratio`, which must start
 at 8, and three before `count`, which must start at a multiple of 4. Sorting by
 alignment, largest first, packs the same fields into 16 bytes with 2 bytes of
@@ -177,6 +180,9 @@ orders with the real ABI:
 />
 
 The tests check that the layout model reproduces these offsets and sizes.
+
+</details>
+
 Reordering is not always free. A struct that other code or files already depend
 on has a fixed binary layout, and grouping fields by alignment can separate
 fields that are used together. Packing attributes remove padding entirely, at

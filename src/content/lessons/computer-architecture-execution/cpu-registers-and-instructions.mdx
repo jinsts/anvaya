@@ -106,9 +106,16 @@ instructions to read memory operands directly. Neither label alone establishes
 performance.
 
 **Predict:** if a register contains address 1000, does adding one to the register
-necessarily change the value stored at address 1000? No. It changes the register's
+necessarily change the value stored at address 1000?
+
+<details>
+<summary>Check after predicting</summary>
+
+No. It changes the register's
 bit pattern. A separate operation that writes through the address would change
 memory. Confusing these two jobs is a common source of pointer mistakes.
+
+</details>
 
 ## Decode a small format completely
 
