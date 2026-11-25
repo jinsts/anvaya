@@ -184,7 +184,10 @@ predict how many times `jne` jumps back for four values.
 
 <AssemblyStepper client:visible listings={{ sumO0, sumO2, scaleO2 }} />
 
-The same -O2 loop without JavaScript, for `values = {3, 5, 7, 9}` at 0x5000:
+<details>
+<summary>Check after stepping: the same trace without JavaScript</summary>
+
+The same -O2 loop, for `values = {3, 5, 7, 9}` at 0x5000:
 
 <div className="table-scroll" tabIndex={0} role="region" aria-label="The -O2 loop, iteration by iteration">
 
@@ -196,6 +199,8 @@ The same -O2 loop without JavaScript, for `values = {3, 5, 7, 9}` at 0x5000:
 | 4         | eax = 24            | 0x5010              | equal, ZF = 1     | falls through |
 
 </div>
+
+</details>
 
 For this input -O2 executes 23 instructions and -O0 executes 58: -O0 loads `i`
 and `total` from the stack and stores them back on every iteration. That is a

@@ -107,6 +107,9 @@ lesson. Before each step, predict which state changes besides the PC.
   <DatapathStepper client:visible />
 </DiagramFrame>
 
+<details>
+<summary>Check after stepping: the same trace without JavaScript</summary>
+
 | Step | Instruction        | Path through the datapath                                | State after              |
 | ---- | ------------------ | -------------------------------------------------------- | ------------------------ |
 | 1    | `load R0, [1000]`  | ALU passes the address; data memory returns 7 to R0      | PC 1, R0 7, [1000] 7     |
@@ -116,6 +119,8 @@ lesson. Before each step, predict which state changes besides the PC.
 Only the store changes memory. Between the load and the store the new value
 exists only in R0, which is why a crash or another thread reading memory in
 between would still see 7.
+
+</details>
 
 <details>
 <summary>Inspect the tested datapath model and expected output</summary>
@@ -150,12 +155,19 @@ where the PC will point afterward.
 | 2                    | Branch to 1 if accumulator is nonzero | Otherwise continue at 3    |
 | 3                    | Halt                                  | Stop with PC retained at 3 |
 
+<details>
+<summary>Check after predicting: the executed trace</summary>
+
 <BranchTimeline />
 
 After the first addition the accumulator is 1, so the branch returns to
 instruction position 1. After the second it is 0, so execution continues to
 position 3. The branch executes twice, even though it appears once in the
-program. **Static instruction count** counts instructions in the program;
+program.
+
+</details>
+
+**Static instruction count** counts instructions in the program;
 **dynamic instruction count** counts the instructions actually executed.
 
 <details>
