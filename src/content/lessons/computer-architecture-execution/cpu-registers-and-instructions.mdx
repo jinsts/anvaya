@@ -147,10 +147,12 @@ encoding matters: register index 16 would require a fifth bit and could overlap
 the opcode field. Silently masking it down to zero would change the requested
 operation instead of reporting the invalid input.
 
-The tests round-trip all 8192 valid instructions: two opcodes, 16 registers, and
-256 immediates. They also check invalid field ranges and reserved opcodes.
-Round-tripping protects the invariant that decoding an encoded valid operation
-recovers exactly its three fields.
+The tests check the output above exactly and round-trip all 8,192 valid
+instructions: two opcodes, 16 registers and 256 immediates. They also check
+that the figure's field layout recovers exactly what `decode` returns, and that
+out-of-range fields and reserved opcodes are refused. Round-tripping protects
+the invariant that decoding an encoded valid operation recovers exactly its
+three fields.
 
 ## Registers are scarce names for active values
 

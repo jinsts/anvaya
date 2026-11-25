@@ -1813,3 +1813,19 @@ Same command and environment as the first entry of 2026-11-25: zero type
 errors, warnings or hints; formatting and lint passed; 442 tests in 65 files,
 none skipped, including the native drift check; 39 pages; 142 browser tests.
 No figure changed, so no screenshots were taken.
+
+## CPU, registers and instructions: what the tests check — 2026-11-25
+
+Fixes finding F13 of the 2026-11-17 architecture audit for this lesson with the
+enhance-lesson skill (standard L9). The paragraph after the decoder model began
+"The tests round-trip"; it now begins "The tests check the output above
+exactly", keeps the round trip of all 8,192 valid instructions, and adds the
+layout test from the F6 change (the figure's fields recover exactly what
+`decode` returns) beside the refusals of out-of-range fields and reserved
+opcodes. `pnpm subject:report` no longer raises L9 for the lesson; C4 remains
+(35 minutes, one mechanism).
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 442 tests in 65 files,
+none skipped, including the native drift check; 39 pages; 142 browser tests.
+No figure changed, so no screenshots were taken.
