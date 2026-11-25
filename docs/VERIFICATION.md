@@ -1845,3 +1845,21 @@ Same command and environment as the first entry of 2026-11-25: zero type
 errors, warnings or hints; formatting and lint passed; 442 tests in 65 files,
 none skipped, including the native drift check; 39 pages; 142 browser tests.
 No figure changed, so no screenshots were taken.
+
+## Stack and heap: what the tests check — 2026-11-25
+
+Fixes finding F13 of the 2026-11-17 architecture audit for this lesson with the
+enhance-lesson skill (standard L9). After the lifetime model's disclosure, a
+paragraph now says what `example.test.ts` asserts (the output exactly, reverse
+call order without releasing what a call allocated, the exact stack limit and
+an overflowing call that changes nothing, release in any order but not twice,
+and the refusal of invalid sizes and of totals beyond the safe integer range)
+and that `trace.test.ts` and `frames.test.ts` check the stepper's story and the
+figure's real -O0 frames. It names no number that practice 02 asks the learner
+to predict. `pnpm subject:report` no longer raises L9 for the lesson; C4, L3
+and L10 belong to F2, F9 and F8.
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 442 tests in 65 files,
+none skipped, including the native drift check; 39 pages; 142 browser tests.
+No figure changed, so no screenshots were taken.

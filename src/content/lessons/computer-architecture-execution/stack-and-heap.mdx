@@ -252,6 +252,13 @@ unknown allocations.
 
 </details>
 
+The tests check this output exactly, that frames return in reverse call order
+without releasing what the call allocated, that a frame exactly at the stack
+limit fits while an overflowing call changes nothing, that allocations can be
+freed in any order but not twice, and that invalid sizes and totals beyond the
+safe integer range are refused. Further tests check the story the stepper
+replays and the frames the figure reads from GCC's -O0 listings.
+
 <details>
 <summary>Model contract and implementation costs</summary>
 
