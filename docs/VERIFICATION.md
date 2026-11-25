@@ -1500,3 +1500,16 @@ together: zero type errors, warnings or hints; formatting and lint passed; 421
 tests passed and 1 skipped in 65 files (the native drift check, which needs
 `ANVAYA_CC`); 39 pages; 142 browser tests. No figure changed, so no
 screenshots were taken.
+
+## DRAM, SSDs and disks: predict before practice — 2026-11-25
+
+Fixes finding F3 of the 2026-11-17 architecture audit with the enhance-lesson
+skill (standard L5). Before the working-set sweep, the learner now predicts where the time per load steps up, from the recorded 48 KiB L1d, 3 MiB L2 and 24 MiB L3 (`sweep.json`) over the sweep's 4 KiB–256 MiB range. The disclosure gives the capacities and the early last step the figure notes already explain. Beyond what this entry names, no explanation, figure,
+lab or test value changed. `pnpm subject:report` no longer raises L5 for the
+lesson and raises no new flag.
+
+`pnpm verify` without the toolchain variables, run once on all five F3 lessons
+together: zero type errors, warnings or hints; formatting and lint passed; 421
+tests passed and 1 skipped in 65 files (the native drift check, which needs
+`ANVAYA_CC`); 39 pages; 142 browser tests. No figure changed, so no
+screenshots were taken.
