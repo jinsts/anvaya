@@ -166,6 +166,11 @@ inputs. It parses no real object format; the figures above read real ones.
 
 </details>
 
+The tests check this output exactly, a backward reference, an empty image and a
+symbol at address 0, and that undefined and duplicate symbols, invalid offsets,
+words and load bases, and overlapping patches are refused without changing the
+inputs.
+
 ## Loading is more than copying a file
 
 An executable file is not a running process. On a conventional operating system,

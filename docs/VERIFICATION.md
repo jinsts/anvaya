@@ -1829,3 +1829,19 @@ Same command and environment as the first entry of 2026-11-25: zero type
 errors, warnings or hints; formatting and lint passed; 442 tests in 65 files,
 none skipped, including the native drift check; 39 pages; 142 browser tests.
 No figure changed, so no screenshots were taken.
+
+## Compilation and execution: what the tests check — 2026-11-25
+
+Fixes finding F13 of the 2026-11-17 architecture audit for this lesson with the
+enhance-lesson skill (standard L9). After the teaching linker's disclosure, a
+paragraph now says what `example.test.ts` asserts: the output exactly, a
+backward reference, an empty image and a symbol at address 0, and the refusal
+of undefined and duplicate symbols, invalid offsets, words and load bases, and
+overlapping patches without changing the inputs. The relocation test of the
+real call was already described in the body. `pnpm subject:report` no longer
+raises L9 for the lesson; C4 remains (40 minutes, one mechanism).
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 442 tests in 65 files,
+none skipped, including the native drift check; 39 pages; 142 browser tests.
+No figure changed, so no screenshots were taken.
