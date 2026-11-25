@@ -223,18 +223,26 @@ the process and runtime explain which memory and services that flow can use.
 
 ## Attempt the control-flow contract
 
-<LabCard title="Independent execution attempt" command="pnpm lab computer-architecture-execution/how-computers-execute-programs">
-Implement `solve(initial)` in `starter.ts`: count executed instructions for the
-set/add-255/conditional-branch/halt program. Count the untaken branch and halt.
-Try 7 and 19, then explain the special case where the initial byte is zero.
+<LabCard
+  title="Independent execution attempt"
+  command="pnpm lab computer-architecture-execution/how-computers-execute-programs"
+>
+  Implement `solve(initial)` in `starter.ts`: count executed instructions for
+  the set/add-255/conditional-branch/halt program, counting the untaken branch
+  and the halt, and throw a `RangeError` when `initial` is not an unsigned byte.
+  The hidden cases include both ends of the byte range and refused values.
+  Before running them, count by hand for an initial value of 5, then explain the
+  special case where the initial byte is zero.
 </LabCard>
+
 <details>
 <summary>Check after deriving the count</summary>
 
-For a positive byte n, there are n additions, n branches, one set and one halt:
-2n + 2 instructions. Zero first wraps to 255, so the loop runs 256 times and the
-count is 514. The reference uses a sufficient step budget and the same contracts
-as the learner's attempt.
+From 5 there are one set, five additions, five branches (four taken, the last
+untaken) and one halt: 12 instructions. For a positive byte n the count is
+2n + 2. Zero first wraps to 255, so the loop body runs 256 times before the
+accumulator returns to zero. The reference uses a sufficient step budget and
+the same contracts as the learner's attempt.
 
 </details>
 

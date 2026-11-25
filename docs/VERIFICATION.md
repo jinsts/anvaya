@@ -1604,3 +1604,32 @@ binutils 2.46 on `PATH`, then `pnpm verify`: zero type errors, warnings or
 hints; formatting and lint passed; 429 tests in 65 files, none skipped,
 including the native drift check; 39 pages; 142 browser tests. No figure
 changed, so no screenshots were taken.
+
+## Program execution: a hidden instruction-count contract — 2026-11-25
+
+Fixes finding F5 of the 2026-11-17 architecture audit for this lesson with the
+enhance-lesson skill (standard P2, P5). The attempt lab's contract grows from
+four cases to eight: the existing 3, 7, 19 and 0, both ends of the byte range
+(1, where the branch is never taken, and 255), and refusals that expect a
+`RangeError` for 256, −1 and 2.5. The practice card no longer names hidden
+inputs ("Try 7 and 19"): it states the contract, including the refusal, and
+asks for a hand count from 5. The reveal now explains that count (12
+instructions, four taken branches and one untaken), keeps the 2n + 2 rule and
+the wrap of zero to 255, and no longer prints a hidden case's expected count.
+A new model test asserts the count from 5 and the order of taken and untaken
+branches.
+
+Cross-check: a separate Python simulation of the four-instruction machine gives
+every contract value (8, 16, 40, 514, 4, 512), the practice count of 12 and the
+lesson's 6 instructions from 2, and refuses the three invalid values; the
+counts were also derived by hand from 2n + 2. `pnpm vitest run
+labs/computer-architecture-execution/how-computers-execute-programs/` passes 18
+tests, and `pnpm lab computer-architecture-execution/how-computers-execute-programs`
+fails all 8 cases against the starter. `pnpm subject:report` counts 8 cases and
+no longer raises P2 for the lesson; its remaining flags belong to later findings
+(L9, L10) or the audit's C4 and L6 judgments.
+
+Same command and environment as the previous entry: zero type errors, warnings
+or hints; formatting and lint passed; 434 tests in 65 files, none skipped,
+including the native drift check; 39 pages; 142 browser tests. No figure
+changed, so no screenshots were taken.
