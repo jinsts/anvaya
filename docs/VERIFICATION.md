@@ -970,3 +970,423 @@ an attempt (it failed seven), and the reference passes them.
 
 Same command as the previous entry: zero type errors, warnings or hints;
 formatting and lint passed; 405 tests in 64 files; 39 pages; 102 browser tests.
+
+## Local toolchain setup scripts — 2026-11-17
+
+The compiler and browser libraries used for the architecture work were no
+longer under `/tmp`. GCC 15.2 was rebuilt with the existing
+`native/setup-gcc-ubuntu.sh /tmp/anvaya-cc`. Two setups that had only been
+described in this record are now scripts that extract Ubuntu 26.04 packages
+without root: `scripts/setup-browser-deps.sh` (libnspr4, libnss3, ALSA for
+Playwright's Chromium) and `native/setup-gcc-arm64-ubuntu.sh` (the aarch64
+cross-compiler for `-S` listings). Both compilers report
+`(Ubuntu 15.2.0-16ubuntu1) 15.2.0`, matching `toolchain.json`, and `ldd` finds
+every Chromium library with the extracted folder on `LD_LIBRARY_PATH`.
+
+```sh
+PLAYWRIGHT_PORT=4371 \
+  LD_LIBRARY_PATH=/tmp/anvaya-browser-deps/usr/lib/x86_64-linux-gnu \
+  ANVAYA_CC=/tmp/anvaya-cc/compiler ANVAYA_CC_ARM64=/tmp/anvaya-cc-arm64/compiler \
+  pnpm verify
+```
+
+Baseline on unchanged content: zero type errors, warnings or hints; formatting
+and lint passed; 405 tests in 64 files; 39 pages; 102 browser tests. The native
+drift check, run on its own, reported all 28 artifacts unchanged (ARM64
+included), 8 checked programs passing and 5 measurements validated.
+
+## Subject standard and ADR 0009 — 2026-11-17
+
+`docs/SUBJECT_STANDARD.md` writes down the bar set by Computer Architecture &
+Execution as 56 numbered properties in six groups (curriculum, lesson anatomy,
+visuals, evidence, practice, process), each naming what checks it. The
+properties were taken from the subject's lessons and labs, the 2026-11-13 audit
+and its correction, this record's architecture entries and the fix commits of
+PR #9 (for example: reveal answers only after the attempt, keep answers out of
+figures, number labs consecutively, and require a specific error in refusal
+contracts). The promotion checklist moved from `LEARNING_STANDARDS.md` into
+the standard, and that file was removed; the README, the review playbook and
+`AGENTS.md` now link the standard, and the dated audit's link points to the
+file at the audited commit. ADR 0009 records the decision. Nothing in this
+change is enforced yet; the report and browser checks it names arrive in
+later changes.
+
+Same command as the previous entry: zero type errors, warnings or hints;
+formatting and lint passed; 405 tests in 64 files; 39 pages; 102 browser tests.
+
+## Subject report — 2026-11-17
+
+`pnpm subject:report <subject>[/<lesson>] [--json]` (`scripts/subject-report.ts`,
+run by Node's built-in type stripping) inventories a subject against the
+standard's IDs: chapters and planned topics, duplicate planned titles across
+paths, lessons missing from any path, and for each lesson its minutes,
+objectives, interview questions, sources, predict prompts and whether the next
+block gates the answer, check-after disclosures, the tested model disclosure,
+LabCard numbering and commands, ConceptChecks, recap bullets, imported figures
+and whether they read from `labs/`, whether each verified output's lines appear
+in a lab test, lab files, hidden contract cases and bare `toThrow()` calls, and
+linked problems. It is advisory and never fails the gate. `yaml` 2.9.1, already
+used by Astro, became a direct development dependency.
+
+Ten unit tests cover a lesson that meets the standard (no flags), an answer
+given in prose after a prompt, "predictor" not counting as a prompt, missing
+frontmatter, contract counting, the minute thresholds, numbering, missing labs
+and unasserted outputs, and a temporary repository with an unlisted lesson and
+a planned title duplicated across subjects.
+
+On the current content it agrees with the hand survey made while planning:
+13 of 19 architecture lessons are above 30 minutes and three above 45; the
+three lab folders that differ from their slugs; `measuring-performance` has no
+lab README; `AmdahlBars`, `InstructionFields` and `CachePlacement` import no
+lab model; `memory-hierarchy-and-caches` has two contract cases. On the outline
+subjects it reports "Replication and partitioning" planned under both databases
+and distributed systems. Its signals are prompts for an audit, not findings:
+for example `MeasureWorkflow` and `SpectreSteps` are concept figures with no
+values to compute.
+
+Same command as the previous entry: zero type errors, warnings or hints;
+formatting and lint passed; 415 tests in 65 files; 39 pages; 102 browser tests.
+
+## Per-lesson browser checks for every lesson — 2026-11-17
+
+The per-lesson checks that `tests/e2e/architecture.spec.ts` ran over a
+hard-coded list of 19 slugs now live in `tests/e2e/lessons.spec.ts`, which
+finds every `.mdx` file under `src/content/lessons`. For each lesson, in both
+projects, it checks a visible `.diagram-frame`, no horizontal overflow and an
+axe scan (WCAG 2.2 AA tags) in light and dark themes, that the "Inspect the
+tested model" disclosure opens by keyboard and shows code, and that there is
+exactly one concept check (new) whose correct answer is accepted by keyboard.
+With JavaScript disabled, it checks every lesson's figure, recap, overflow and
+disclosure. `dsa/arrays` and `dsa/hash-maps` are excluded as known exceptions
+to the standard. The subject spec keeps its twelve widget keyboard tests; its
+unasserted `cpu-registers-and-instructions` screenshot was dropped in favour
+of `pnpm shots`. A new subject's lessons are now covered without editing a
+test list.
+
+Same command as the previous entry, with this change and the screenshot script
+of the next entry in the tree: zero type errors, warnings or hints; formatting
+and lint passed; 415 tests in 65 files; 39 pages; 104 browser tests (the two
+new ones confirm the spec found its lessons).
+
+## Screenshot review script — 2026-11-17
+
+`pnpm shots <subject>/<lesson> [--select css] [--port n]` replaces the
+uncommitted scratchpad script used during the architecture work. Against the
+built site served by `astro preview`, it captures each `.diagram-frame` and
+each hydrated widget at 1280 px and 390 px in light and dark themes (theme set
+through `anvaya:theme:v1`, reduced motion, fonts loaded, the sticky header made
+static), plus the whole page at 390 px without JavaScript, and writes
+`report.json` with page overflow, up to five elements wider than the viewport
+outside scroll regions, and console errors. Output goes to the ignored
+`screenshots/` folder, and the command exits non-zero when the report finds a
+problem.
+
+Run on `computer-architecture-execution/cache-organization`: two captures per
+width and theme (the placement figure and the cache explorer), zero overflow,
+no errors; the 1280 px light placement figure and the 390 px dark explorer were
+opened and read correctly. The first run failed because `astro-island` uses
+`display: contents` and has no box; the script now captures the island's first
+child. Gate results are in the previous entry, which ran with this script in
+the tree.
+
+## Lab and lesson templates in the attempt pattern — 2026-11-17
+
+`templates/lab/` now produces the architecture lab pattern instead of a
+`solution.ts` lab with visible cases: a README titled "Independent practice",
+`contracts(solve)` with five hidden "unseen case N" contracts including a
+refusal that expects `RangeError`, a starter that throws
+`Implement your attempt`, `exercises.attempt.test.ts`, a `practice.test.ts`
+that runs the contracts against the reference, and `example.ts` with an
+`*Example()` output asserted by `example.test.ts`. `templates/lesson.mdx`
+follows the standard's anatomy (hook with the analogy's limit, figure,
+predict and check-after disclosure, worked example, tested model disclosure,
+`## Practice` with card `01 /`, a three-option concept check, recap). `pnpm
+new:lesson` always creates the lab (`--lab` is no longer needed) and its next
+steps name the report, the failing attempt, the gate and the screenshots. The
+placeholder lint now checks every lab `.ts`, `.c`, `.sh` and `.mjs` file except
+`starter.ts`; the existing labs pass it.
+
+Scaffolding `computer-architecture-execution/zz-scaffold-check` (then deleted):
+the placeholder lint reported 37 markers; `pnpm lab` failed all 5 contracts;
+the reference passed its 7 tests; the tools type check passed.
+
+Same command as the previous entry: zero type errors, warnings or hints;
+formatting and lint passed; 415 tests in 65 files; 39 pages; 104 browser tests.
+Prettier then turned the template's two-line MDX comment into emphasis; it is
+now two one-line comments, and the format check passed again. Templates are not
+part of the build.
+
+## Guidance aligned with the subject standard — 2026-11-17
+
+`AGENTS.md`, the playbooks, the authoring guide, the design system, the README
+and `IMPLEMENTATION.md` now agree with the standard. New
+`docs/playbooks/verify-change.md` holds the environment setup, the gate
+command, the screenshot review and its recurring problems from PR #9, the test
+lists that still need hand updates, the verification entry's structure and the
+commit conventions. `add-lesson.md` names the architecture lessons as
+references, requires a lab and builds it first, and replaces "link 3–6
+problems" with linking only genuine ones. `add-interactive.md` points figures
+and widgets at tested lab models instead of `src/lib/`. `add-problem.md` adds
+the bank metadata and paid-only checks used in PR #9; `add-source.md` requires
+opening every cited page; `add-subject-or-path.md` plans a curriculum through a
+proposal before drafting; `review-content.md` starts from the report and the
+standard. The authoring guide gains the `c` and `text` languages, LabCard
+numbering, the lab layout and the new commands. ADR 0008's status is accepted,
+as PR #9 merged it, and `IMPLEMENTATION.md` no longer describes those drafts as
+unpushed. A search for `--lab`, "3–6 practice", "solution.ts",
+`LEARNING_STANDARDS` and the old `lint && test && build` gate in the guidance
+found nothing left.
+
+Same command as the previous entry: zero type errors, warnings or hints;
+formatting and lint passed; 415 tests in 65 files; 39 pages; 104 browser tests.
+
+## audit-subject skill — 2026-11-17
+
+`.claude/skills/audit-subject/` scores a subject, chapter or lesson against the
+standard: inventory from `pnpm subject:report`, full reading of the scope,
+pass/partial/fail/n/a per ID with file:line evidence (`rubric.md`), P0–P3
+priorities, a curriculum-only mode for subjects without lessons, a "standard
+feedback" section for properties that seem wrong, and the document structure
+in `audit-template.md`, modelled on the 2026-11-13 architecture audit.
+`AGENTS.md` gains a skills table so other agents can follow the same files.
+The skill is exercised by the audits recorded later on this branch.
+
+Same command as the previous entry, with only this skill in `.claude/skills/`:
+zero type errors, warnings or hints; formatting and lint passed; 415 tests in
+65 files; 39 pages; 104 browser tests.
+
+## draft-lesson skill — 2026-11-17
+
+`.claude/skills/draft-lesson/` drafts one lesson in the order the architecture
+work settled on (scaffold, lab and its cross-check, native evidence, figures
+from the model, prose, sources and genuine problems, neighbours), then runs a
+pre-commit self-review (`checklist.md`) that turns the PR #9 fix commits into
+checks, verifies and records with `verify-change.md`, commits the lesson alone
+and reports verified facts separately from items for the owner. It drives
+`add-lesson.md` rather than restating it.
+
+Same command as the previous entry, with the audit and draft skills in the
+tree: zero type errors, warnings or hints; formatting and lint passed; 415
+tests in 65 files; 39 pages; 104 browser tests.
+
+## enhance-lesson skill — 2026-11-17
+
+`.claude/skills/enhance-lesson/` makes small changes to one lesson while the
+owner studies it: restate the request, read the lesson with its lab, tests,
+components and history, pick the single teaching home or propose a split, then
+apply a recipe (`recipes.md`) that lists everything that moves together for a
+point, figure, worked example, lab case, practice task, problem, interview
+question or source, and for bringing a legacy lesson up to the standard
+(including removing it from the browser spec's exception list).
+
+Same command as the previous entry, with the audit, draft and enhance skills in
+the tree: zero type errors, warnings or hints; formatting and lint passed; 415
+tests in 65 files; 39 pages; 104 browser tests.
+
+## create-subject skill — 2026-11-17
+
+`.claude/skills/create-subject/` plans and builds a subject in five phases:
+intake (`intake.md`, three batches of questions on goals, level, roles,
+depth, toolchains, hardware, exclusions, sources, time and checkpoints, each
+tied to the outline decision it drives) with no repository changes; survey and
+research; a proposal in `docs/proposals/<subject>.md` from
+`outline-template.md`, committed on its own, then a stop for approval; one
+planning change to the path and subject YAML; and draft-lesson for each page
+with a checkpoint after every lesson and audit-subject after every chapter.
+The skills table in `AGENTS.md` now lists all four, and `IMPLEMENTATION.md`
+ticks the skills item.
+
+Same command as the previous entry, with all four skills in the tree: zero
+type errors, warnings or hints; formatting and lint passed; 415 tests in 65
+files; 39 pages; 104 browser tests.
+
+## Operating Systems & Runtime Internals outline audit — 2026-11-17
+
+First run of the audit-subject skill in its curriculum-only mode:
+`docs/reviews/operating-systems-runtime-internals-audit-2026-11-17.md` scores C1–C8 and feasibility for the
+subject's outline at `6d48b46` (P0 0, P1 2, P2 3, P3 1). Its inventory came from
+`pnpm subject:report operating-systems-runtime-internals`; tool availability was checked with `command -v`
+and `apt-cache policy`. Candidate sources it names were not opened and are
+marked as unverified suggestions; the only external pages fetched during these
+audits were the Google SRE books index and two chapter URLs (HTTP 200), which
+show the registered `google-sre-books` prefix cannot match chapter citations.
+No content changed.
+
+Same command as the previous entry: zero type errors, warnings or hints;
+formatting and lint passed; 415 tests in 65 files; 39 pages; 104 browser tests.
+
+## Computer Networking outline audit — 2026-11-17
+
+First run of the audit-subject skill in its curriculum-only mode:
+`docs/reviews/computer-networking-audit-2026-11-17.md` scores C1–C8 and feasibility for the
+subject's outline at `6d48b46` (P0 0, P1 2, P2 3, P3 1). Its inventory came from
+`pnpm subject:report computer-networking`; tool availability was checked with `command -v`
+and `apt-cache policy`. Candidate sources it names were not opened and are
+marked as unverified suggestions; the only external pages fetched during these
+audits were the Google SRE books index and two chapter URLs (HTTP 200), which
+show the registered `google-sre-books` prefix cannot match chapter citations.
+No content changed.
+
+Same command as the previous entry: zero type errors, warnings or hints;
+formatting and lint passed; 415 tests in 65 files; 39 pages; 104 browser tests.
+
+## Databases & Storage Systems outline audit — 2026-11-17
+
+First run of the audit-subject skill in its curriculum-only mode:
+`docs/reviews/databases-storage-systems-audit-2026-11-17.md` scores C1–C8 and feasibility for the
+subject's outline at `6d48b46` (P0 0, P1 2, P2 3, P3 1). Its inventory came from
+`pnpm subject:report databases-storage-systems`; tool availability was checked with `command -v`
+and `apt-cache policy`. Candidate sources it names were not opened and are
+marked as unverified suggestions; the only external pages fetched during these
+audits were the Google SRE books index and two chapter URLs (HTTP 200), which
+show the registered `google-sre-books` prefix cannot match chapter citations.
+No content changed.
+
+Same command as the previous entry: zero type errors, warnings or hints;
+formatting and lint passed; 415 tests in 65 files; 39 pages; 104 browser tests.
+
+## Software Engineering & Architecture outline audit — 2026-11-17
+
+First run of the audit-subject skill in its curriculum-only mode:
+`docs/reviews/software-engineering-architecture-audit-2026-11-17.md` scores C1–C8 and feasibility for the
+subject's outline at `6d48b46` (P0 0, P1 3, P2 2, P3 1). Its inventory came from
+`pnpm subject:report software-engineering-architecture`; tool availability was checked with `command -v`
+and `apt-cache policy`. Candidate sources it names were not opened and are
+marked as unverified suggestions; the only external pages fetched during these
+audits were the Google SRE books index and two chapter URLs (HTTP 200), which
+show the registered `google-sre-books` prefix cannot match chapter citations.
+No content changed.
+
+Same command as the previous entry: zero type errors, warnings or hints;
+formatting and lint passed; 415 tests in 65 files; 39 pages; 104 browser tests.
+
+## Distributed Systems outline audit — 2026-11-17
+
+First run of the audit-subject skill in its curriculum-only mode:
+`docs/reviews/distributed-systems-audit-2026-11-17.md` scores C1–C8 and feasibility for the
+subject's outline at `6d48b46` (P0 0, P1 2, P2 3, P3 1). Its inventory came from
+`pnpm subject:report distributed-systems`; tool availability was checked with `command -v`
+and `apt-cache policy`. Candidate sources it names were not opened and are
+marked as unverified suggestions; the only external pages fetched during these
+audits were the Google SRE books index and two chapter URLs (HTTP 200), which
+show the registered `google-sre-books` prefix cannot match chapter citations.
+No content changed.
+
+Same command as the previous entry: zero type errors, warnings or hints;
+formatting and lint passed; 415 tests in 65 files; 39 pages; 104 browser tests.
+
+## Security, Performance & Reliability outline audit — 2026-11-17
+
+First run of the audit-subject skill in its curriculum-only mode:
+`docs/reviews/security-performance-reliability-audit-2026-11-17.md` scores C1–C8 and feasibility for the
+subject's outline at `6d48b46` (P0 0, P1 3, P2 2, P3 1). Its inventory came from
+`pnpm subject:report security-performance-reliability`; tool availability was checked with `command -v`
+and `apt-cache policy`. Candidate sources it names were not opened and are
+marked as unverified suggestions; the only external pages fetched during these
+audits were the Google SRE books index and two chapter URLs (HTTP 200), which
+show the registered `google-sre-books` prefix cannot match chapter citations.
+No content changed.
+
+Same command as the previous entry: zero type errors, warnings or hints;
+formatting and lint passed; 415 tests in 65 files; 39 pages; 104 browser tests.
+
+## create-subject dry run: Operating Systems & Runtime Internals — 2026-11-17
+
+The create-subject skill's first run, stopped after Phase 3 as requested:
+three intake batches and a summary read-back with the owner (who chose three
+full runtime case studies over the agent's two-deep, one-light suggestion, and
+dropped Python), then `docs/proposals/operating-systems-runtime-internals.md`:
+38 pages in 10 chapters (965 minutes), a coverage map, two running threads, a
+toolchain and evidence plan, a duplication table, decisions for the owner and
+risks. No path, subject or lesson file changed. The proposal resolves the
+outline audit's findings: broad titles split, the architecture boundary
+stated, containers and signals added.
+
+Thirty-three candidate source pages were fetched and returned HTTP 200 with the
+expected titles (OSTEP chapters, man7 pages, kernel cgroup-v2, EEVDF and memory
+concepts, Node.js, libuv, V8, Oracle GC tuning and JVM specification, JEPs 439
+and 444, `jcmd`, Go GC guide, memory model, runtime package and `proc.go`'s
+scheduler comment, Brendan Gregg's USE method and flame graphs, Python free
+threading). They were not read in depth per claim; the proposal says so. Tool
+availability was checked: `strace`, OpenJDK 21 and Go 1.26/1.24 are available
+as Ubuntu packages to extract; `perf` is not; Docker's daemon answers.
+
+Same command as the previous entry: zero type errors, warnings or hints;
+formatting and lint passed; 415 tests in 65 files; 39 pages; 104 browser tests.
+
+## Computer Architecture & Execution audit against the standard — 2026-11-17
+
+The audit-subject skill's full mode on the reference subject:
+`docs/reviews/computer-architecture-execution-audit-2026-11-17.md` scores all
+56 properties (41 pass, 14 partial, 1 fail) and lists 13 findings (P0 0, P1 1,
+P2 6, P3 6) and four items of standard feedback for the owner. All 53 report
+flags were read at their lines. Three were false signals (two prose uses of
+"predict", and concept figures with nothing to compute). The report also
+missed five answer reveals that sit after a widget, which the audit found by
+reading. `pnpm shots` ran on all 19 lessons: 251 captures, no overflow or
+console errors; the four opened images found one label collision in the DRAM
+sweep at 390 px. Counts in the audit were taken from `pnpm subject:report
+--json`, after correcting three hand-written totals in the first draft
+(minutes, figures and verified outputs). No content changed.
+
+Same command as the previous entry: zero type errors, warnings or hints;
+formatting and lint passed; 415 tests in 65 files; 39 pages; 104 browser tests.
+
+## Standard adjusted after the architecture audit — 2026-11-17
+
+The owner decided the audit's standard feedback. C4 keeps 15–30 minutes as the
+target, accepts 31–45 for a page that is still one mechanism, and requires a
+split above 45; `pnpm subject:report` now reports 31–45 as information rather
+than a warning (its test was updated), and the playbook, authoring guide and
+skills say the same. L9 accepts wording other than "The tests check" that says
+what the tests assert. P1 records the three existing architecture lab folders
+as known exceptions. L10 is unchanged: making `LabCard`'s `command` optional,
+as the owner chose, is left for a follow-up component change with its own
+browser test. The audit gained a dated "Owner decisions" section; its findings
+were not rewritten.
+
+Same command as the previous entry: zero type errors, warnings or hints;
+formatting and lint passed; 415 tests in 65 files; 39 pages; 104 browser tests.
+
+## Review fixes for the subject standard tooling — 2026-11-19
+
+Fixes from a code review of this branch:
+
+- **`pnpm shots`:** the preview now starts with `--ignore-lock`, like
+  `playwright.config.ts`. Before this fix, Astro 7 ran it as a background
+  server that outlived the script, and any later run on another port failed
+  with "Preview did not start". The script now also stops the preview on
+  Ctrl-C, and refuses to start when something already serves the port.
+- **`pnpm subject:report`:** an unknown lesson or chapter is now an error
+  instead of an empty report. A new chapter scope, `<subject>#<section-id>`,
+  serves audit-subject's chapter audits. Lesson and chapter reports no longer
+  carry subject-wide flags. Parsing fixes:
+  - A lab card after a prompt now counts as a gate.
+  - Output escapes are resolved in one pass.
+  - Attributes containing `>` are read correctly.
+  - `verified={false}` is not counted as verified.
+  - Duplicate planned titles keep their parentheses.
+- **Skills and standard:** audit-subject redirects JSON with `pnpm -s`.
+  enhance-lesson follows C4 (split above 45 minutes). L8 again requires
+  complexity and cost claims to name their assumptions, which was dropped with
+  `LEARNING_STANDARDS.md`. V7 is marked manual, since the report has no V7
+  check.
+- **Setup scripts:** all three resolve their folder to an absolute path, so a
+  relative argument works.
+- **Browser and unit tests:** the no-JavaScript browser check runs once per
+  lesson instead of in one loop. The unit test's temporary repository is
+  created in `beforeAll`.
+
+On the current content the subject report is unchanged: 53 flags for
+Computer Architecture & Execution. Five new unit tests cover the parsing
+fixes, the chapter scope and the unknown-target errors. With a dummy local
+package, both browser and ARM64 setup scripts now work with a relative folder,
+and all three setup scripts recreated the toolchain used below. `pnpm shots`
+on `cache-organization` ran twice, on ports 4361 and 4362, and once
+interrupted; no preview process was left afterwards.
+
+`PLAYWRIGHT_PORT=4371`, `LD_LIBRARY_PATH`, `ANVAYA_CC` and `ANVAYA_CC_ARM64`
+set, then `pnpm verify`: zero type errors, warnings or hints; formatting and
+lint passed; 420 tests in 65 files; 39 pages; 140 browser tests (38 are the
+per-lesson no-JavaScript checks that replace the two looping tests). The
+native drift check, run on its own, reported all 28 artifacts unchanged.

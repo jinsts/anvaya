@@ -77,6 +77,9 @@ to the component.
 ## Before merging UI work
 
 Check desktop and phone widths in light and dark themes, with keyboard-only
-navigation and 200% zoom. `pnpm test:e2e` runs axe scans on the main page types
+navigation and 200% zoom. For lesson figures and widgets, `pnpm shots
+<subject>/<lesson>` captures 1280 and 390 px in both themes plus a page without
+JavaScript ([verify-change.md](playbooks/verify-change.md)); look at every
+image. `pnpm test:e2e` runs axe scans on the main page types
 in both themes; it is a regression guard, not a full WCAG certification.
 Add screenshot baselines only after the owner approves a design.

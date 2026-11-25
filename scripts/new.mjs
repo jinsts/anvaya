@@ -1,5 +1,6 @@
 // Scaffold content from templates/. Usage:
-//   pnpm new:lesson <subject>/<slug> [--title "Title"] [--path <path-id>] [--lab]
+//   pnpm new:lesson <subject>/<slug> [--title "Title"] [--path <path-id>]
+// Every lesson gets an attempt lab (docs/SUBJECT_STANDARD.md, P1).
 //   pnpm new:problem <slug> --title "Title" --url <url> --difficulty <easy|medium|hard> --lesson <subject>/<slug>
 import { access, mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
@@ -65,21 +66,21 @@ async function newLesson() {
       `subject: ${subject}\npath: ${options.path}\n`,
     );
   await writeNew(`src/content/lessons/${subject}/${name}.mdx`, lesson);
-  if (options.lab) {
-    for (const file of await readdir('templates/lab'))
-      await writeNew(
-        `labs/${subject}/${name}/${file}`,
-        fill(await readFile(`templates/lab/${file}`, 'utf8'), {
-          TITLE: title,
-          ID: `${subject}/${name}`,
-        }),
-      );
-  }
+  for (const file of await readdir('templates/lab'))
+    await writeNew(
+      `labs/${subject}/${name}/${file}`,
+      fill(await readFile(`templates/lab/${file}`, 'utf8'), {
+        TITLE: title,
+        ID: `${subject}/${name}`,
+      }),
+    );
   console.log(`
-Next steps (docs/playbooks/add-lesson.md):
-  1. ${options.path ? `Add ${subject}/${name} to a section's lessons in src/content/paths/${options.path}.yaml (and remove it from planned).` : 'Optionally add the lesson to a path in src/content/paths/.'}
-  2. Replace every TODO, cite registered sources, and write tested examples.
-  3. Run pnpm lint && pnpm test && pnpm build, then review the page with pnpm dev.`);
+Next steps (docs/playbooks/add-lesson.md, or the draft-lesson skill):
+  1. ${options.path ? `Move the topic from planned to lessons in src/content/paths/${options.path}.yaml.` : 'Add the lesson to a path section in src/content/paths/.'}
+  2. Build the lab first: the model and its tests, then contracts, then figures.
+  3. Replace every TODO; cite registered sources you opened.
+  4. Check with pnpm subject:report ${subject}/${name} and pnpm lab ${subject}/${name} (it must fail).
+  5. Run pnpm verify and review pnpm shots ${subject}/${name} (docs/playbooks/verify-change.md).`);
 }
 
 async function newProblem() {

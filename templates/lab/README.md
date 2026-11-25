@@ -1,8 +1,12 @@
-# **TITLE** practice
+# Independent practice
 
-TODO: State the goal, the input/output contract, constraints and example cases.
+TODO: State the contract in one paragraph: what `solve` in `starter.ts` takes
+and returns, the units and assumptions, and which inputs are refused. Name the
+reference to open only afterwards (`example.ts`).
 
-From the repository root, run `pnpm lab __ID__` to test **your starter**. It
-fails until you implement it. `pnpm test` checks the reference solution against
-the same contracts. Explain your invariant and complexity before opening
-`solution.ts`.
+Run `pnpm lab __ID__`. The attempt throws until you implement it; the ordinary
+quality gate checks the reference against the same contracts. TODO: For each
+case, say what the learner should explain before reading the reference.
+
+TODO: If the lab uses recorded artifacts (listings, measurements), say where
+they came from and how they are regenerated.
