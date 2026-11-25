@@ -1661,3 +1661,35 @@ Same command and environment as the first entry of 2026-11-25: zero type
 errors, warnings or hints; formatting and lint passed; 438 tests in 65 files,
 none skipped, including the native drift check; 39 pages; 142 browser tests.
 No figure changed, so no screenshots were taken.
+
+## Architecture and performance: Amdahl bars from the model — 2026-11-25
+
+Fixes finding F6 of the 2026-11-17 architecture audit for this lesson with the
+enhance-lesson skill (standard V2). `AmdahlBars` wrote 0.25, 0.75, 0.1875,
+0.4375 and 2.286 as literals, and its segment widths as fixed percentages. A new
+`amdahlTimes(serial, speedup)` in the performance lab returns the unchanged and
+improvable parts of a normalized baseline time, the improved part, the new
+total and `amdahl()`'s speedup. The figure keeps only the lesson's illustrative
+inputs (a quarter serial, four times faster) and computes every number, label,
+accessible name and segment width from it. The caption now reads "making 75% of
+baseline time 4× faster" instead of "improving 75% of baseline time fourfold";
+nothing else the learner sees changed. A new test asserts the five values for
+0.25 and 4, that the total is the reciprocal of `amdahl()` for four other
+inputs, and that invalid inputs are refused through `amdahl()`.
+
+Cross-check: by hand, 0.75 ÷ 4 = 0.1875, 0.25 + 0.1875 = 0.4375 and
+1 ÷ 0.4375 = 2.2857…, which the existing verified output already prints as
+2.286x. `pnpm vitest run labs/computer-architecture-execution/architecture-and-performance/`
+passes 29 tests, and `pnpm lab computer-architecture-execution/architecture-and-performance`
+still fails all 9 cases. `pnpm subject:report` no longer raises V2 for the
+lesson; its other flags are C4 (40 minutes, one mechanism) and L9, which F13
+addresses.
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 439 tests in 65 files,
+none skipped, including the native drift check; 39 pages; 142 browser tests.
+
+Visual review: `pnpm shots` with a selector for the figure, at 1280 and 390 px
+in light and dark themes, plus the page without JavaScript; report.json shows
+no overflow or console errors. The bars match the old widths (25% and 75%, then
+25% and 18.75%); at 390 px "0.1875" fits its segment as before.
