@@ -6,6 +6,16 @@ export interface EncodedOperation {
   immediate: number;
 }
 
+/** The fields from the most significant bit down; together they fill 16 bits. */
+export const FIELDS = [
+  { name: 'opcode', bits: 4 },
+  { name: 'register', bits: 4 },
+  { name: 'immediate', bits: 8 },
+] as const;
+
+/** The two assigned opcodes; the other fourteen 4-bit values are reserved. */
+export const OPCODES = { 1: 'set', 2: 'add' } as const;
+
 function unsigned(value: number, limit: number, label: string): void {
   if (!Number.isInteger(value) || value < 0 || value >= limit) {
     throw new RangeError(`${label} is outside its encoding range`);

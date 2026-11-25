@@ -1,38 +1,63 @@
 ---
 import DiagramFrame from '../learning/DiagramFrame.astro';
+import {
+  FIELDS,
+  OPCODES,
+  decode,
+  encode,
+} from '../../../labs/computer-architecture-execution/cpu-registers-and-instructions/example';
+// The lesson's worked instruction, encoded and decoded by the tested model.
+// Field widths, bit slices and ranges come from the model's layout.
+const word = encode({ opcode: 2, register: 3, immediate: 17 });
+const operation = decode(word);
+const bits = word.toString(2).padStart(16, '0');
+const meaning = {
+  opcode: OPCODES[operation.opcode],
+  register: `R${operation.register}`,
+  immediate: `${operation.immediate}`,
+};
+let start = 0;
+const fields = FIELDS.map((field) => {
+  const slice = bits.slice(start, start + field.bits);
+  start += field.bits;
+  return { ...field, slice, meaning: meaning[field.name] };
+});
+const largest = Object.fromEntries(
+  FIELDS.map((field) => [field.name, 2 ** field.bits - 1]),
+);
+const hex = `0x${word.toString(16)}`;
 ---
 
-<DiagramFrame caption="Illustrative 16-bit 0x2311: operation 2, register 3, immediate 17. Field width limits the choices.">
+<DiagramFrame
+  caption={`Illustrative 16-bit ${hex}: operation ${operation.opcode}, register ${operation.register}, immediate ${operation.immediate}. Field width limits the choices.`}
+>
   <div
     class="fields"
     role="img"
-    aria-label="Four opcode bits 0010, four register bits 0011, eight immediate bits 00010001"
+    aria-label={fields
+      .map((field) => `${field.bits} ${field.name} bits ${field.slice}`)
+      .join(', ')}
+    style={`grid-template-columns: ${fields.map((field) => `${field.bits}fr`).join(' ')}`}
   >
-    <div>
-      <span>4 bits · opcode</span>
-      <strong>0010</strong>
-      <span>add</span>
-    </div>
-    <div>
-      <span>4 bits · register</span>
-      <strong>0011</strong>
-      <span>R3</span>
-    </div>
-    <div>
-      <span>8 bits · immediate</span>
-      <strong>00010001</strong>
-      <span>17</span>
-    </div>
+    {fields.map((field) => (
+      <div>
+        <span>
+          {field.bits} bits · {field.name}
+        </span>
+        <strong>{field.slice}</strong>
+        <span>{field.meaning}</span>
+      </div>
+    ))}
   </div>
   <p>
-    Ranges set by these widths: opcode 0–15 (two assigned here), registers
-    R0–R15, immediate 0–255.
+    Ranges set by these widths: opcode 0–{largest.opcode} (
+    {Object.keys(OPCODES).length} assigned here), registers R0–R
+    {largest.register}, immediate 0–{largest.immediate}.
   </p>
 </DiagramFrame>
 <style>
   .fields {
     display: grid;
-    grid-template-columns: 1fr 1fr 2fr;
     gap: var(--space-1);
   }
   .fields div {

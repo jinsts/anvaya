@@ -1693,3 +1693,35 @@ Visual review: `pnpm shots` with a selector for the figure, at 1280 and 390 px
 in light and dark themes, plus the page without JavaScript; report.json shows
 no overflow or console errors. The bars match the old widths (25% and 75%, then
 25% and 18.75%); at 390 px "0.1875" fits its segment as before.
+
+## CPU, registers and instructions: instruction fields from the decoder — 2026-11-25
+
+Fixes finding F6 of the 2026-11-17 architecture audit for this lesson with the
+enhance-lesson skill (standard V2). `InstructionFields` hard-coded the bits of
+0x2311, the field widths, the meaning of each field and the ranges. The CPU lab
+now exports the format's field layout, `FIELDS` (opcode 4 bits, register 4,
+immediate 8, most significant first), and its assigned opcodes, `OPCODES`
+(1 set, 2 add). The figure encodes the lesson's worked instruction with
+`encode`, decodes it with `decode` and computes the bit slices, labels, ranges,
+accessible name and column proportions from those exports. The learner sees the
+same figure; "(two assigned here)" now reads "(2 assigned here)". A new test
+checks, for all 8,192 valid words, that shifting and masking by `FIELDS`
+recovers exactly what `decode` returns, that the widths fill 16 bits, and that
+`decode` refuses every opcode `OPCODES` leaves unassigned.
+
+Cross-check: by hand, 0x2311 is 0010 0011 00010001, which is opcode 2, register
+3 and immediate 17, the values the existing verified output prints.
+`pnpm vitest run labs/computer-architecture-execution/cpu-registers-and-instructions/`
+passes 12 tests, and `pnpm lab computer-architecture-execution/cpu-registers-and-instructions`
+still fails all 6 cases. `pnpm subject:report` no longer raises V2 for the
+lesson; its other flags are C4 (35 minutes, one mechanism) and L9, which F13
+addresses.
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 440 tests in 65 files,
+none skipped, including the native drift check; 39 pages; 142 browser tests.
+
+Visual review: `pnpm shots` with a selector for the figure, at 1280 and 390 px
+in light and dark themes, plus the page without JavaScript; report.json shows
+no overflow or console errors. The figure matches the previous layout,
+including the 1 : 1 : 2 field columns and the wrapped field labels at 390 px.
