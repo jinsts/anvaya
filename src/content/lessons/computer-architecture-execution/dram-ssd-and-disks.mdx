@@ -119,6 +119,20 @@ cycle of nodes, one per 64-byte cache line. Each load needs the address the
 previous load returned, and a random order defeats the prefetcher, so the time
 per load approaches the latency of the level that holds the working set.
 
+The machine reports a 48 KiB L1 data cache per core, a 3 MiB L2 and a shared
+24 MiB L3. Predict before looking at the figure: as the working set grows from
+4 KiB to 256 MiB, at which sizes will the time per load step up?
+
+<details>
+<summary>Check after predicting</summary>
+
+Just past each capacity: above 48 KiB, above 3 MiB, and around 24 MiB, where
+DRAM takes over. The first two steps land where the capacities place them. The
+last one starts early, from around 12 MiB; the notes under the figure explain
+why a capacity alone does not place it.
+
+</details>
+
 <WorkingSetSweep />
 
 The steps line up with the recorded cache sizes: flat while the set fits in the

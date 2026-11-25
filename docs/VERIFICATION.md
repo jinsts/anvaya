@@ -1487,3 +1487,68 @@ hints; formatting and lint passed; 421 tests passed and 1 skipped in 65 files
 (the native drift check, which needs `ANVAYA_CC`); 39 pages; 142 browser tests,
 including the new paper-task card check on desktop and mobile. Two new unit
 tests cover a command-less card and a command-less first card.
+
+## Compilation and execution: predict before practice — 2026-11-25
+
+Fixes finding F3 of the 2026-11-17 architecture audit with the enhance-lesson
+skill (standard L5). Before the relocation figure, the learner now predicts which two addresses the linker needs to patch the call to `sum_to`; the answer (the symbol's address and the patched bytes' address, because the call stores a distance) is in a "Check after predicting" disclosure. It restates what the next section and `relocation.test.ts` already establish. Beyond what this entry names, no explanation, figure,
+lab or test value changed. `pnpm subject:report` no longer raises L5 for the
+lesson and raises no new flag.
+
+`pnpm verify` without the toolchain variables, run once on all five F3 lessons
+together: zero type errors, warnings or hints; formatting and lint passed; 421
+tests passed and 1 skipped in 65 files (the native drift check, which needs
+`ANVAYA_CC`); 39 pages; 142 browser tests. No figure changed, so no
+screenshots were taken.
+
+## DRAM, SSDs and disks: predict before practice — 2026-11-25
+
+Fixes finding F3 of the 2026-11-17 architecture audit with the enhance-lesson
+skill (standard L5). Before the working-set sweep, the learner now predicts where the time per load steps up, from the recorded 48 KiB L1d, 3 MiB L2 and 24 MiB L3 (`sweep.json`) over the sweep's 4 KiB–256 MiB range. The disclosure gives the capacities and the early last step the figure notes already explain. Beyond what this entry names, no explanation, figure,
+lab or test value changed. `pnpm subject:report` no longer raises L5 for the
+lesson and raises no new flag.
+
+`pnpm verify` without the toolchain variables, run once on all five F3 lessons
+together: zero type errors, warnings or hints; formatting and lint passed; 421
+tests passed and 1 skipped in 65 files (the native drift check, which needs
+`ANVAYA_CC`); 39 pages; 142 browser tests. No figure changed, so no
+screenshots were taken.
+
+## Hardware-software interaction: predict before practice — 2026-11-25
+
+Fixes finding F3 of the 2026-11-17 architecture audit with the enhance-lesson
+skill (standard L5). The resume indices for a syscall, a restartable fault and an interrupt at index 12 were stated before the model; the learner now predicts them, and the existing sentences moved into a "Check after predicting" disclosure. The model's verified output prints the same three. Beyond what this entry names, no explanation, figure,
+lab or test value changed. `pnpm subject:report` no longer raises L5 for the
+lesson and raises no new flag.
+
+`pnpm verify` without the toolchain variables, run once on all five F3 lessons
+together: zero type errors, warnings or hints; formatting and lint passed; 421
+tests passed and 1 skipped in 65 files (the native drift check, which needs
+`ANVAYA_CC`); 39 pages; 142 browser tests. No figure changed, so no
+screenshots were taken.
+
+## Architecture and performance: predict before practice — 2026-11-25
+
+Fixes finding F3 of the 2026-11-17 architecture audit with the enhance-lesson
+skill (standard L5). Before the locality strip, the learner now predicts which loop order is faster and whether the times overlap. The disclosure says row order, with no overlap in this recording, which `example.test.ts` asserts (every column-order sum slower than every row-order sum). Beyond what this entry names, no explanation, figure,
+lab or test value changed. `pnpm subject:report` no longer raises L5 for the
+lesson and raises no new flag.
+
+`pnpm verify` without the toolchain variables, run once on all five F3 lessons
+together: zero type errors, warnings or hints; formatting and lint passed; 421
+tests passed and 1 skipped in 65 files (the native drift check, which needs
+`ANVAYA_CC`); 39 pages; 142 browser tests. No figure changed, so no
+screenshots were taken.
+
+## Measuring performance: predict before practice — 2026-11-25
+
+Fixes finding F3 of the 2026-11-17 architecture audit with the enhance-lesson
+skill (standard L5). Before the timing distribution, the learner now predicts whether every cold run is slower than every warm run. The disclosure says the ranges overlap because the cold penalty is smaller than the run-to-run spread; `stats.test.ts` now also asserts that the median gap is smaller than either series' range (0.054 against about 0.18 ns per element). Beyond what this entry names, no explanation, figure,
+lab or test value changed. `pnpm subject:report` no longer raises L5 for the
+lesson and raises no new flag.
+
+`pnpm verify` without the toolchain variables, run once on all five F3 lessons
+together: zero type errors, warnings or hints; formatting and lint passed; 421
+tests passed and 1 skipped in 65 files (the native drift check, which needs
+`ANVAYA_CC`); 39 pages; 142 browser tests. No figure changed, so no
+screenshots were taken.

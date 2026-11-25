@@ -99,6 +99,21 @@ run it reads a 64 MiB buffer to push the array out of the caches; the runs in
 between find the array just read. Every sum is checked against the expected
 total.
 
+Predict before looking at the runs: the cold runs start with the array evicted.
+Will every cold run be slower than every warm run, or will the two ranges
+overlap?
+
+<details>
+<summary>Check after predicting</summary>
+
+They overlap. Evicting the array made the typical run slower, but many cold
+runs were faster than many warm ones. A 4 MiB sequential scan fits in this
+machine's L3 and is easy to prefetch, so the cold penalty is smaller than the
+run-to-run spread. The notes under the figure say what that means for one
+measurement.
+
+</details>
+
 <TimingDistribution />
 
 Three things show up even in this simple, checked experiment:

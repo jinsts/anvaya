@@ -112,10 +112,20 @@ scheduler run another thread.
 
 ## Test the return location
 
-The lab models a CPU using **instruction indices**, not byte addresses. A syscall
-at index 12 consumes that instruction and saves 13. A restartable fault at 12
-saves 12. An interrupt arrives between instructions, so its current index already
-names the next instruction to execute.
+The lab models a CPU using **instruction indices**, not byte addresses. Predict
+the index each event saves as its resume point when the current index is 12: a
+syscall at 12, a restartable fault at 12, and an interrupt that arrives while
+12 is the next instruction.
+
+<details>
+<summary>Check after predicting</summary>
+
+A syscall at index 12 consumes that instruction and saves 13. A restartable
+fault at 12 saves 12, so the access is retried. An interrupt arrives between
+instructions, so its current index already names the next instruction to
+execute: it saves 12. The model below prints all three.
+
+</details>
 
 <details>
 <summary>Inspect the tested model and expected output</summary>
