@@ -1792,3 +1792,24 @@ none skipped, including the native drift check, which also confirmed the four
 listings unchanged; 39 pages; 142 browser tests, including the per-lesson check
 that opens the model disclosure by keyboard. No figure changed, so no
 screenshots were taken.
+
+## Program execution: what the tests check — 2026-11-25
+
+Fixes finding F13 of the 2026-11-17 architecture audit for this lesson with the
+enhance-lesson skill (standard L9). The datapath model's disclosure is now
+followed by a paragraph that says what `datapath.test.ts` asserts: the output
+exactly, which state each instruction changes, the shared fetch and decode
+path, data memory used only by the load and the store in their own directions,
+32-bit wraparound, and the three refusals (an address holding no data, a fifth
+register, a negative address). The sentence avoids naming which instruction
+changes memory, since the stepper above asks the learner to predict that. The
+accumulator model's existing sentence about its tests now starts its own
+paragraph. `pnpm subject:report` no longer raises L9 for the lesson; its L6 flag
+is the "predict both the new accumulator…" prompt, which is followed by the
+program's instruction table, not by its trace (the trace is in the "Check after
+predicting" disclosure), so it is not a reveal.
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 442 tests in 65 files,
+none skipped, including the native drift check; 39 pages; 142 browser tests.
+No figure changed, so no screenshots were taken.

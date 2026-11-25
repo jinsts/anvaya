@@ -136,6 +136,12 @@ between would still see 7.
 
 </details>
 
+The tests check this output exactly and which state each instruction changes.
+They also check that every step is fetched and decoded along the same path,
+that data memory is used only by loads and stores, each in its own direction,
+that register addition wraps at 32 bits, and that a load from an address
+holding no data, a fifth register and a negative address are refused.
+
 ## Trace a deliberately small machine
 
 Our illustrative machine has one eight-bit **accumulator**, a register that
@@ -183,8 +189,10 @@ program.
 </details>
 
 Each output line shows PC and accumulator after a state transition, with the
-initial state first. The tests check the full sequence, unsigned wraparound,
-taken and untaken branches, invalid operands, and the step limit.
+initial state first.
+
+The tests check the full sequence, unsigned wraparound, taken and untaken
+branches, invalid operands, and the step limit.
 
 <details>
 <summary>Model contract and simulator costs</summary>
