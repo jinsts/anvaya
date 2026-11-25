@@ -114,6 +114,20 @@ the relocation records the assembler left. An object file can be complete
 machine code and still say "I call something named `sum_to`; fill in its
 distance later".
 
+Predict before reading on: the call inside `scale_sum` cannot hold its final
+bytes until the link. Which two addresses must the linker know before it can
+write them?
+
+<details>
+<summary>Check after predicting</summary>
+
+The address the layout gives `sum_to`, and the address of the four bytes being
+patched inside the call instruction. The call stores a distance between them,
+not the target address itself, so neither address alone is enough. The next
+section computes that distance from the recorded link.
+
+</details>
+
 ## Compute the patch the linker wrote
 
 <RelocationPatch />

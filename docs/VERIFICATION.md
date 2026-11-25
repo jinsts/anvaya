@@ -1487,3 +1487,16 @@ hints; formatting and lint passed; 421 tests passed and 1 skipped in 65 files
 (the native drift check, which needs `ANVAYA_CC`); 39 pages; 142 browser tests,
 including the new paper-task card check on desktop and mobile. Two new unit
 tests cover a command-less card and a command-less first card.
+
+## Compilation and execution: predict before practice — 2026-11-25
+
+Fixes finding F3 of the 2026-11-17 architecture audit with the enhance-lesson
+skill (standard L5). Before the relocation figure, the learner now predicts which two addresses the linker needs to patch the call to `sum_to`; the answer (the symbol's address and the patched bytes' address, because the call stores a distance) is in a "Check after predicting" disclosure. It restates what the next section and `relocation.test.ts` already establish. Beyond what this entry names, no explanation, figure,
+lab or test value changed. `pnpm subject:report` no longer raises L5 for the
+lesson and raises no new flag.
+
+`pnpm verify` without the toolchain variables, run once on all five F3 lessons
+together: zero type errors, warnings or hints; formatting and lint passed; 421
+tests passed and 1 skipped in 65 files (the native drift check, which needs
+`ANVAYA_CC`); 39 pages; 142 browser tests. No figure changed, so no
+screenshots were taken.
