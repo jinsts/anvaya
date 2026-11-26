@@ -2075,3 +2075,19 @@ errors, warnings or hints; formatting and lint passed; 442 tests in 65 files,
 none skipped, including the native drift check; 39 pages, with every internal
 link validated; 142 browser tests. No figure changed, so no screenshots were
 taken.
+
+## Compilation and execution: what `bump` connects to — 2026-11-26
+
+Fixes finding F10 of the 2026-11-17 architecture audit for this lesson with the
+enhance-lesson skill (standard L13, W9). "The same `bump` function connects this
+build to the CPU and stack lessons" was stale: the stack lesson uses
+`scale_sum` and `sum_to`, not `bump`. The sentence now links the registers
+lesson, which imports `bump-O2.txt` and reads its listing, and says that
+`scale_sum` and `sum_to` connect the build to the assembly lesson, which reads
+their listings.
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 442 tests in 65 files,
+none skipped, including the native drift check; 39 pages, with every internal
+link validated; 142 browser tests. No figure changed, so no screenshots were
+taken.

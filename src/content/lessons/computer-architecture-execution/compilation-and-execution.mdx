@@ -230,7 +230,10 @@ boundary proves only that stage's checks passed.
 
 ## Reproduce a native build
 
-The same `bump` function connects this build to the CPU and stack lessons.
+The same `bump` function connects this build to the
+[registers lesson](/learn/computer-architecture-execution/cpu-registers-and-instructions/),
+which reads its `-O2` listing, and `scale_sum` and `sum_to` connect it to the
+[assembly lesson](/learn/computer-architecture-execution/reading-assembly/).
 The native lab compiles and runs assertions at both `-O0` and `-O2`, with
 `-fno-inline` retaining a callable function. The checked-in listings were
 produced on Linux x86-64 by GCC 15.2.0; other toolchains can generate different
