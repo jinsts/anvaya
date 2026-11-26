@@ -1963,3 +1963,18 @@ Same command and environment as the first entry of 2026-11-25: zero type
 errors, warnings or hints; formatting and lint passed; 442 tests in 65 files,
 none skipped, including the native drift check; 39 pages; 142 browser tests.
 No figure changed, so no screenshots were taken.
+
+## Cache organization: a numbered Practice section — 2026-11-26
+
+Fixes finding F8 of the 2026-11-17 architecture audit for this lesson with the
+enhance-lesson skill (standard L10). The three practice cards sat at the end of
+"Layout decides which sets you use", after its prose. They now follow a
+"Practice" heading, and the first card is titled "01 / Simulate an LRU cache"
+instead of "Independent cache attempt", so the cards run 01, 02, 03; their
+text and commands are unchanged. `pnpm subject:report` no longer raises L10
+for the lesson; C4 remains (40 minutes, one mechanism).
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 442 tests in 65 files,
+none skipped, including the native drift check; 39 pages; 142 browser tests.
+No figure changed, so no screenshots were taken.
