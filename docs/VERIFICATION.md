@@ -2145,3 +2145,17 @@ Same command and environment as the first entry of 2026-11-25: zero type
 errors, warnings or hints; formatting and lint passed; 442 tests in 65 files,
 none skipped, including the native drift check; 39 pages; 142 browser tests.
 No figure changed, so no screenshots were taken.
+
+## Program execution: the lab README states its contract — 2026-11-26
+
+Fixes finding F11 of the 2026-11-17 architecture audit for this lab with the
+enhance-lesson skill (standard P6). The README was generic. It now states the
+contract (count every executed instruction of set/add 255/branch/halt, refuse a
+value that is not an unsigned byte with a `RangeError`), one worked case that is
+the lesson's own trace (six instructions from 2), the run command, the state
+invariant to explain, and what `datapath.ts` is for.
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 442 tests in 65 files,
+none skipped, including the native drift check; 39 pages; 142 browser tests.
+No figure changed, so no screenshots were taken.
