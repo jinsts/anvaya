@@ -2022,3 +2022,22 @@ Same command and environment as the first entry of 2026-11-25: zero type
 errors, warnings or hints; formatting and lint passed; 442 tests in 65 files,
 none skipped, including the native drift check; 39 pages; 142 browser tests.
 No figure changed, so no screenshots were taken.
+
+## Multicore coherence and atomics: the analogy in the hook — 2026-11-26
+
+Fixes finding F9 of the 2026-11-17 architecture audit for this lesson with the
+enhance-lesson skill (standard L3). The first section had no concrete scenario,
+and the document-editing analogy with its limit sat in the coherence section.
+The hook now opens with two threads that each increment only their own counter
+yet run at different speeds depending on how far apart the counters are, asks
+why, and follows with the analogy and "The analogy stops at granularity", moved
+unchanged from the coherence section. The hook names no ratio; the false-sharing
+section answers it from the recording, and `models.test.ts` asserts the
+recorded adjacent layout is more than three times slower than the padded one.
+`pnpm subject:report` no longer raises L3 for the lesson; C4 (35 minutes) and
+the documented P1 folder exception remain.
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 442 tests in 65 files,
+none skipped, including the native drift check; 39 pages; 142 browser tests.
+No figure changed, so no screenshots were taken.

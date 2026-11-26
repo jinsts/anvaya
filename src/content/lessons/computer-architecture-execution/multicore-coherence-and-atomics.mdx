@@ -90,6 +90,15 @@ import model from '../../../../labs/computer-architecture-execution/multicore/mo
 
 ## Several cores, one memory
 
+Two threads each add one to their own counter, over and over, and neither ever
+reads the other's. Yet moving the two counters further apart in memory changes
+how fast both threads run. They share no data, so why should the distance
+between two variables matter?
+
+Think of a document that many people may read but only one may edit, after
+collecting everyone else's copy. The analogy stops at granularity: a cache does
+this for every 64-byte line separately, whatever the line holds.
+
 Each core has at least its own L1 cache, so two cores can hold copies of the
 same cache line. Three separate questions follow, and mixing them up causes most
 multicore bugs:
@@ -112,10 +121,6 @@ announces itself, and any other copy drops to Shared. A write needs the only
 valid copy, so a cache holding the line Shared or not at all sends a **request
 for ownership** that invalidates every other copy. A line held Exclusive becomes
 Modified silently, since there is no one to tell.
-
-Think of a document that many people may read but only one may edit, after
-collecting everyone else's copy. The analogy stops at granularity: a cache does this
-for every 64-byte line separately, whatever the line holds.
 
 Before each access below, predict both cores' states afterwards.
 
