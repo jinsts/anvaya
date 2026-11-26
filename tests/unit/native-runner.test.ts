@@ -37,7 +37,7 @@ const FAKES: Record<string, string> = {
     '  shift',
     'done',
     // The "program" prints its arguments.
-    `printf '#!/bin/sh\\necho "ran $*"\\n' > "$out"`,
+    `printf '#!/bin/sh\\necho "ran $*"\\nif [ -x ./helper ]; then echo "helper installed"; fi\\n' > "$out"`,
     'chmod +x "$out"',
   ),
   'binutils/objdump': script('echo "GNU objdump (Fake) 9.9"'),
@@ -385,6 +385,28 @@ describe('the shared native runner', () => {
     registry.artifacts = [artifact];
     expect(() => runNative(registry, { env: failing })).toThrow(
       'exited with 1, not 0',
+    );
+  });
+
+  it('builds other programs into an output artifact’s working folder', () => {
+    const registry = freshLab();
+    writeFileSync(join(lab, 'helper.c'), 'helper.c\n');
+    registry.checks = [];
+    registry.measurements = [];
+    registry.artifacts = [
+      {
+        kind: 'output',
+        source: 'prog.c',
+        flags: [],
+        // The stand-in program lists its folder's executables.
+        args: ['./helper'],
+        programs: { helper: { sources: ['helper.c'], flags: [] } },
+        file: 'out/with-helper.txt',
+      },
+    ];
+    runNative(registry, { record: true, env });
+    expect(read('out/with-helper.txt')).toBe(
+      'ran ./helper\nhelper installed\n',
     );
   });
 

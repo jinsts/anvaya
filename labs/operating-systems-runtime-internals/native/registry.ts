@@ -84,6 +84,16 @@ export const ARTIFACTS: Artifact[] = [
     status: 1,
     file: 'system-calls/serve-missing-trace.txt',
   },
+  // processes: launcher.c runs the model's LAUNCHER program for real, with
+  // serve built beside it. It prints names, not process IDs.
+  {
+    kind: 'output',
+    source: 'processes/launcher.c',
+    flags: C17,
+    files: REQUEST,
+    programs: { serve: SERVE },
+    file: 'processes/launcher-output.txt',
+  },
 ];
 
 export const MEASUREMENTS: Measurement[] = [

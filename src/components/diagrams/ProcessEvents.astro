@@ -1,0 +1,41 @@
+---
+import {
+  LAUNCHER,
+  simulate,
+} from '../../../labs/operating-systems-runtime-internals/processes/process';
+// The stepper's events as a table, for reading without JavaScript.
+const { events } = simulate(LAUNCHER);
+---
+
+<div
+  class="table-scroll"
+  tabindex="0"
+  role="region"
+  aria-label="Launcher events"
+>
+  <table>
+    <thead>
+      <tr>
+        <th scope="col">#</th>
+        <th scope="col">Event</th>
+        <th scope="col">Every process afterwards</th>
+      </tr>
+    </thead>
+    <tbody>
+      {events.map((event, index) => (
+        <tr>
+          <td>{index + 1}</td>
+          <td>{event.text}</td>
+          <td>
+            {event.after
+              .map(
+                (s) =>
+                  `${s.name} ${s.state}${s.parent === 'init' ? ' (init’s)' : ''}`,
+              )
+              .join(', ')}
+          </td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+</div>

@@ -105,6 +105,8 @@ export type Artifact = ArtifactBase &
         flags: string[];
         args?: string[];
         files?: Record<string, string>;
+        /** Other C programs built into its working folder under these names. */
+        programs?: Record<string, CProgram>;
       }
     | {
         // A normalized strace of a C program (see normalizeTrace).
@@ -704,9 +706,13 @@ export function runNative(registry: Registry, options: Options = {}): Report {
           },
           'program',
         );
-        return run(executable, artifact.args ?? [], {
-          cwd: workspace(artifact.files),
-        });
+        const folder = workspace(artifact.files);
+        for (const [name, program] of Object.entries(artifact.programs ?? {})) {
+          const installed = join(folder, name);
+          writeFileSync(installed, readFileSync(buildC(program, name)));
+          chmodSync(installed, 0o755);
+        }
+        return run(executable, artifact.args ?? [], { cwd: folder });
       }
       case 'strace': {
         const { folder, text } = traced(

@@ -104,8 +104,8 @@ sections:
     # system-calls, processes, threads, scheduling, context-switches
     lessons:
       - operating-systems-runtime-internals/system-calls
+      - operating-systems-runtime-internals/processes
     planned:
-      - 'Processes: fork, exec and wait'
       - "Threads: What they share and what they don't"
       - 'Scheduling: Sharing a CPU fairly'
       - 'Context switches: What switching costs'

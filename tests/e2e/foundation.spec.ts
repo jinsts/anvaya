@@ -303,7 +303,10 @@ test('full-text search, quiz feedback, and mobile navigation', async ({
   await expect(
     results.getByRole('link', { name: 'Arrays: Think in indices' }),
   ).toBeVisible();
-  await search.fill('zzqqxv');
+  // Pagefind also matches an indexed word that begins the query, so an
+  // empty search needs a first letter that is never a word on its own: a
+  // lone "z" now appears (a zombie's process state), "a" never matches.
+  await search.fill('aqqjjxv');
   await expect(page.locator('#empty')).toBeVisible();
   await search.fill('collision');
   await expect(

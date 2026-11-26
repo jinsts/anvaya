@@ -1756,3 +1756,65 @@ used for the vDSO's limit rather than privilege. All timings are from a
 virtual machine; the lesson gives ratios and says so. The statement that
 strace -c leaves out `exit_group` is what the recording shows; the lesson
 does not claim why.
+
+## Processes lesson — 2026-11-26
+
+Drafts `operating-systems-runtime-internals/processes`, Chapter 1's second
+page, with the draft-lesson skill. The learner predicts the processes a
+program builds with `fork`, `exec` and `wait`, steps through a launcher that
+starts `serve`, and sees why every exited child is a zombie until its parent,
+or whoever adopts it, waits. Figures: a lifecycle diagram drawn from the
+model's `LIFECYCLE` table, the `ForkStepper` island over the model's events
+(with a prediction of which process init adopts), and its events as a table
+in a "Check after stepping" disclosure.
+
+Evidence: `launcher.c` runs the model's `LAUNCHER` program on Linux, with
+`serve` built beside it. It catches P3 as a zombie (`WNOWAIT`, then state `Z`
+in `/proc/<pid>/stat`), shows `/proc/<pid>` gone after the reap, and makes
+itself a child subreaper so the orphaned P5 comes to it. It prints P1 to P5,
+not process IDs; the shared runner drift-checks `launcher-output.txt`, which
+was the same on three consecutive runs. The runner's `output` kind gained
+`programs`, other C programs built into the working folder, with a unit test.
+
+Model and tests: `process.ts` simulates fork, exec (successful or missing),
+wait (oldest unreaped child), exit and pause, names children in reading order
+so the result does not depend on the scheduler, and refuses statuses outside
+0–255 and unknown actions. Nine model tests (including the practice card's
+answer) and ten hidden contract cases pass; `pnpm lab
+operating-systems-runtime-internals/processes` fails all ten against the
+starter. Independent checks: the model's statuses and ends agree with the
+recorded launcher, and a separate Python implementation that runs the newest
+process first passed all ten hidden cases through the contracts themselves.
+Two component tests cover the stepper (a zombie before its reap, the scored
+adoption prediction, reset), and a new `tests/e2e/operating-systems.spec.ts`
+steps it by keyboard.
+
+Sources opened on 2026-11-26 before citing: OSTEP chapter 5 (the process
+API); fork(2) (including its copy-on-write note), execve(2), \_exit(2),
+wait(2), PR_SET_CHILD_SUBREAPER(2const), proc_pid_stat(5) and
+pid_namespaces(7) on man7.org. No fitting problem exists in the registered
+bank; none is linked.
+
+Same command as the previous entry: zero type errors, warnings or hints;
+formatting and lint passed; 486 tests passed and 1 skipped in 72 files (the
+Docker test); 42 pages; 154 browser tests. `pnpm subject:report
+operating-systems-runtime-internals/processes`: no flags.
+
+First-run failures and fixes: the first gate run failed four search tests on
+both projects. Pagefind also matches an indexed word that begins the query,
+and the lesson's zombie state, a lone "Z", made the tests' empty query
+`zzqqxv` match it; probing every first letter showed that a query starting
+with "a" never matches, so both tests now search for `aqqjjxv`, with a comment
+saying why. Earlier, the model left an adopted child that exited later as a
+zombie and P1 unreaped; both are reaped now, as in Linux.
+
+Visual review: `pnpm shots` captured the lifecycle figure and the stepper at
+1280 and 390 px in both themes and the page without JavaScript; a scratch
+script captured the stepper after the first zombie and after the adoption,
+and the event table, in both widths and themes. No overflow; the review found
+nothing to change.
+
+For the owner: the model sends orphans to init, while the recording uses a
+subreaper; the lesson says so. "Exits with 127 after a failed exec" is
+`launcher.c`'s own choice, not a rule the lesson states. Whether a container
+runtime starts a small init as PID 1 is left to the containers chapter.

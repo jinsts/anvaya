@@ -135,7 +135,10 @@ test('global search reaches indexed lessons and restores query on reload', async
   await page.reload();
   await expect(search).toHaveValue('memory');
   await expect(arraysResult).toBeVisible();
-  await search.fill('zzqqxv');
+  // Pagefind also matches an indexed word that begins the query, so an
+  // empty search needs a first letter that is never a word on its own: a
+  // lone "z" now appears (a zombie's process state), "a" never matches.
+  await search.fill('aqqjjxv');
   await expect(page.locator('#empty')).toBeVisible();
   await page.getByRole('button', { name: 'Clear', exact: true }).click();
   await expect(page).toHaveURL('/concepts/');
