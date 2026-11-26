@@ -1937,3 +1937,16 @@ errors, warnings or hints; formatting and lint passed; 442 tests in 65 files,
 none skipped, including the native drift check; 39 pages; 142 browser tests.
 No figure changed, so no screenshots were taken. With this entry F13 is done
 for all nine lessons it named (reading assembly met it in the F7 change).
+
+## Program execution: a numbered Practice section — 2026-11-26
+
+Fixes finding F8 of the 2026-11-17 architecture audit for this lesson with the
+enhance-lesson skill (standard L10). The heading "Attempt the control-flow
+contract" is now "Practice", and the attempt card is titled "01 / Count executed
+instructions" instead of "Independent execution attempt"; its text and command
+are unchanged. `pnpm subject:report` no longer raises L10 for the lesson.
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 442 tests in 65 files,
+none skipped, including the native drift check; 39 pages; 142 browser tests.
+No figure changed, so no screenshots were taken.
