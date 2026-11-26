@@ -1917,3 +1917,23 @@ Same command and environment as the first entry of 2026-11-25: zero type
 errors, warnings or hints; formatting and lint passed; 442 tests in 65 files,
 none skipped, including the native drift check; 39 pages; 142 browser tests.
 No figure changed, so no screenshots were taken.
+
+## Architecture and performance: what the tests check — 2026-11-26
+
+Fixes finding F13 of the 2026-11-17 architecture audit for this lesson with the
+enhance-lesson skill (standard L9). The paragraph after the model began "The
+lab tests these calculations and invalid inputs"; it now begins "The tests
+check this output exactly" and names what `example.test.ts` asserts: CPU time
+scaling with work and inversely with frequency, Amdahl's serial and parallel
+limits, the parts the Amdahl bars draw (added by the F6 change), and the
+refusal of invalid counts, CPIs, frequencies, fractions and overflowing
+estimates. "Both arithmetic helpers" became "Each arithmetic helper", since the
+F6 change added a third. The serial-limit values that practice 02 asks for are
+not named. `pnpm subject:report` no longer raises L9; C4 remains (40 minutes,
+one mechanism).
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 442 tests in 65 files,
+none skipped, including the native drift check; 39 pages; 142 browser tests.
+No figure changed, so no screenshots were taken. With this entry F13 is done
+for all nine lessons it named (reading assembly met it in the F7 change).

@@ -186,8 +186,11 @@ comparison.
 
 </details>
 
-The lab tests these calculations and invalid inputs. It measures no processor
-timings, counters, or power. Both arithmetic helpers use O(1) operations and
+The tests check this output exactly, that CPU time scales with work and
+inversely with frequency, the serial and parallel limits of Amdahl's law and
+the parts the Amdahl bars draw, and that invalid counts, CPIs, frequencies,
+fractions and overflowing estimates are refused. The lab measures no processor
+timings, counters, or power. Each arithmetic helper uses O(1) operations and
 O(1) space under the fixed-width number model; their returned estimates do not
 include JavaScript execution overhead.
 
