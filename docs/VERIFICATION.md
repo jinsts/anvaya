@@ -2159,3 +2159,18 @@ Same command and environment as the first entry of 2026-11-25: zero type
 errors, warnings or hints; formatting and lint passed; 442 tests in 65 files,
 none skipped, including the native drift check; 39 pages; 142 browser tests.
 No figure changed, so no screenshots were taken.
+
+## Memory hierarchy: the lab README states its contract — 2026-11-26
+
+Fixes finding F11 of the 2026-11-17 architecture audit for this lab with the
+enhance-lesson skill (standard P6). The README was generic. It now states the
+contract (one hit or miss per address through a cold direct-mapped cache of two
+16-byte lines, and a `RangeError` for an address that is not a nonnegative safe
+integer), how a block and its slot are found, one worked case that is the
+lesson's own trace (0, 4, 8, 12, 32, 0), the run command, what to explain, and
+what `traversal.ts` is for. It names no hidden input.
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 442 tests in 65 files,
+none skipped, including the native drift check; 39 pages; 142 browser tests.
+No figure changed, so no screenshots were taken.
