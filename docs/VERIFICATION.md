@@ -2059,3 +2059,19 @@ Same command and environment as the first entry of 2026-11-25: zero type
 errors, warnings or hints; formatting and lint passed; 442 tests in 65 files,
 none skipped, including the native drift check; 39 pages; 142 browser tests.
 No figure changed, so no screenshots were taken.
+
+## Program execution: the pipeline link points at its lesson — 2026-11-26
+
+Fixes finding F10 of the 2026-11-17 architecture audit for this lesson with the
+enhance-lesson skill (standard L13, W9). "The performance lesson works the
+latency, throughput and dependency timeline" was stale: that timeline moved to
+`pipelining-and-hazards` when the processor chapter was split. The sentence now
+links the pipelining lesson, whose "Five stages, overlapped" section defines
+throughput against per-instruction latency and whose hazard sections step the
+dependency timeline.
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 442 tests in 65 files,
+none skipped, including the native drift check; 39 pages, with every internal
+link validated; 142 browser tests. No figure changed, so no screenshots were
+taken.
