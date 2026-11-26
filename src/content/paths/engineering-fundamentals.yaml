@@ -53,6 +53,14 @@ sections:
       - computer-architecture-execution/reading-assembly
       - computer-architecture-execution/compilation-and-execution
       - computer-architecture-execution/stack-and-heap
+    # Split on 2026-11-25 (audit F2; owner decision S1: split above 45
+    # minutes). "Call frames and the stack pointer" goes before stack-and-heap
+    # and takes call frames, the stack pointer, the calling convention's stack
+    # rules (alignment, the red zone) and stack overflow. stack-and-heap keeps
+    # independent allocation lifetimes, failure modes, allocator costs and
+    # garbage collection.
+    planned:
+      - Call frames and the stack pointer
   - id: architecture-memory-hierarchy
     title: The memory hierarchy
     subject: computer-architecture-execution
@@ -64,6 +72,14 @@ sections:
     # memory-hierarchy-and-caches, which keeps the hierarchy, locality and
     # access costs. The storage page completes the approved topic "Memory
     # hierarchy, caches, RAM, and storage".
+    # Split on 2026-11-25 (audit F2; owner decision S1: split above 45
+    # minutes). "Average access time and address translation" goes after
+    # memory-hierarchy-and-caches and takes average access time (additional
+    # against total miss penalty, local and global miss rates) and the TLB,
+    # page walks and page faults. memory-hierarchy-and-caches keeps the
+    # layers, lines, direct-mapped placement and locality.
+    planned:
+      - Average access time and address translation
   - id: architecture-processor
     title: Inside the processor
     subject: computer-architecture-execution
@@ -85,6 +101,14 @@ sections:
     lessons:
       - computer-architecture-execution/hardware-software-interaction
       - computer-architecture-execution/io-mechanisms
+    # Split on 2026-11-25 (audit F2; owner decision S1: split above 45
+    # minutes). "Polling, interrupts and DMA" goes between
+    # hardware-software-interaction and io-mechanisms and takes programmed
+    # I/O against DMA, polling against interrupts, coalescing and the latency,
+    # throughput and CPU costs. io-mechanisms keeps the request lifecycle:
+    # buffer ownership, completion, cancellation and durability.
+    planned:
+      - Polling, interrupts and DMA
   - id: architecture-performance
     title: Performance on real hardware
     subject: computer-architecture-execution

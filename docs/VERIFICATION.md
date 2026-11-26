@@ -2213,3 +2213,32 @@ overflow or console errors. The first 390 px capture showed "24" and "MiB."
 breaking across lines in the key; non-breaking spaces fixed that, and the
 second capture shows no label touching a point. The 1280 px captures match the
 previous figure.
+
+## Plan three pages split from the oversized architecture lessons — 2026-11-26
+
+Planning change for finding F2 of the 2026-11-17 architecture audit, following
+add-subject-or-path.md and owner decision S1 (split pages above 45 minutes).
+Three planned pages join their chapters in
+`src/content/paths/engineering-fundamentals.yaml`, each with a YAML comment
+naming its intended position and the material it takes over, using the audit's
+candidate split points:
+
+- "Average access time and address translation", after
+  memory-hierarchy-and-caches (55 minutes), which keeps the layers, lines,
+  direct-mapped placement and locality.
+- "Call frames and the stack pointer", before stack-and-heap (50 minutes),
+  which keeps allocation lifetimes, failure modes, allocator costs and garbage
+  collection.
+- "Polling, interrupts and DMA", between hardware-software-interaction and
+  io-mechanisms (55 minutes), which keeps the request lifecycle.
+
+No lesson changed; existing lessons keep their URLs, and the chapter count is
+unchanged, so `tests/e2e/catalog.spec.ts` needs no update. The titles appear in
+no other path or proposal. `pnpm subject:report computer-architecture-execution`
+lists the three as planned in the right chapters and raises no duplicate-title
+flag. The owner asked for this split in the task that produced this branch; the
+pages are drafted in the following changes, one per commit.
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 442 tests in 65 files,
+none skipped, including the native drift check; 39 pages; 142 browser tests.
