@@ -2041,3 +2041,21 @@ Same command and environment as the first entry of 2026-11-25: zero type
 errors, warnings or hints; formatting and lint passed; 442 tests in 65 files,
 none skipped, including the native drift check; 39 pages; 142 browser tests.
 No figure changed, so no screenshots were taken.
+
+## DRAM, SSDs and disks: an analogy of its own — 2026-11-26
+
+Fixes finding F9 of the 2026-11-17 architecture audit for this lesson with the
+enhance-lesson skill (standard L3: analogies are not reused). The hook's book
+fetched from a desk, a shelf, a library basement or another city repeated the
+memory hierarchy lesson's desk, shelf and warehouse. It now answers a question
+at work: from what you know, your notes, a colleague on the phone or an archive.
+Each is a different mechanism rather than a longer walk, and follow-up questions
+are quick once the colleague is on the line, which mirrors the lesson's open DRAM
+row and sequential disk reads. The limit is unchanged: "The analogy stops at
+overlap". A search of the subject's lessons finds no other use of this
+analogy. `pnpm subject:report` raises only C4 (35 minutes, one mechanism).
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 442 tests in 65 files,
+none skipped, including the native drift check; 39 pages; 142 browser tests.
+No figure changed, so no screenshots were taken.
