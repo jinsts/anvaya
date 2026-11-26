@@ -84,9 +84,10 @@ the calculation may need sixteen line fills. Both algorithms perform sixteen
 logical reads.
 
 A desk, a nearby shelf and a warehouse make a useful analogy: frequently used
-items belong near the worker. It stops being exact because hardware transfers
-fixed blocks, follows placement rules and can overlap requests. A cache does not
-understand which application values you consider useful.
+items belong near the worker. The analogy stops at choice: hardware moves
+fixed-size lines rather than chosen items, places each line by fixed rules and
+can overlap requests, and a cache does not know which application values you
+consider useful.
 
 This lesson follows the [representation model](/learn/computer-architecture-execution/binary-and-data-representation/)
 from values to explicit byte addresses. The cache trace and timing arithmetic
