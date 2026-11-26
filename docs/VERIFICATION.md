@@ -2109,3 +2109,25 @@ errors, warnings or hints; formatting and lint passed; 442 tests in 65 files,
 none skipped, including the native drift check; 39 pages, with every internal
 link validated; 142 browser tests. No figure changed, so no screenshots were
 taken.
+
+## Measuring performance: the lab's README — 2026-11-26
+
+Fixes finding F11 of the 2026-11-17 architecture audit for this lab with the
+enhance-lesson skill (standard P1, P6). `labs/computer-architecture-execution/measuring-performance/`
+had no README. The new "Independent practice" README states the contract
+(median and nearest-rank p90 without changing the input, and a `RangeError`
+for an empty list or a non-finite value), one worked case that no hidden case
+uses (`[4, 2, 8]` gives median 4 and p90 8), the run command, and what to
+explain before opening the reference. It records the provenance of `timing.c`
+and `timing.json` (flags `-std=c17 -O2`, checked sums, the fields the native
+runner records, `--record-measurements`) and that `perf-counters.sh` is
+owner-run, with its tested exit status 2 when `perf` is missing. Each of these
+was checked against `verify-native.mjs`, `timing.json` and `stats.test.ts`.
+`pnpm subject:report` no longer raises P1 for the lesson; its V2 flag is the
+audit's known false signal (`MeasureWorkflow` is a concept figure with nothing
+to compute).
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 442 tests in 65 files,
+none skipped, including the native drift check; 39 pages; 142 browser tests.
+No figure changed, so no screenshots were taken.
