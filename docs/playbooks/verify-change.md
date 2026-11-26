@@ -6,39 +6,59 @@ ran; if one could not run, say which and why.
 
 ## 1. Set up the environment once
 
-| Need                         | Setup (no root; Ubuntu packages extracted into a folder)                                                                                                         | Variable                                                                             |
-| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| Chromium libraries           | `sh scripts/setup-browser-deps.sh /tmp/anvaya-browser-deps`                                                                                                      | `LD_LIBRARY_PATH=/tmp/anvaya-browser-deps/usr/lib/x86_64-linux-gnu`                  |
-| A subject's native toolchain | The subject's native lab README, for example `labs/computer-architecture-execution/compilation-and-execution/native/README.md` (GCC 15.2 for x86-64 and aarch64) | `ANVAYA_CC=/tmp/anvaya-cc/compiler`, `ANVAYA_CC_ARM64=/tmp/anvaya-cc-arm64/compiler` |
-| An isolated preview port     | Any free port, so a stale preview is never tested                                                                                                                | `PLAYWRIGHT_PORT=4371`                                                               |
+| Need                                 | Setup (no root; Ubuntu packages extracted into a folder)      | Variable                                                                  |
+| ------------------------------------ | ------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| Chromium libraries                   | `sh scripts/setup-browser-deps.sh /tmp/anvaya-browser-deps`   | `LD_LIBRARY_PATH=/tmp/anvaya-browser-deps/usr/lib/x86_64-linux-gnu`       |
+| GCC 15.2 and binutils 2.46           | `sh scripts/setup-gcc-ubuntu.sh /tmp/anvaya-cc`               | `ANVAYA_CC=/tmp/anvaya-cc/compiler`, `ANVAYA_BINUTILS=/tmp/anvaya-cc/bin` |
+| GCC 15.2 for aarch64 (listings only) | `sh scripts/setup-gcc-arm64-ubuntu.sh /tmp/anvaya-cc-arm64`   | `ANVAYA_CC_ARM64=/tmp/anvaya-cc-arm64/compiler`                           |
+| strace 6.19                          | `sh scripts/setup-strace-ubuntu.sh /tmp/anvaya-strace`        | `ANVAYA_STRACE=/tmp/anvaya-strace/strace`                                 |
+| OpenJDK 21                           | `sh scripts/setup-jdk-ubuntu.sh /tmp/anvaya-jdk`              | `ANVAYA_JAVA_HOME=/tmp/anvaya-jdk/root/usr/lib/jvm/java-21-openjdk-amd64` |
+| Go 1.26                              | `sh scripts/setup-go-ubuntu.sh /tmp/anvaya-go`                | `ANVAYA_GO=/tmp/anvaya-go/root/usr/lib/go-1.26/bin/go`                    |
+| Docker, with a daemon that answers   | Docker Engine or Docker Desktop (containers run unprivileged) | `ANVAYA_DOCKER=docker`                                                    |
+| An isolated preview port             | Any free port, so a stale preview is never tested             | `PLAYWRIGHT_PORT=4371`                                                    |
 
-Folders under `/tmp` disappear on reboot. Check first: `ls /tmp/anvaya-cc
-/tmp/anvaya-browser-deps`, and `ldd` on Playwright's `chrome-headless-shell` for
-`not found` libraries. Without `ANVAYA_CC` the native tests are skipped, and the
-record must say so.
+The recorded toolchains come from Ubuntu 26.04 packages. On another Ubuntu
+release, prefix a setup command with `ANVAYA_UBUNTU_SUITE=resolute` to
+download them through a private package list in the folder
+(`scripts/ubuntu-packages.sh`). The JDK is the exception: Ubuntu 26.04's
+build needs glibc 2.42, so use the machine's own suite (for example `noble`),
+which has the same 21.0.13.1. The subjects' native lab READMEs say which
+artifacts need which tool.
+
+Folders under `/tmp` disappear on reboot. Check first: `ls /tmp/anvaya-*`, and
+`ldd` on Playwright's `chrome-headless-shell` for `not found` libraries. The
+shared native runner (`scripts/native.ts`) reports a tool whose variable is
+unset, or that does not run, as absent, and skips everything that needs it
+with the reason; the record must name what was skipped.
 
 ## 2. Run the gate
 
 ```sh
 PLAYWRIGHT_PORT=4371 \
   LD_LIBRARY_PATH=/tmp/anvaya-browser-deps/usr/lib/x86_64-linux-gnu \
-  ANVAYA_CC=/tmp/anvaya-cc/compiler ANVAYA_CC_ARM64=/tmp/anvaya-cc-arm64/compiler \
+  ANVAYA_CC=/tmp/anvaya-cc/compiler ANVAYA_BINUTILS=/tmp/anvaya-cc/bin \
+  ANVAYA_CC_ARM64=/tmp/anvaya-cc-arm64/compiler \
+  ANVAYA_STRACE=/tmp/anvaya-strace/strace \
+  ANVAYA_JAVA_HOME=/tmp/anvaya-jdk/root/usr/lib/jvm/java-21-openjdk-amd64 \
+  ANVAYA_GO=/tmp/anvaya-go/root/usr/lib/go-1.26/bin/go ANVAYA_DOCKER=docker \
   pnpm verify
 ```
 
 It runs type checks, formatting, lint (tokens and placeholders), unit and lab
-tests (including the native drift check when `ANVAYA_CC` is set), the static
-build with search index and link validation, and the browser tests. Use
-`pnpm lint` and `pnpm vitest run <path>` while iterating, but commit only after
-a full run.
+tests (including each subject's native drift check for the tools that are
+set), the static build with search index and link validation, and the browser
+tests. Use `pnpm lint` and `pnpm vitest run <path>` while iterating, but
+commit only after a full run.
 
 For a lesson, also run:
 
 - `pnpm lab <subject>/<lesson>`: it must fail every case before an attempt.
 - `pnpm subject:report <subject>/<lesson>`: resolve each flag or justify it in
   the record.
-- The subject's native runner on its own when its artifacts changed, and
-  `--record` only when you intend to change them.
+- The subject's native registry on its own when its artifacts changed (for
+  example `node labs/operating-systems-runtime-internals/native/registry.ts`),
+  and `--record` or `--record-measurements` only when you intend to change
+  them.
 
 ## 3. Review screenshots
 

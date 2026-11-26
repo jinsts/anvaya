@@ -1,0 +1,17 @@
+{
+  "cc": {
+    "version": "(Ubuntu 15.2.0-16ubuntu1) 15.2.0",
+    "target": "x86_64-linux-gnu",
+    "binutils": "GNU objdump (GNU Binutils for Ubuntu) 2.46"
+  },
+  "strace": {
+    "version": "strace -- version 6.19"
+  },
+  "java": {
+    "version": "javac 21.0.13.1",
+    "runtime": "openjdk version \"21.0.13.1\" 2026-11-17"
+  },
+  "go": {
+    "version": "go1.26.8 linux/amd64"
+  }
+}

@@ -64,7 +64,8 @@ pnpm verify
 On a fresh Linux CI machine, use `pnpm exec playwright install --with-deps chromium`
 to install browser system libraries too. Without root, extract them with
 `sh scripts/setup-browser-deps.sh /tmp/anvaya-browser-deps` and set
-`LD_LIBRARY_PATH`; native lab tests also need `ANVAYA_CC`
+`LD_LIBRARY_PATH`; native lab tests also need the toolchain variables, such
+as `ANVAYA_CC` and `ANVAYA_STRACE`, and skip what they cannot run
 ([verify-change.md](docs/playbooks/verify-change.md)). The E2E suite starts its own production
 preview on `127.0.0.1:4321` (or reuses one already there). Build first.
 Screenshots and traces go to the ignored `test-results/` and

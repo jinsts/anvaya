@@ -1,8 +1,10 @@
 {
-  "version": "(Ubuntu 15.2.0-16ubuntu1) 15.2.0",
-  "target": "x86_64-linux-gnu",
-  "binutils": "GNU objdump (GNU Binutils for Ubuntu) 2.46",
-  "arm64": {
+  "cc": {
+    "version": "(Ubuntu 15.2.0-16ubuntu1) 15.2.0",
+    "target": "x86_64-linux-gnu",
+    "binutils": "GNU objdump (GNU Binutils for Ubuntu) 2.46"
+  },
+  "cc-arm64": {
     "version": "(Ubuntu 15.2.0-16ubuntu1) 15.2.0",
     "target": "aarch64-linux-gnu"
   }

@@ -27,7 +27,8 @@ marked ☐ registered.
 - **Size and boundaries:** 38 pages in 10 chapters, and the ownership table
   under "Scope and boundary".
 - **Native runner:** extracted into one shared runner that both subjects use,
-  as a separate platform change before lesson 1, with its own ADR.
+  as a separate platform change before lesson 1
+  ([ADR 0010](../adr/0010-shared-native-runner.md)).
 - **Go version:** Go 1.26.
 - **Root:** tools are extracted without root and containers run
   unprivileged; a lesson that needs root says why.

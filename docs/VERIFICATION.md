@@ -1608,3 +1608,67 @@ and the existing catalog test scans the path page in both themes.
 For the owner: the rewritten overview objectives, mechanisms, experiments
 and competencies are agent drafts, and the ten `os-…` section IDs become
 the chapters' anchors.
+
+## Shared native runner — 2026-11-26
+
+The platform change the owner decided on 2026-11-25, recorded in
+[ADR 0010](adr/0010-shared-native-runner.md). `scripts/native.ts` is one
+runner for every subject's native lab: it finds each tool from its variable,
+generates twelve kinds of artifact (the architecture's six plus `strace`
+traces, `javap` listings, Java and Go output, Go escape analysis and container
+output), runs C, Java and Go checks, validates measurements, and reports every
+tool as present or absent and every skipped item with its reason.
+`verify-native.mjs` keeps its path and command and is now only the
+architecture's registry; its `toolchain.json` moved to one entry per tool,
+with the same identities. `labs/operating-systems-runtime-internals/native/`
+holds the new subject's registry (empty until lesson 1), its toolchain record,
+test and README. The two GCC setup scripts moved to `scripts/`, beside new
+ones for strace, the JDK and Go, which share `scripts/ubuntu-packages.sh`.
+
+Same container as the previous entry (Ubuntu 24.04, not the owner's 26.04).
+All five setup scripts recreated their toolchains from empty folders:
+GCC 15.2.0-16ubuntu1 with binutils 2.46 and the ARM64 cross-compiler,
+strace 6.19 and Go 1.26.8 from Ubuntu 26.04 (`ANVAYA_UBUNTU_SUITE=resolute`),
+and OpenJDK 21.0.13.1 from this host's own 24.04 suite
+(`ANVAYA_UBUNTU_SUITE=noble`), because the 26.04 build needs glibc 2.42.
+The first GCC folder reproduced 27 of the 28 artifacts: Ubuntu's GCC runs
+`/usr/bin/x86_64-linux-gnu-as` and `-ld` by absolute path, so the host's
+binutils 2.42 linked `scale-linked.txt` with its alignment NOPs in another
+order. A specs file in the folder now points GCC at the extracted binutils
+2.46; `-v` shows the 2.46 `as` and `ld` running, and all 28 compare the same.
+
+The runner's tests (`tests/unit/native-runner.test.ts`) use stand-in tools,
+so they run in every gate: tool detection and skip reasons, a `ptrace`
+refusal, recording then comparing every artifact kind, a changed artifact, a
+version mismatch that skips only the artifacts needing that tool, an absent
+tool's recorded identity kept on `--record`, quick and recorded measurements
+with their provenance, trace normalization and the listing helpers. Three
+more run against the real JDK (`javap` shows `imul`; the program prints 42),
+Go (`moved to heap: x`) and strace (process IDs become P1) when their
+variables are set. The architecture registry run on its own: 28 artifacts
+same, 8 checks, 5 measurements validated. With a tool removed it reports, for
+example, `cc-arm64 is absent (ANVAYA_CC_ARM64 is not set)`; with this host's
+`objdump` (2.42) on `PATH` instead of `ANVAYA_BINUTILS`, all 28 are skipped
+with the differing identity. Docker's command line is installed here but no
+daemon runs, so the runner reports Docker absent with the daemon's error.
+
+```sh
+PLAYWRIGHT_PORT=4371 \
+  ANVAYA_CC=/tmp/anvaya-cc/compiler ANVAYA_BINUTILS=/tmp/anvaya-cc/bin \
+  ANVAYA_CC_ARM64=/tmp/anvaya-cc-arm64/compiler \
+  ANVAYA_STRACE=/tmp/anvaya-strace/strace \
+  ANVAYA_JAVA_HOME=/tmp/anvaya-jdk/root/usr/lib/jvm/java-21-openjdk-amd64 \
+  ANVAYA_GO=/tmp/anvaya-go/root/usr/lib/go-1.26/bin/go \
+  pnpm verify
+```
+
+Zero type errors, warnings or hints; formatting and lint passed; 442 tests
+passed and 1 skipped in 67 files (the skip is the Docker test, with
+`ANVAYA_DOCKER` unset because no daemon runs here); 39 pages; 144 browser
+tests. No content or figure changed, so no screenshots were taken.
+
+For the owner: the moved GCC scripts now also extract binutils 2.46, so the
+compiler wrapper no longer uses the system's `as` and `ld` on your machine
+either (the same version there). Set `ANVAYA_BINUTILS=/tmp/anvaya-cc/bin`
+with `ANVAYA_CC`, or the architecture listings are skipped if your system
+binutils is not 2.46. Docker recordings need your machine.
