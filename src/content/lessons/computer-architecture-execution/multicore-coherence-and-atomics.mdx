@@ -99,9 +99,10 @@ Think of a document that many people may read but only one may edit, after
 collecting everyone else's copy. The analogy stops at granularity: a cache does
 this for every 64-byte line separately, whatever the line holds.
 
-Each core has at least its own L1 cache, so two cores can hold copies of the
-same cache line. Three separate questions follow, and mixing them up causes most
-multicore bugs:
+The [cache organization lesson](/learn/computer-architecture-execution/cache-organization/)
+followed lines through one core's cache. Each core has at least its own L1
+cache, so two cores can hold copies of the same cache line. Three separate
+questions follow, and mixing them up causes most multicore bugs:
 
 - **Coherence:** do the copies of one location agree?
 - **Ordering:** in what order can other cores see writes to _different_
@@ -203,7 +204,9 @@ by architecture.
 
 `atomics.c` writes the pattern with GCC's `__atomic` builtins; C11's
 `<stdatomic.h>` spells the same store `atomic_store_explicit(&ready, 1,
-memory_order_release)`. GCC 15.2 at `-O2` compiled it for x86-64 and AArch64:
+memory_order_release)`. GCC 15.2 at `-O2` compiled it for x86-64 and AArch64;
+the listings read as in the
+[assembly lesson](/learn/computer-architecture-execution/reading-assembly/):
 
 <CodeExample title="publish, x86-64 -O2" code={publish} language="text" />
 <CodeExample title="consume, x86-64 -O2" code={consume} language="text" />
@@ -288,7 +291,8 @@ if a listing drifts.
 - **NUMA** machines attach memory to each processor socket, and reaching another
   socket's memory takes longer.
 - Locks, condition variables and deadlock are built on these atomic operations;
-  the operating-systems subject covers them.
+  the [operating systems subject](/subjects/operating-systems-runtime-internals/)
+  plans lessons on them.
 
 Neither cost was measured here.
 

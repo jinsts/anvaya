@@ -2091,3 +2091,21 @@ errors, warnings or hints; formatting and lint passed; 442 tests in 65 files,
 none skipped, including the native drift check; 39 pages, with every internal
 link validated; 142 browser tests. No figure changed, so no screenshots were
 taken.
+
+## Multicore coherence and atomics: links to what it builds on — 2026-11-26
+
+Fixes finding F10 of the 2026-11-17 architecture audit for this lesson with the
+enhance-lesson skill (standard L13). The lesson had no `/learn` links. The
+first section now links its prerequisite cache organization lesson ("followed
+lines through one core's cache"), the compiled listings link its other
+prerequisite, the assembly lesson, and the closing note on locks, condition
+variables and deadlock links the operating systems subject. Because that
+subject has no lessons yet, the note now says it "plans lessons on them"
+(its path section lists "Concurrency and synchronization" and "Race
+conditions, deadlocks, and resource contention") instead of "covers them".
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 442 tests in 65 files,
+none skipped, including the native drift check; 39 pages, with every internal
+link validated; 142 browser tests. No figure changed, so no screenshots were
+taken.
