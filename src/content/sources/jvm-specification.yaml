@@ -1,0 +1,8 @@
+name: The Java Virtual Machine Specification, Java SE 21 Edition
+kind: specification
+by: Tim Lindholm, Frank Yellin, Gilad Bracha, Alex Buckley and Daniel Smith
+url: https://docs.oracle.com/javase/specs/jvms/se21/html/
+description: >-
+  The normative specification that every Java SE 21 virtual machine
+  implements: its structure, the class file format, loading and linking, and
+  the instruction set.

@@ -290,6 +290,37 @@ test('a subject with several chapters is grouped on path, subject and lesson pag
   ]);
 });
 
+test('operating systems is ten chapters from its approved proposal', async ({
+  page,
+}) => {
+  await page.goto('/paths/engineering-fundamentals/');
+  const chapters = page
+    .locator('#subject-operating-systems-runtime-internals')
+    .locator('xpath=ancestor::section[1]')
+    .getByRole('heading', { level: 3 });
+  await expect(chapters).toHaveCount(10);
+  await expect(chapters.first()).toHaveText(
+    /^Chapter 1 The kernel boundary and processes$/,
+  );
+  await expect(chapters.last()).toHaveText(
+    /^Chapter 10 Go and choosing a runtime$/,
+  );
+
+  // The path sections are the only outline: no overview chapter sketch.
+  await page.goto('/subjects/operating-systems-runtime-internals/');
+  await expect(page.locator('#future-chapters')).toHaveCount(0);
+  await page
+    .getByRole('heading', {
+      level: 3,
+      name: 'Chapter 4 Files and I/O for services',
+    })
+    .getByRole('link')
+    .click();
+  await expect(page).toHaveURL(
+    '/paths/engineering-fundamentals/#section-os-files-io',
+  );
+});
+
 test('catalog and subject pages fit both themes and pass accessibility scans', async ({
   page,
 }, info) => {

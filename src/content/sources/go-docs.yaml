@@ -1,0 +1,13 @@
+name: Go documentation and source
+kind: documentation
+by: The Go Authors
+url: https://go.dev/
+prefixes:
+  - https://go.dev/doc/
+  - https://go.dev/ref/
+  - https://go.dev/src/
+  - https://pkg.go.dev/runtime
+description: >-
+  The Go project's guides, references and standard-library source, including
+  the garbage collector guide, the memory model, the runtime package's
+  documentation and the scheduler's design comment in runtime/proc.go.

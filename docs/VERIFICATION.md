@@ -1552,3 +1552,59 @@ together: zero type errors, warnings or hints; formatting and lint passed; 421
 tests passed and 1 skipped in 65 files (the native drift check, which needs
 `ANVAYA_CC`); 39 pages; 142 browser tests. No figure changed, so no
 screenshots were taken.
+
+## Operating Systems & Runtime Internals planning change — 2026-11-26
+
+Applies the proposal the owner approved on 2026-11-25, with create-subject
+Phase 4. The subject's single path section becomes ten chapter sections
+(`os-kernel-boundary` through `os-go-runtime`) whose planned lists are the 38
+approved page titles in drafting order; a YAML comment on each chapter keeps
+the proposal's lesson slugs. The subject overview loses its six-chapter
+sketch (C8) and now matches the planned pages (C7): Go joins Node.js and the
+JVM as a case study, containers, signals and diagnostics are named, and three
+claims no page teaches (JVM class loading, actors, heap dumps) are gone. The
+proposal is marked approved, with the owner's final decisions in a dated
+section; its original text is kept. No lesson exists yet, so no competency or
+experiment is recorded as done.
+
+Eight sources were registered for the pages the proposal marked ☐. Pages
+opened on 2026-11-26, each read for its title, publisher and the section a
+later lesson will cite: Brendan Gregg's USE Method and Flame Graphs, the
+Node.js event-loop and "Don't Block the Event Loop" guides, libuv's design
+overview, V8's "Trash talk", the contents of the JVM Specification SE 21, the
+HotSpot GC Tuning Guide (Release 21) index, the JDK 21 `jcmd` manual, JEPs 439
+and 444, Go's `runtime/proc.go` scheduler comment, the `runtime` package
+documentation, the GC guide and the memory model. Claim-level reading happens
+when each lesson cites them.
+
+This run is not on the owner's WSL2 machine. It is a Claude Code cloud
+container: a Firecracker microVM (KVM) with Linux 6.18.44-fc-v880, Ubuntu
+24.04.5 and 4 vCPUs of an "Intel(R) Xeon(R) Processor @ 2.10GHz", working as
+root. Its network proxy refused the documentation hosts until the owner
+approved adding nine to the environment's allowed hosts (`man7.org`,
+`pages.cs.wisc.edu`, `docs.kernel.org`, `www.brendangregg.com`,
+`docs.libuv.org`, `v8.dev`, `docs.oracle.com`, `openjdk.org`, `go.dev`).
+GCC 15.2.0-16ubuntu1 and binutils 2.46 were extracted from Ubuntu 26.04
+packages with the setup scripts the next change adds; `PATH` put their
+`objdump` and `nm` ahead of this host's binutils 2.42 for the unchanged
+architecture runner. Chromium's libraries are all present here, so
+`LD_LIBRARY_PATH` was not needed.
+
+```sh
+PLAYWRIGHT_PORT=4371 PATH=/tmp/anvaya-cc/bin:$PATH \
+  ANVAYA_CC=/tmp/anvaya-cc/compiler ANVAYA_CC_ARM64=/tmp/anvaya-cc-arm64/compiler \
+  pnpm verify
+```
+
+Zero type errors, warnings or hints; formatting and lint passed; 422 tests in
+65 files, none skipped (the architecture native drift test ran); 39 pages;
+144 browser tests, including the new chapter test on desktop and mobile. The
+native drift check, run on its own, reported all 28 artifacts unchanged.
+`pnpm subject:report operating-systems-runtime-internals`: 10 chapters, 38
+planned pages, no flags. The change adds no figure; the built path and
+subject pages were inspected for the ten chapter headings and their anchors,
+and the existing catalog test scans the path page in both themes.
+
+For the owner: the rewritten overview objectives, mechanisms, experiments
+and competencies are agent drafts, and the ten `os-…` section IDs become
+the chapters' anchors.
