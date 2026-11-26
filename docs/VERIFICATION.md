@@ -1978,3 +1978,17 @@ Same command and environment as the first entry of 2026-11-25: zero type
 errors, warnings or hints; formatting and lint passed; 442 tests in 65 files,
 none skipped, including the native drift check; 39 pages; 142 browser tests.
 No figure changed, so no screenshots were taken.
+
+## Stack and heap: a Practice section — 2026-11-26
+
+Fixes finding F8 of the 2026-11-17 architecture audit for this lesson with the
+enhance-lesson skill (standard L10). The two numbered practice cards sat inside
+"Test lifetimes without inspecting the runtime", after the model disclosures.
+They now follow their own "Practice" heading; the model stays in its section,
+and the cards' titles, text and commands are unchanged. `pnpm subject:report`
+no longer raises L10 for the lesson; C4 and L3 belong to F2 and F9.
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 442 tests in 65 files,
+none skipped, including the native drift check; 39 pages; 142 browser tests.
+No figure changed, so no screenshots were taken.
