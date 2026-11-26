@@ -2131,3 +2131,17 @@ Same command and environment as the first entry of 2026-11-25: zero type
 errors, warnings or hints; formatting and lint passed; 442 tests in 65 files,
 none skipped, including the native drift check; 39 pages; 142 browser tests.
 No figure changed, so no screenshots were taken.
+
+## Binary representation: the lab README states its contract — 2026-11-26
+
+Fixes finding F11 of the 2026-11-17 architecture audit for this lab with the
+enhance-lesson skill (standard P6). The README was generic. It now states the
+contract (read a pattern 0–255 as two's complement, refuse anything else with a
+`RangeError`), one worked case that is the lesson's own (255 reads as −1) and
+no hidden case, the run command, and what to explain before opening the
+reference.
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 442 tests in 65 files,
+none skipped, including the native drift check; 39 pages; 142 browser tests.
+No figure changed, so no screenshots were taken.
