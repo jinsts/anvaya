@@ -2174,3 +2174,20 @@ Same command and environment as the first entry of 2026-11-25: zero type
 errors, warnings or hints; formatting and lint passed; 442 tests in 65 files,
 none skipped, including the native drift check; 39 pages; 142 browser tests.
 No figure changed, so no screenshots were taken.
+
+## Cache organization: the lab README states its contract — 2026-11-26
+
+Fixes finding F11 of the 2026-11-17 architecture audit for this lab with the
+enhance-lesson skill (standard P6). The README was generic. It now states the
+contract (one hit or miss per read through a cold cache of 16-byte lines with
+`sets` sets of `ways` lines and exact LRU), how a block's set is chosen and a
+victim picked, one worked case that no hidden case uses (0, 16, 0 in one set of
+two ways), the run command, what to explain, and what `lscpu-caches.txt` and
+`lscpu.test.ts` are for. With this entry F11 is done; the three lab folders
+whose names differ from their lessons' slugs stay as documented exceptions
+(owner decision S4).
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 442 tests in 65 files,
+none skipped, including the native drift check; 39 pages; 142 browser tests.
+No figure changed, so no screenshots were taken.
