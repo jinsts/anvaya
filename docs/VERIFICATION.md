@@ -1672,3 +1672,87 @@ compiler wrapper no longer uses the system's `as` and `ld` on your machine
 either (the same version there). Set `ANVAYA_BINUTILS=/tmp/anvaya-cc/bin`
 with `ANVAYA_CC`, or the architecture listings are skipped if your system
 binutils is not 2.46. Docker recordings need your machine.
+
+## System calls lesson — 2026-11-26
+
+Drafts `operating-systems-runtime-internals/system-calls`, the first page of
+Chapter 1, with the draft-lesson skill; it moves from the chapter's planned
+list to its lessons. The page follows a C library call through the kernel's
+system-call table and back, shows the vDSO answering `clock_gettime` in the
+process, and counts serve's system calls the way `strace -c` does. It
+introduces `serve` (`labs/operating-systems-runtime-internals/native/serve.c`),
+the subject's running example. The architecture hardware–software lesson now
+links forward to it, and the catalog test's sidebar list includes the new
+chapter.
+
+Evidence, registered in `native/registry.ts` and run by the shared runner
+with GCC 15.2 and strace 6.19: `numbers.txt` (system-call numbers from
+`<sys/syscall.h>`), `serve-trace.txt` and `serve-missing-trace.txt` (serve's
+own calls from its first `openat`, with and without its request file) are
+drift-checked; `serve-strace.json` (`strace -f -C` of the whole run, with
+strace's summary), `cost.json` and `cost-traced.json` (`cost.c`, fifteen
+alternated rounds of `getpid` and `clock_gettime`, without and under strace)
+are recordings. Each stores its date, tools, kernel, CPU and command; all were
+made on 2026-11-26 in this Claude Code cloud container (Linux 6.18.44-fc-v880,
+"Intel(R) Xeon(R) Processor @ 2.10GHz", KVM, 4 vCPUs, unpinned, as root),
+not on the owner's WSL2 machine. The run counted 35 calls, 29 of them before
+serve's own code and 1 error (`access` of `/etc/ld.so.preload`); `exit_group`
+is in the trace but not in strace's summary; no `clock_gettime` appears.
+Medians: `getpid` 90.4 ns and `clock_gettime` 29.1 ns; under strace 52.6 µs
+and 29.6 ns. The tests assert only what the lesson says: `getpid` slower in
+every round, a median ratio between 2.5 and 3.5 ("about three times"), every
+traced `getpid` round over 100 times the slowest untraced one ("hundreds of
+times"), and traced `clock_gettime` within 0.8–1.25 of untraced.
+
+Model and tests: `trace.ts` parses the strace line forms the lesson uses
+(returned, failed, unreturned, unfinished and resumed calls, signal and exit
+lines) and refuses others with the line number, counts as `strace -c` does,
+reads strace's summary table, and gives the call paths the figure draws.
+Twelve model tests and nine hidden contract cases pass; `pnpm lab
+operating-systems-runtime-internals/system-calls` fails all nine against the
+starter. Independent checks: the model's count of serve's recorded run equals
+strace's own summary row by row (calls and errors), and a separate Python
+implementation written from the contract's wording agreed with all nine
+hidden cases.
+
+Sources opened on 2026-11-26 before citing: syscall(2), intro(2), vdso(7),
+getpid(2), open(2), read(2), exit_group(2), stdin(3), ld.so(8), strace(1)
+and ptrace(2) on man7.org (man-pages 6.19); the kernel documentation's
+"Adding a New System Call" and "Kernel Entries"; OSTEP chapter 6. The
+proposal found no fitting problem, and none is linked.
+
+Same command as the previous entry, with `ANVAYA_STRACE`, `ANVAYA_JAVA_HOME`
+and `ANVAYA_GO` set: zero type errors, warnings or hints; formatting and lint
+passed; 464 tests passed and 1 skipped in 69 files (the Docker test); 41
+pages; 148 browser tests, including the per-lesson checks with and without
+JavaScript for this page. `pnpm subject:report
+operating-systems-runtime-internals/system-calls`: no flags.
+
+First-run failures and fixes: `perror` added `dup`, `fcntl` and `close`
+calls whose behaviour belongs to the host's C library, so serve reports errors
+with one `write`. serve first printed its process ID, which made the `write`
+length depend on the ID's digits; it now uses `getpid` only to check for
+PID 1. After a session restart, four-digit process IDs exposed that strace
+pads the ID column to five characters, which the runner's normalization kept
+(`P1  openat`); the runner now writes the label and one space, with a unit
+test. The model first rejected the runner's `P1` labels, and said rax where
+syscall(2) names eax for the number. The runner gained an expected exit
+status for traced programs (serve's failure path exits 1) and names a
+measured program in its recorded command. The study sidebar test expected one
+subject label.
+
+Visual review: `pnpm shots` captured the visible call-path figure at 1280 and
+390 px in both themes and the page at 390 px without JavaScript; a scratch
+script captured all three figures with every disclosure open. Review changed:
+each call-path step on its own row with elbows where the call crosses into and
+out of the kernel; the trace chart's names lost the prose inline-code boxes
+and its bars stack under their labels on phones; the cost chart shows every
+other axis label on phones; long trace lines in a disclosure widened the
+chart's grid and overflowed the page until the grid's column was constrained.
+
+For the owner: the bank-counter analogy comes from the approved proposal and
+is close in spirit to the architecture lesson's service desk, though it is
+used for the vDSO's limit rather than privilege. All timings are from a
+virtual machine; the lesson gives ratios and says so. The statement that
+strace -c leaves out `exit_group` is what the recording shows; the lesson
+does not claim why.

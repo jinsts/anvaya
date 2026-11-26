@@ -81,7 +81,10 @@ A system call also has a binary interface, like the
 [calling convention](/learn/computer-architecture-execution/cpu-registers-and-instructions/)
 for ordinary calls: it defines how the request number and arguments reach the
 kernel. Following it does not authorize the request; the kernel still checks
-it.
+it. The operating-systems subject's
+[system-calls lesson](/learn/operating-systems-runtime-internals/system-calls/)
+follows a request from there through the kernel's system-call table, and shows
+the calls that never enter the kernel at all.
 
 ## Three reasons to enter a handler
 

@@ -117,6 +117,8 @@ export type Artifact = ArtifactBase &
         options?: string[];
         /** Keep the trace from the first line containing this text. */
         from?: string;
+        /** The exit status the program must end with (default 0). */
+        status?: number;
       }
     | {
         // javap's listing of one compiled class.
@@ -413,7 +415,8 @@ export function objdumpBlock(text: string, symbol: string): string {
 /**
  * Makes an `strace -f -o` trace comparable across runs: each process ID
  * becomes P1, P2 … in order of first appearance, wherever it occurs as a
- * whole number; the temporary folder becomes `.`; and with `from`, lines
+ * whole number, and the ID column becomes the label and one space whatever
+ * the ID's length; the temporary folder becomes `.`; and with `from`, lines
  * before the first one containing that text are dropped.
  */
 export function normalizeTrace(
@@ -435,7 +438,13 @@ export function normalizeTrace(
   return (
     lines
       .map((line) => {
-        let text = line.split(folder).join('.');
+        // strace pads the process ID column to five characters, so a
+        // shorter ID leaves extra spaces; the label takes exactly one.
+        const prefix = line.match(/^(\d+)\s+/);
+        let text = prefix
+          ? `P${pids.indexOf(prefix[1]!) + 1} ${line.slice(prefix[0].length)}`
+          : line;
+        text = text.split(folder).join('.');
         pids.forEach((pid, index) => {
           text = text.replace(
             new RegExp(`(?<![\\w.])${pid}(?![\\w.])`, 'g'),
@@ -582,6 +591,7 @@ export function runNative(registry: Registry, options: Options = {}): Report {
     args: string[],
     files: Record<string, string> | undefined,
     extra: string[],
+    status = 0,
   ) => {
     const folder = workspace(files);
     const name = basename(program.sources[0]!, '.c');
@@ -598,9 +608,10 @@ export function runNative(registry: Registry, options: Options = {}): Report {
         env,
       },
     );
-    if (result.status !== 0)
+    // strace exits with the traced program's status.
+    if (result.status !== status)
       throw new Error(
-        `strace of ${program.sources[0]} failed: ${result.stderr}`,
+        `strace of ${program.sources[0]} exited with ${result.status}, not ${status}: ${result.stderr}`,
       );
     const text = readFileSync(out, 'utf8');
     rmSync(out);
@@ -703,6 +714,7 @@ export function runNative(registry: Registry, options: Options = {}): Report {
           artifact.args ?? [],
           artifact.files,
           artifact.options ?? [],
+          artifact.status,
         );
         return normalizeTrace(text, folder, artifact.from);
       }
@@ -924,7 +936,8 @@ export function runNative(registry: Registry, options: Options = {}): Report {
         ].join(' ');
         flags = measurement.program.flags;
       } else {
-        const executable = scratch('measurement');
+        const name = basename(measurement.source, '.c');
+        const executable = scratch(name);
         run(cc(), [
           ...measurement.flags,
           at(measurement.source),
@@ -932,7 +945,7 @@ export function runNative(registry: Registry, options: Options = {}): Report {
           executable,
         ]);
         data = measurement.parse(run(executable, args));
-        command = ['./measurement', ...args].join(' ');
+        command = [`./${name}`, ...args].join(' ');
         flags = measurement.flags;
       }
       const result = {

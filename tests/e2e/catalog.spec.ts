@@ -279,7 +279,12 @@ test('a subject with several chapters is grouped on path, subject and lesson pag
   const sidebar = page.locator(
     '[data-path-sidebar="engineering-fundamentals"]',
   );
-  await expect(sidebar.locator('.path-subject')).toHaveText(subject);
+  // Each subject with several chapters gets its label; a chapter appears once
+  // it has a lesson, so Operating Systems shows only its first chapter so far.
+  await expect(sidebar.locator('.path-subject')).toHaveText([
+    subject,
+    'Operating Systems & Runtime Internals',
+  ]);
   await expect(sidebar.locator('.path-section summary')).toHaveText([
     'Machine state and data representation',
     'From source to running process',
@@ -287,6 +292,7 @@ test('a subject with several chapters is grouped on path, subject and lesson pag
     'Inside the processor',
     'Devices and the hardware–software boundary',
     'Performance on real hardware',
+    'The kernel boundary and processes',
   ]);
 });
 

@@ -1,0 +1,379 @@
+---
+title: "System calls: The kernel's front door"
+shortTitle: System calls
+summary: Follow a C library call through the kernel's system-call table and back, see why clock_gettime never enters the kernel, and count a program's system calls the way strace does.
+subject: operating-systems-runtime-internals
+path: engineering-fundamentals
+difficulty: foundation
+estimatedMinutes: 25
+learningObjectives:
+  - Trace a system call on x86-64 Linux from the C library's wrapper through the kernel's entry and system-call table and back, saying where the number, arguments, result and errors travel
+  - Explain why clock_gettime can return without entering the kernel while getpid cannot, and what that means for a program under strace
+  - Count and classify the system calls in an strace trace the way strace -c does, including failed calls and calls that never return
+prerequisites:
+  - computer-architecture-execution/hardware-software-interaction
+  - computer-architecture-execution/measuring-performance
+tags: [kernel, execution, performance, debugging]
+skills: [debugging, profiling-measurement]
+status: draft
+drafter: agent
+interviewQuestions:
+  - prompt: What happens, step by step, when a Linux program on x86-64 calls `read()`?
+    answer: >-
+      The C library's wrapper puts the system-call number, 0 for read on
+      x86-64, in eax and the arguments in rdi, rsi and rdx, then runs the
+      `syscall` instruction, which enters the kernel at its entry point. The
+      entry code saves the user registers and checks the number, and the
+      handler that the system-call table holds for it copies bytes from the
+      file into the caller's buffer. The result comes back in rax: the number
+      of bytes, 0 at end of file, or a negative error number, which the
+      wrapper turns into -1 and errno. This assumes x86-64 Linux with glibc;
+      other architectures use other instructions and registers.
+    followUps:
+      - Why does reading a whole file take one more `read` than its size suggests?
+  - prompt: Why is a system call more expensive than a function call, and how would you measure the difference?
+    answer: >-
+      A function call stays in user mode, while a system call switches the
+      CPU into the kernel, saves and restores registers and runs the kernel's
+      checks and handler before returning. To measure it, time many
+      back-to-back calls of a cheap system call such as `getpid` and of a
+      cheap call that stays in user space, such as `clock_gettime` from the
+      vDSO, alternating them over several rounds and comparing medians. In
+      this lesson's recording on a virtual machine, `getpid` took about three
+      times as long, around 90 ns. The numbers depend on the CPU, the kernel
+      and virtualization, so measure on the machine you care about.
+  - prompt: What is the vDSO, and why does `clock_gettime` not appear in an strace trace?
+    answer: >-
+      The vDSO is a small shared library that the kernel maps into every
+      process, and the C library calls it for a few frequent calls whose
+      answers are not secret: on x86-64, `clock_gettime`, `gettimeofday`,
+      `time` and `getcpu`. The kernel keeps the data they need in memory the
+      process can read, so the call becomes an ordinary function call and a
+      few memory accesses. strace sees only system calls, so vDSO calls
+      never appear in its output, and seccomp filters cannot see them either.
+  - prompt: Why does strace slow a program down so much, and how would you trace a busy production service more carefully?
+    answer: >-
+      strace uses ptrace: the kernel stops the traced program just before
+      each system call and again when the call finishes, and strace runs in
+      between to decode and print it. Every system call therefore costs two
+      stops and two trips to the tracer; in this lesson's recording `getpid`
+      went from about 90 ns to about 50 µs, while vDSO calls kept their cost.
+      On a busy service, trace one process for a short time, trace only the
+      calls you need with `-e`, and add `--seccomp-bpf`, which makes the
+      kernel stop the program only for those calls (it needs `-f`).
+    followUps:
+      - What does `strace -c` report, and which calls does it leave out?
+sources:
+  - label: 'syscall(2) — x86-64 calling convention: instruction, number, argument and result registers'
+    url: https://man7.org/linux/man-pages/man2/syscall.2.html
+  - label: 'intro(2) — negative error numbers and how the C library turns them into errno'
+    url: https://man7.org/linux/man-pages/man2/intro.2.html
+  - label: 'Linux kernel documentation — Adding a New System Call: the x86-64 system-call table'
+    url: https://docs.kernel.org/process/adding-syscalls.html
+  - label: 'Linux kernel documentation — Kernel Entries: the syscall instruction from 64-bit code'
+    url: https://docs.kernel.org/arch/x86/entry_64.html
+  - label: 'OSTEP, chapter 6 — Limited direct execution: system-call numbers, trap tables and measuring a system call'
+    url: https://pages.cs.wisc.edu/~remzi/OSTEP/cpu-mechanisms.pdf
+  - label: 'vdso(7) — why the vDSO exists, its x86-64 functions, and strace'
+    url: https://man7.org/linux/man-pages/man7/vdso.7.html
+  - label: 'getpid(2) — glibc 2.25 and later make the system call every time'
+    url: https://man7.org/linux/man-pages/man2/getpid.2.html
+  - label: 'ld.so(8) — the dynamic linker loads a program’s shared libraries'
+    url: https://man7.org/linux/man-pages/man8/ld.so.8.html
+  - label: 'open(2) — glibc’s open uses openat; a new descriptor is the lowest one not open'
+    url: https://man7.org/linux/man-pages/man2/open.2.html
+  - label: 'read(2) — the bytes read, and 0 at end of file'
+    url: https://man7.org/linux/man-pages/man2/read.2.html
+  - label: 'exit_group(2) — ends every thread in the process and does not return'
+    url: https://man7.org/linux/man-pages/man2/exit_group.2.html
+  - label: 'stdin(3) — descriptors 0, 1 and 2 at program start'
+    url: https://man7.org/linux/man-pages/man3/stdin.3.html
+  - label: 'strace(1) — trace format, -c and -C summaries, --seccomp-bpf, tracing slowdown'
+    url: https://man7.org/linux/man-pages/man1/strace.1.html
+  - label: 'ptrace(2) — syscall-enter-stop and syscall-exit-stop'
+    url: https://man7.org/linux/man-pages/man2/ptrace.2.html
+---
+
+import CallCost from '../../../components/diagrams/CallCost.astro';
+import SyscallPath from '../../../components/diagrams/SyscallPath.astro';
+import TraceCounts from '../../../components/diagrams/TraceCounts.astro';
+
+import serveSource from '../../../../labs/operating-systems-runtime-internals/native/serve.c?raw';
+import serveTrace from '../../../../labs/operating-systems-runtime-internals/system-calls/serve-trace.txt?raw';
+import missingTrace from '../../../../labs/operating-systems-runtime-internals/system-calls/serve-missing-trace.txt?raw';
+import costSource from '../../../../labs/operating-systems-runtime-internals/system-calls/cost.c?raw';
+import model from '../../../../labs/operating-systems-runtime-internals/system-calls/trace.ts?raw';
+
+## Two calls that look alike
+
+`serve`, this subject's running example, reads a request from a file and
+writes one line of response. On the way it calls `clock_gettime` twice, to
+check how long reading took, and `getpid` once, to see whether it is a
+container's first process. From C the two look the same: a library function
+that takes almost nothing and returns a number. Yet on the machine these
+lessons were recorded on, `getpid` took about three times as long. The
+difference is where each call's work happens.
+
+Think of a bank. To move money you fill in a slip with a form number and hand
+it to a teller, who looks the number up and does the work behind the counter,
+where you cannot go. To learn the time, you read the clock in the lobby. The
+analogy stops at the clock: the lobby clock gives everyone the same answer,
+and that is exactly the limit of the kernel's shortcut. It serves only answers
+the kernel can publish to every process, such as the time; anything that needs
+the kernel to act for you, such as reading a file, still goes to the counter.
+
+The [hardware–software lesson](/learn/computer-architecture-execution/hardware-software-interaction/)
+showed how the CPU enters the kernel with a privilege change and returns to a
+saved resume point. This lesson follows what the kernel does with a request
+once it is in, and the shortcut that skips the trip.
+
+## From a library call to the kernel and back
+
+<SyscallPath />
+
+A **system call** is a request to the kernel, made by number. On x86-64 Linux,
+the C library's wrapper for `getpid` puts the number 39 in the eax register and
+any arguments in rdi, rsi, rdx, r10, r8 and r9, then runs the `syscall`
+instruction; syscall(2) lists these registers for every architecture. The
+instruction enters the kernel at the entry point for 64-bit system calls. The
+entry code saves your registers, checks that the number is valid and runs the
+handler that the **system-call table** holds at that index. The kernel's
+source lists the table one line per number, in
+`arch/x86/entry/syscalls/syscall_64.tbl`.
+
+Asking by number is a protection, as OSTEP puts it: your code cannot name a
+kernel address to jump to, only a service to request. The handler's result
+comes back in rax. A negative result is an error number, which the wrapper
+turns into a return value of -1 and the error in `errno` (intro(2)). `read`
+takes the same path with number 0; its handler copies bytes from the file into
+your buffer.
+
+The **vDSO**, the virtual dynamic shared object, is the shortcut. The kernel
+maps this small shared library into every process and keeps data in memory the
+process can read, so that a frequent call whose answer is no secret becomes an
+ordinary function call and a few memory accesses. The C library calls it for
+you. vdso(7) lists four such functions on x86-64: `clock_gettime`,
+`gettimeofday`, `time` and `getcpu`. `getpid` is not among them, and since
+glibc 2.25 the C library no longer caches the process ID, so every `getpid`
+is a system call (getpid(2)).
+
+The figure is a model of the order of steps on x86-64 Linux with glibc, not of
+the kernel's code: the real entry path does more on the way in and out than
+these three kernel boxes, and other architectures use other instructions and
+registers.
+
+## What serve asks the kernel for
+
+<details>
+<summary>Inspect serve.c</summary>
+
+<CodeExample
+  title="serve.c, the running example"
+  code={serveSource}
+  language="c"
+/>
+
+</details>
+
+Read `serve.c` and predict two things before running it under strace: how
+many system calls will strace count for one run, and which of the calls in the
+source will not appear in the trace at all?
+
+<details>
+<summary>Check after predicting</summary>
+
+<TraceCounts />
+
+Far more than the source suggests: 35 counted calls, of which 29 ran before
+serve's `main`. The first, `execve`, starts the program; then the dynamic
+linker, whose job ld.so(8) describes as finding and loading a program's shared
+libraries, opens `/etc/ld.so.cache` and the C library and maps them into
+memory, and the C library sets up the first thread. Both `clock_gettime` calls
+are missing, because the vDSO answered them. And `exit_group`, the last call,
+appears in the trace but not in strace's count; it is the one call that never
+returned.
+
+</details>
+
+## Read serve's own calls
+
+From its first `openat` on, everything in the trace is serve's own work. The
+shared native runner reruns serve under strace 6.19 on every check, replaces
+the process ID with `P1`, and fails if these lines change:
+
+<CodeExample
+  title="serve's own system calls (serve-trace.txt)"
+  code={serveTrace}
+  language="text"
+/>
+
+Read it line by line:
+
+- `openat(…) = 3`: since glibc 2.26 the C library's `open` makes the `openat`
+  system call, and the new descriptor is the lowest number not already open
+  (open(2)). Descriptors 0, 1 and 2 are standard input, output and error
+  (stdin(3)).
+- `read(3, "GET /hello\n", 255) = 11`, then `read(3, "", 244) = 0`: a read
+  returns the bytes it got, and 0 means end of file (read(2)). Reading a whole
+  file always takes one read more than its size requires, the one that finds
+  nothing.
+- `close(3) = 0` and `getpid() = P1`: two more requests; serve is not PID 1,
+  so it answers normally.
+- `write(1, …, 20) = 20`: the whole response in one call to standard output.
+- `exit_group(0) = ?`: it ends every thread in the process and does not
+  return (exit_group(2)), so its result is `?` and strace prints the exit on
+  the next line.
+
+A common mistake is to count system calls by reading source code. The source
+shows library calls: some, like `clock_gettime`, make no system call, and a
+program makes many calls of its own before `main` runs. Count with the tool.
+
+## What a system call costs
+
+`cost.c` times one million back-to-back calls of `getpid` and of
+`clock_gettime`, alternating them for fifteen rounds and checking every
+result, as the
+[measuring-performance lesson](/learn/computer-architecture-execution/measuring-performance/)
+recommends for comparing two candidates. Without strace, `getpid` took about
+three times as long as `clock_gettime`.
+
+<details>
+<summary>Inspect cost.c</summary>
+
+<CodeExample title="cost.c" code={costSource} language="c" />
+
+</details>
+
+strace stops a program at its system calls. Predict how much slower each call
+becomes when the same program runs under strace: `getpid`, and
+`clock_gettime`.
+
+<details>
+<summary>Check after predicting</summary>
+
+<CallCost />
+
+`getpid` became hundreds of times slower and `clock_gettime` did not change.
+strace uses ptrace: a tracer that restarts the program with `PTRACE_SYSCALL`
+makes the kernel stop it just before each system call and again when the call
+finishes (ptrace(2)), and strace runs in between to decode and write the line.
+A vDSO call is not a system call, so nothing stops it. strace's manual says as
+much under BUGS: a traced process runs more slowly, and `--seccomp-bpf`, which
+makes the kernel stop the program only for the calls being traced, reduces the
+cost.
+
+These rounds ran in a KVM virtual machine with four virtual CPUs, not pinned
+to a CPU, so take the ratios rather than the nanoseconds to another machine.
+
+</details>
+
+<details>
+<summary>Inspect the tested model and expected output</summary>
+
+<CodeExample
+  title="Reading strace's output and tracing a call's path"
+  code={model}
+  verified
+  output={
+    '6 calls counted: openat 1, read 2, close 1, getpid 1, write 1\nerrors: none; never returned: exit_group\n11 bytes read, 20 bytes written\ngetpid: system call 39; clock_gettime: vDSO, no system call'
+  }
+/>
+
+</details>
+
+The tests check every trace line form the model reads and the lines it
+refuses, its counting rules for errors, unreturned calls and bytes, strace's
+summary table and both call paths. Against the recordings, they check that the
+model's count of serve's whole run matches strace's own summary row by row,
+that `clock_gettime` never appears, and each relationship this lesson states
+about the timings. The native runner rebuilds the programs with GCC 15.2 and
+fails if a drift-checked trace changes.
+
+## Practice
+
+<LabCard
+  title="01 / Count a trace like strace -c"
+  command="pnpm lab operating-systems-runtime-internals/system-calls"
+>
+  Implement `solve(trace)` in `starter.ts`: return the calls per name that
+  strace -c would count, the errors per name, and the bytes read and written,
+  following the rules in the lab's README. Before running the tests, work out
+  the summary of a four-line trace: `5 openat(AT_FDCWD, "config.ini", O_RDONLY)
+  = 3`, `5 pread64(3, "port=80\n", 64, 0) = 8`, `5 close(3) = 0` and `5
+  exit_group(0) = ?`.
+</LabCard>
+
+<details>
+<summary>Check after attempting</summary>
+
+Three calls are counted, one each of `openat`, `pread64` and `close`, with no
+errors. `exit_group` never returned, so it is not counted. `pread64` reads
+like `read`, so 8 bytes were read and none written.
+
+</details>
+
+<LabCard title="02 / Predict a failed request">
+  serve is run with `missing.txt`, a file that does not exist. Write down the
+  lines strace will show from serve's `openat` to its exit, using `serve.c`, and
+  say what strace -c would count for them.
+</LabCard>
+
+<details>
+<summary>Check after attempting</summary>
+
+<CodeExample
+  title="serve's own calls without its request file (serve-missing-trace.txt)"
+  code={missingTrace}
+  language="text"
+/>
+
+The `openat` fails with `ENOENT`: one call and one error. serve writes its
+message to descriptor 2, standard error, in a single 46-byte `write`, and
+exits with status 1. strace -c counts `openat` with its error and `write`, but
+not `exit_group`.
+
+</details>
+
+## Check your reasoning
+
+<ConceptCheck
+  id="system-calls-strace-slowdown"
+  question="You attach strace -f to a service that calls clock_gettime and getpid on every request, and it becomes much slower. Which explanation fits what this lesson measured?"
+  options={[
+    {
+      label:
+        'Each getpid now stops twice for the tracer, while clock_gettime runs in the vDSO and is never stopped.',
+      correct: true,
+      explanation:
+        'ptrace stops the program before and after every system call. A vDSO call is an ordinary function call inside the process, so it keeps its cost, as the recording showed.',
+    },
+    {
+      label:
+        'strace intercepts every library call, so both calls slow down equally.',
+      explanation:
+        'strace sees system calls only. clock_gettime did not slow down at all, and vDSO calls never appear in its output.',
+    },
+    {
+      label:
+        'strace makes extra system calls inside the service, so it does more work.',
+      explanation:
+        'The program makes the same calls as before. What changes is that each of its system calls is stopped twice while strace decodes it.',
+    },
+  ]}
+/>
+
+## Two-minute recap
+
+- A system call is a request to the kernel by number. On x86-64 Linux the
+  number goes in eax and the arguments in rdi, rsi, rdx, r10, r8 and r9; the
+  result comes back in rax, and the C library turns a negative result into -1
+  and `errno`.
+- The kernel's entry code saves your registers, checks the number and runs the
+  handler that the system-call table holds for it.
+- The vDSO answers a few frequent, non-secret calls such as `clock_gettime`
+  inside your process, with no system call, so strace never sees them.
+- A small program makes more system calls than its source shows: serve's run
+  counted 35, and 29 of them started the program. `exit_group` never returns,
+  so strace -c does not count it.
+- strace stops a program twice for each system call: `getpid` became hundreds
+  of times slower under it, while `clock_gettime` did not change.

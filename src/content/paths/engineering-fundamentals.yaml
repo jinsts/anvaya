@@ -102,8 +102,9 @@ sections:
     title: The kernel boundary and processes
     subject: operating-systems-runtime-internals
     # system-calls, processes, threads, scheduling, context-switches
+    lessons:
+      - operating-systems-runtime-internals/system-calls
     planned:
-      - "System calls: The kernel's front door"
       - 'Processes: fork, exec and wait'
       - "Threads: What they share and what they don't"
       - 'Scheduling: Sharing a CPU fairly'

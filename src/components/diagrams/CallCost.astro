@@ -1,0 +1,225 @@
+---
+import DiagramFrame from '../learning/DiagramFrame.astro';
+import plainRaw from '../../../labs/operating-systems-runtime-internals/system-calls/cost.json?raw';
+import tracedRaw from '../../../labs/operating-systems-runtime-internals/system-calls/cost-traced.json?raw';
+// Every recorded round of cost.c, without and with strace, on one log scale.
+type Run = {
+  date: string;
+  cpu: string;
+  kernel: string;
+  environment: string | null;
+  command: string;
+  records: { call: string; round: number; nsPerCall: number; calls: number }[];
+};
+const plain = JSON.parse(plainRaw) as Run;
+const traced = JSON.parse(tracedRaw) as Run;
+const median = (values: number[]) => {
+  const sorted = [...values].sort((a, b) => a - b);
+  const n = sorted.length;
+  return n % 2
+    ? sorted[(n - 1) / 2]!
+    : (sorted[n / 2 - 1]! + sorted[n / 2]!) / 2;
+};
+const series = [
+  { run: plain, call: 'getpid', label: 'getpid()', tracedBy: false },
+  {
+    run: plain,
+    call: 'clock_gettime',
+    label: 'clock_gettime()',
+    tracedBy: false,
+  },
+  {
+    run: traced,
+    call: 'getpid',
+    label: 'getpid() under strace',
+    tracedBy: true,
+  },
+  {
+    run: traced,
+    call: 'clock_gettime',
+    label: 'clock_gettime() under strace',
+    tracedBy: true,
+  },
+].map((s, index) => {
+  const records = s.run.records.filter((r) => r.call === s.call);
+  const values = records.map((r) => r.nsPerCall);
+  return {
+    ...s,
+    index,
+    records,
+    median: median(values),
+    min: Math.min(...values),
+    max: Math.max(...values),
+    calls: records[0]!.calls,
+  };
+});
+const [pidPlain, clockPlain, pidTraced] = series;
+// A log axis from 10 ns to 100 µs.
+const low = 1;
+const high = 5;
+const x = (ns: number) => `${((Math.log10(ns) - low) / (high - low)) * 100}%`;
+const ticks = [10, 100, 1_000, 10_000, 100_000];
+const ns = (value: number) =>
+  value >= 1000 ? `${(value / 1000).toFixed(1)} µs` : `${value.toFixed(1)} ns`;
+---
+
+<DiagramFrame
+  caption={`Time per call in each of ${pidPlain!.records.length} alternated rounds (dots) and the median (bar), on a logarithmic scale. getpid() took ${(pidPlain!.median / clockPlain!.median).toFixed(1)} times as long as clock_gettime(); under strace it took ${Math.round(pidTraced!.median / pidPlain!.median)} times as long as without, while clock_gettime() did not change. ${plain.cpu}, Linux ${plain.kernel}, ${plain.environment ?? 'unnamed environment'}; not pinned to a CPU. Recorded ${plain.date.slice(0, 10)}: ${plain.command} and ${traced.command}.`}
+>
+  <div class="cost">
+    {series.map((s) => (
+      <div class:list={['row', { traced: s.tracedBy }]}>
+        <p class="name">
+          <strong>{s.label}</strong>{' '}
+          <span>
+            median {ns(s.median)} · {s.calls.toLocaleString('en-US')} calls a
+            round
+          </span>
+        </p>
+        <div class="track" aria-hidden="true">
+          <span class="median" style={`left: ${x(s.median)}`} />
+          {s.records.map((r) => (
+            <span
+              class:list={['dot', s.call === 'getpid' ? 'kernel' : 'vdso']}
+              style={`left: ${x(r.nsPerCall)}`}
+              title={`${s.label}, round ${r.round}: ${ns(r.nsPerCall)}`}
+            />
+          ))}
+        </div>
+      </div>
+    ))}
+    <div class="axis" aria-hidden="true">
+      {ticks.map((t) => (
+        <span style={`left: ${x(t)}`}>{ns(t).replace('.0', '')}</span>
+      ))}
+    </div>
+    <p class="unit" aria-hidden="true">
+      time per call (log scale)
+    </p>
+    <details>
+      <summary>The same rounds as a table</summary>
+      <div
+        class="table-scroll"
+        tabindex="0"
+        role="region"
+        aria-label="Call cost summary"
+      >
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Call</th>
+              <th scope="col">Rounds</th>
+              <th scope="col">min</th>
+              <th scope="col">median</th>
+              <th scope="col">max</th>
+            </tr>
+          </thead>
+          <tbody>
+            {series.map((s) => (
+              <tr>
+                <th scope="row">{s.label}</th>
+                <td>{s.records.length}</td>
+                <td>{ns(s.min)}</td>
+                <td>{ns(s.median)}</td>
+                <td>{ns(s.max)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </details>
+  </div>
+</DiagramFrame>
+<style>
+  .cost {
+    display: grid;
+    /* Long trace lines scroll in their region instead of widening the figure. */
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-3);
+    padding: 0 var(--space-2);
+  }
+  .row.traced {
+    padding-top: var(--space-2);
+    border-top: 1px dashed var(--border);
+  }
+  .row.traced + .row.traced {
+    padding-top: 0;
+    border-top: 0;
+  }
+  .name {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 var(--space-2);
+    margin: 0 0 var(--space-1);
+    font-size: var(--text-sm);
+  }
+  .name span {
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+  }
+  .track {
+    position: relative;
+    height: 1.5rem;
+    border-bottom: 1px solid var(--border-strong);
+  }
+  .median {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    border-left: 2px solid var(--text);
+  }
+  .dot {
+    position: absolute;
+    top: 50%;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    box-shadow: 0 0 0 1.5px var(--surface);
+    transform: translate(-50%, -50%);
+  }
+  .dot.kernel {
+    background: var(--chart-1);
+  }
+  .dot.vdso {
+    border-radius: 2px;
+    background: var(--chart-2);
+  }
+  .axis {
+    position: relative;
+    height: 1rem;
+    margin-top: calc(-1 * var(--space-2));
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+  }
+  .axis span {
+    position: absolute;
+    white-space: nowrap;
+    transform: translateX(-50%);
+  }
+  .axis span:first-child {
+    transform: none;
+  }
+  .axis span:last-child {
+    transform: translateX(-100%);
+  }
+  /* Every other label on a phone, so neighbours never touch. */
+  @media (max-width: 40rem) {
+    .axis span:nth-child(even) {
+      display: none;
+    }
+  }
+  .unit {
+    margin: calc(-1 * var(--space-2)) 0 0;
+    color: var(--muted);
+    font-size: var(--text-xs);
+    text-align: right;
+  }
+  details {
+    font-size: var(--text-sm);
+  }
+  details .table-scroll {
+    margin: var(--space-2) 0 0;
+  }
+</style>

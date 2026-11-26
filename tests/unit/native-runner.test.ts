@@ -53,7 +53,8 @@ const FAKES: Record<string, string> = {
     '  esac',
     'done',
     'if [ -n "$FAKE_STRACE_DENIED" ]; then echo "strace: ptrace(PTRACE_TRACEME, ...): Operation not permitted" >&2; exit 1; fi',
-    '"$@" || exit $?',
+    // Like strace: trace the program, then exit with its status.
+    '"$@"; status=$?',
     '{',
     `  printf '%s\\n' "4242 execve(\\"$1\\", [\\"$1\\"], 0x7ffd0000 /* 3 vars */) = 0"`,
     `  printf '%s\\n' "4242 getpid()                          = 4242"`,
@@ -65,6 +66,7 @@ const FAKES: Record<string, string> = {
     `    printf '%s\\n' "100.00    0.000001           1         1           getpid"`,
     '  fi',
     '} > "$out"',
+    'exit $status',
   ),
   'java/bin/javac': script(
     'if [ "$1" = -version ]; then echo "javac 21.0.13.1"; exit 0; fi',
@@ -118,10 +120,15 @@ beforeAll(() => {
     JAVA_TOOL_OPTIONS: '-Dnoise=1',
   };
 });
-afterAll(() => rmSync(fakes, { recursive: true, force: true }));
+const labs: string[] = [];
+afterAll(() => {
+  for (const folder of [fakes, ...labs])
+    rmSync(folder, { recursive: true, force: true });
+});
 
 function freshLab(): Registry {
   lab = mkdtempSync(join(tmpdir(), 'anvaya-lab-'));
+  labs.push(lab);
   for (const name of ['prog.c', 'Fake.java', 'fake.go'])
     writeFileSync(join(lab, name), `${name}\n`);
   return {
@@ -332,7 +339,7 @@ describe('the shared native runner', () => {
     const recorded = JSON.parse(read('out/measure.json'));
     expect(recorded).toMatchObject({
       line: 'ran full',
-      command: './measurement full',
+      command: './prog full',
       flags: ['-O2'],
       tools: { cc: { version: '(Fake 1.0) 1.0' } },
     });
@@ -349,6 +356,36 @@ describe('the shared native runner', () => {
       command: 'strace -f -C -o strace.txt ./prog',
       tools: { strace: { version: 'strace -- version 6.19' } },
     });
+  });
+
+  it('accepts a traced program that fails on purpose, and only with that status', () => {
+    const registry = freshLab();
+    writeFileSync(
+      join(fakes, 'bin/cc-fails'),
+      script(
+        'case "$1" in --version) echo "fakecc (Fake 1.0) 1.0"; exit 0 ;; -dumpmachine) echo "x86_64-fake-linux-gnu"; exit 0 ;; esac',
+        'out=; while [ $# -gt 0 ]; do if [ "$1" = -o ]; then out=$2; shift; fi; shift; done',
+        `printf '#!/bin/sh\\nexit 1\\n' > "$out"; chmod +x "$out"`,
+      ),
+    );
+    chmodSync(join(fakes, 'bin/cc-fails'), 0o755);
+    const failing = { ...env, ANVAYA_CC: join(fakes, 'bin/cc-fails') };
+    const artifact = {
+      kind: 'strace' as const,
+      program: { sources: ['prog.c'], flags: [] },
+      from: 'getpid',
+      file: 'out/failed.txt',
+    };
+    registry.checks = [];
+    registry.measurements = [];
+    registry.artifacts = [{ ...artifact, status: 1 }];
+    expect(runNative(registry, { record: true, env: failing }).drift).toEqual([
+      { file: 'out/failed.txt', status: 'recorded' },
+    ]);
+    registry.artifacts = [artifact];
+    expect(() => runNative(registry, { env: failing })).toThrow(
+      'exited with 1, not 0',
+    );
   });
 
   it('names the tools each kind needs', () => {
@@ -378,6 +415,10 @@ describe('trace and listing helpers', () => {
     expect(
       normalizeTrace('42 read(3, "42.5 4242", 9) = 42\n', '/tmp/none'),
     ).toBe('P1 read(3, "42.5 4242", 9) = P1\n');
+    // strace pads a short process ID to five characters.
+    expect(
+      normalizeTrace('123   getpid() = 123\n9876543 exit_group(0) = ?\n', '/x'),
+    ).toBe('P1 getpid() = P1\nP2 exit_group(0) = ?\n');
     expect(() => normalizeTrace('1 getpid() = 1\n', '/x', 'openat')).toThrow(
       'The trace never shows openat',
     );
