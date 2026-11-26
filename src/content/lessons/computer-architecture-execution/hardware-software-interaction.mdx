@@ -139,6 +139,11 @@ execute: it saves 12. The model below prints all three.
 
 </details>
 
+The tests check this output exactly, that a fault or an interrupt saves the
+current instruction index without changing its input state, that instruction
+zero survives entry and return, and that nested entry, a return with no saved
+location, and invalid or unrepresentable instruction indexes are refused.
+
 The invariant is that kernel entry preserves a user resume location, and only a
 kernel state with that location can return. Inputs stay unchanged. Each
 transition performs a bounded number of checks and field copies: O(1) time and
