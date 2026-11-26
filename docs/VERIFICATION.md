@@ -2242,3 +2242,91 @@ pages are drafted in the following changes, one per commit.
 Same command and environment as the first entry of 2026-11-25: zero type
 errors, warnings or hints; formatting and lint passed; 442 tests in 65 files,
 none skipped, including the native drift check; 39 pages; 142 browser tests.
+
+## Access time and translation: a page split from the memory hierarchy — 2026-11-26
+
+Drafts the planned page "Average access time and address translation" with
+the draft-lesson skill (audit finding F2, owner decision S1), as
+`access-time-and-translation`, placed after `memory-hierarchy-and-caches` in
+the memory chapter, and moves that material out of the 55-minute memory
+lesson. The new page teaches the average access time with an additional miss
+penalty (and the total-penalty pitfall), nested levels with local and global
+miss rates, translation through a TLB with page walks and reach, and the
+difference between TLB misses, cache misses and page faults. It has a hook
+with a delayed-flight analogy and its limit, two figures, a predict prompt with
+a "Check after predicting" reveal, a verified model output, two practice cards,
+a concept check, a six-point recap, four interview questions (two moved from
+the memory lesson) and two sources.
+
+Lab `labs/computer-architecture-execution/access-time-and-translation/`:
+`accessTime.ts` models the nested average, its per-level parts, translation in
+front of a physically indexed access, a cold fully associative LRU TLB and its
+reach; `accessTime.test.ts` checks the additional and total penalties, the
+nesting, that the parts always sum to the nested formula, the extremes, LRU
+order, reach and every refusal, and the displayed output exactly. The contract
+has seven hidden cases (one level, three levels, no levels, a level that always
+hits, a level that always misses, and two refusals expecting a `RangeError`).
+Cross-check: a separate Python implementation in exact fractions, summing each
+level's time weighted by its reach rather than nesting, gives every contract
+value (5, 7.2, 80, 1 and 5 ns), the example's 6, 3.4 and 4.3 ns and the practice
+answer of 3.5 ns, and an `OrderedDict` LRU TLB reproduces both traces. Case 2 was
+changed from a first draft whose answer, 4.3 ns, matched an unrelated line of the
+example output. `pnpm vitest run` on the lab passes 16 tests, and `pnpm lab
+computer-architecture-execution/access-time-and-translation` fails all 7 cases.
+
+Figures: `AccessTimeParts` draws each level's share of the 3.4 ns average and
+`TlbPasses` the two TLB loops; both compute every value with the lab's model,
+and both captions say the parameters are illustrative. `TlbPasses` sits inside
+the "Check after predicting" disclosure, because it shows the answer.
+
+Material moved out of `memory-hierarchy-and-caches`: the sections on average
+access time and on translation, the AMAT and TLB interview questions, the
+OSTEP TLB source, two objectives and two recap points. A paragraph at the end of
+its locality section now links the new page. Its model loses
+`averageAccessTime`, now in the new lab, and its verified output now lists each
+access of the lesson's trace with its block and slot, asserted exactly. Removing
+the sections took away the lesson's only predict prompt (the report raised
+L5), so the traversal figure now follows a prediction (lines touched by the
+first eight reads in each order, which `traversal.test.ts` asserts: two and
+four) and sits in a "Check after predicting" disclosure with the sentence that
+answered it. The DRAM lesson's mention of TLB misses links the new page.
+
+Minutes: both pages are now 30. The memory lesson's 55-minute estimate was high
+for its length: before the split it ran about 1,750 words of body with one
+practice card, while the subject's other pages of 1,550–1,700 words with two
+practice tasks are estimated at 30 minutes. After the split it has about 1,600
+words and the new page about 1,700, so both are estimated at 30 by that
+calibration. This is a judgment, listed for owner review.
+
+Sources: the environment's network policy blocked the source hosts at first;
+`diveintosystems.org` and `computationstructures.org` were added to the
+environment's allowed hosts (the change was saved), and the pages were then
+downloaded and read: MIT Computation Structures L14, The Memory Hierarchy
+(average memory access time as hit time plus miss ratio times the additional
+miss penalty, applied recursively across levels), and OSTEP chapter 19 (TLB as
+a cache of translations, hardware-walked page tables on x86, the cost of the
+extra memory reference, coverage, LRU with one page more than entries,
+physically indexed caches translating first, larger pages for large randomly
+accessed data). No problem fits this page, so none is linked.
+
+`pnpm subject:report` raises no flag for either page; the memory lesson now
+counts 30 minutes, 3 objectives, 3 interview questions and one predict prompt.
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 457 tests in 67 files,
+none skipped, including the native drift check; 40 pages; 146 browser tests,
+including the per-lesson checks for the new page.
+
+Visual review: `pnpm shots` on the new page at 1280 and 390 px in both themes
+and the page without JavaScript (no overflow or console errors), plus a
+scratch Playwright script that opened the disclosures to capture `TlbPasses`
+in the same four combinations. Review changed `TlbPasses` twice: the two passes
+were first one run of cells told apart only by dashed and solid borders, and
+are now labelled rows; at 390 px the cells wrapped "page" above the number, so
+narrow screens now show the number alone. "16 KiB" no longer breaks in the
+caption.
+
+For owner review: the 30-minute estimates; the delayed-flight analogy; the
+illustrative parameters (1 ns, 10%, 4 ns, 25%, 80 ns; a 0.5 ns TLB lookup, 1%
+TLB misses and a 40 ns walk), which are chosen for arithmetic and are not
+measurements.

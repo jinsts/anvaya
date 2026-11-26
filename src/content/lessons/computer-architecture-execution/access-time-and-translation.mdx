@@ -1,0 +1,284 @@
+---
+title: 'Access time: Price a load through caches and translation'
+shortTitle: Access time and translation
+summary: Average the time of one load across cache levels with stated miss rates, turn local miss rates into the share of loads that reach memory, and add the cost of translating the address through the TLB.
+subject: computer-architecture-execution
+path: engineering-fundamentals
+difficulty: intermediate
+estimatedMinutes: 30
+learningObjectives:
+  - Calculate the average time of an access through several cache levels, adding each level's miss penalty on top of the lookup already paid
+  - Turn local miss rates into the share of all accesses that reach each level, and find which level dominates the average
+  - Explain what a TLB miss adds to an access, and predict from TLB reach whether a loop's translations stay cached
+  - Distinguish a TLB miss, a data-cache miss and a page fault
+prerequisites:
+  - computer-architecture-execution/memory-hierarchy-and-caches
+tags: [memory, caches, performance]
+skills: [complexity-analysis, trade-off-analysis, profiling-measurement]
+status: draft
+drafter: agent
+interviewQuestions:
+  - prompt: When is the formula hit time plus miss rate times miss penalty useful?
+    answer: >-
+      It estimates the average latency of one access for a simplified cache
+      model when the penalty is the additional time after the cache lookup has
+      already been paid. The miss rate must describe the accesses entering that
+      cache level. If the quoted miss latency already includes the lookup, use a
+      weighted average instead to avoid double counting. Overlap, prefetching,
+      queuing and multiple outstanding requests limit its ability to predict
+      whole-program time.
+  - prompt: An L2 cache misses half of its accesses. Is that a bad cache?
+    answer: >-
+      Not necessarily, because that rate is usually local: it counts only the
+      accesses that already missed L1. If L1 misses 4% of loads, half of those is
+      2% of all loads going on to the next level. What matters is how much time
+      those 2% add to the average, which depends on the next level's latency.
+      State whether a miss rate is local or global before comparing caches.
+    followUps:
+      - How would you compute the global miss rate of an L3 from three local rates?
+  - prompt: Is a TLB miss the same as a data-cache miss or a page fault?
+    answer: >-
+      No, a TLB caches virtual-to-physical address translations, while a data
+      cache holds data blocks. A TLB miss requires finding the translation, often
+      through a hardware page-table walk, and the requested data can still be
+      resident in a CPU cache. A page fault is a separate exceptional condition,
+      such as a missing mapping or an access that violates permissions. It does
+      not necessarily require reading a disk.
+  - prompt: What is TLB reach, and why can larger pages help?
+    answer: >-
+      Reach, or coverage, is how much memory a TLB can translate without a miss:
+      its entries times the page size. A program that touches more pages than
+      the TLB holds in a short period takes TLB misses, and each one adds a
+      page-table walk. Larger pages map more bytes per entry, so the same TLB
+      covers far more memory, which suits large, randomly accessed data such as
+      a database's. Whether it helps depends on the access pattern, so measure
+      TLB misses before and after.
+sources:
+  - label: 'MIT Computation Structures, L14 The Memory Hierarchy — Average memory access time across levels'
+    url: https://computationstructures.org/lectures/caches/caches.html
+  - label: 'OSTEP, chapter 19 — TLB hits, misses, page-table walks and coverage'
+    url: https://pages.cs.wisc.edu/~remzi/OSTEP/vm-tlbs.pdf
+---
+
+import AccessTimeParts from '../../../components/diagrams/AccessTimeParts.astro';
+import TlbPasses from '../../../components/diagrams/TlbPasses.astro';
+
+import model from '../../../../labs/computer-architecture-execution/access-time-and-translation/accessTime.ts?raw';
+
+## A rare miss can dominate the time
+
+A profile shows that only one load in ten misses the cache, and someone
+concludes that memory hardly matters. If a hit takes 1 ns and a miss adds
+50 ns, that one load in ten makes the average load take six times as long as a
+hit. Hit rates alone cannot say whether a cache is good enough; the time each
+miss adds decides it.
+
+Think of a flight that boards on time on most days, but one day in ten is
+delayed by an hour. The average delay is six minutes, all of it from the rare
+bad day. The analogy stops at overlap: a processor can wait for several misses
+at once and keep working meanwhile, so an average per access does not add up
+to elapsed time the way delays add up over a year.
+
+The [memory hierarchy lesson](/learn/computer-architecture-execution/memory-hierarchy-and-caches/)
+traced which accesses hit and miss. This page prices them, first through the
+cache levels and then through address translation. Every parameter here is an
+illustrative model input, not a measurement of a processor.
+
+## Average one access
+
+Every access pays the cache's **hit time**, the time to look it up. A fraction
+of accesses, the **miss rate**, then also pays the **miss penalty**: the
+additional time to fetch the line from the next level. MIT's Computation
+Structures lecture writes the average in exactly these terms:
+
+**Average access time = hit time + miss rate × additional miss penalty.**
+
+With a 1 ns hit time, a 10% miss rate and a 50 ns additional penalty, the
+average is 1 + 0.1 × 50 = 6 ns. Check which kind of penalty a number is before
+you use it. If 50 ns instead described the whole miss, lookup included, the
+average is a weighted one: 0.9 × 1 + 0.1 × 50 = 5.9 ns. Adding the hit time to
+a total would count the lookup twice.
+
+## Nest the levels: local rates multiply
+
+A miss in L1 does not go straight to memory; it looks in L2, which has its own
+hit time and miss rate. So L1's miss penalty is the average time of an access
+to L2, and the formula nests, one level inside the miss term of the level
+above:
+
+**Average = h₁ + m₁ × (h₂ + m₂ × memory time).**
+
+Each mᵢ is a **local miss rate**: the fraction of the accesses that reach that
+level and miss it. Multiplying the rates gives a **global** one: the share of
+all loads that get that far.
+
+<AccessTimeParts />
+
+With L1 at 1 ns and 10% local misses, L2 at 4 ns and 25% local misses, and
+memory at 80 ns, the average is 1 + 0.1 × (4 + 0.25 × 80) = 3.4 ns. Only 0.1 ×
+0.25 = 2.5% of loads reach memory, yet they add 2 ns, more than every L1 hit
+together. A local rate of 25% sounds poor until you see that it applies only to
+the tenth of loads that missed L1.
+
+The common mistake is to treat a local rate as global: reading the L2's 25% as
+a quarter of all loads going to memory would add 20 ns instead of 2. The other
+is to stop at the average. This model assumes every access waits for the one
+before it. Independent loads, out-of-order execution, prefetching and queuing
+change how averages turn into elapsed time, so the average is a price list,
+not a stopwatch.
+
+## Translation comes before the data
+
+Programs use virtual addresses, so every access first needs its physical
+address. A **TLB** (translation lookaside buffer) is a small hardware cache of
+frequently used translations. On a **TLB hit** the translation is quick. On a **TLB
+miss** the page table, which lives in memory, must be read: on x86 the hardware
+**walks** it, and those extra memory references are what make a miss costly,
+as OSTEP's chapter on TLBs explains. When the cache is indexed by physical
+address, translation finishes before the cache lookup starts, so the average
+gains a term in front:
+
+**Average = TLB time + TLB miss rate × walk time + data access time.**
+
+With an illustrative 0.5 ns lookup, 1% of accesses missing and a 40 ns walk,
+the 3.4 ns hierarchy above becomes 0.5 + 0.01 × 40 + 3.4 = 4.3 ns. Real designs
+work hard to overlap the lookup with the cache access, which this model does
+not show.
+
+A TLB holds few entries, so what it can translate without missing is its
+**reach**: entries × page size. Predict before opening the trace: a cold TLB
+with four entries and LRU replacement serves a loop that reads one address in
+each of three pages, then the same three pages again. Another loop does the
+same with five pages. Which accesses of each second pass hit?
+
+<details>
+<summary>Check after predicting: the TLB trace</summary>
+
+<TlbPasses />
+
+With three pages, the second pass hits every time: all three translations fit.
+With five, every access misses. Each new page evicts the least recently used
+entry, which is always the page the loop needs next, so LRU loses the whole
+second pass. OSTEP calls touching more pages in a short time than the TLB holds
+exceeding its coverage. Larger pages raise the reach without more entries, which
+is why programs with large, randomly accessed data use them.
+
+</details>
+
+## A TLB miss is not a page fault
+
+Three different events can slow a load, and diagnostic counters report them
+separately:
+
+- A **data-cache miss** fetches a line from the next level; the translation was
+  already known.
+- A **TLB miss** looks up a translation in the page table; the data may still be
+  in a cache.
+- A **page fault** is an exception the operating system handles: a missing
+  mapping, a page not yet allocated, or an access its permissions forbid. Some
+  faults need storage I/O; others do not.
+
+The [operating systems subject](/subjects/operating-systems-runtime-internals/)
+plans the page tables and faults behind this lookup.
+
+<details>
+<summary>Inspect the tested model and expected output</summary>
+
+<CodeExample
+  title="Average access time across levels, translation and an LRU TLB"
+  code={model}
+  verified
+  output={
+    'one level: 6 ns\ntwo levels: 3.4 ns; 2.5% of loads reach memory\nwith translation: 4.3 ns\n3 pages twice, 4-entry TLB: miss miss miss hit hit hit\n5 pages twice, 4-entry TLB: miss miss miss miss miss miss miss miss miss miss'
+  }
+/>
+
+</details>
+
+The tests check this output exactly, that a level's parts always sum to the
+nested formula, the additional and total penalties, the empty, all-hit and
+all-miss extremes, the TLB's LRU order and reach, and that miss rates outside
+0–1 and negative or non-finite times are refused. The average takes O(L) work
+for L levels and the TLB trace O(n × entries) for n accesses; these are costs of
+the TypeScript model, not of hardware.
+
+## Practice
+
+<LabCard
+  title="01 / Average a hierarchy"
+  command="pnpm lab computer-architecture-execution/access-time-and-translation"
+>
+  Implement `solve(levels, memoryNs)` in `starter.ts`: return the average time
+  of one access through levels listed nearest the core first, each
+  `{ hitNs, missRate }` with a local miss rate, and then memory. Throw a
+  `RangeError` for a miss rate outside 0–1 or a negative or non-finite time. The
+  hidden cases include no levels, levels that always hit or always miss, and
+  refused inputs. Before running them, compute by hand an L1 of 2 ns that misses
+  5% of accesses, an L2 of 10 ns that misses 20% of the accesses reaching it,
+  and 100 ns memory.
+</LabCard>
+
+<details>
+<summary>Check after attempting</summary>
+
+2 + 0.05 × (10 + 0.2 × 100) = 2 + 0.05 × 30 = 3.5 ns. Only 0.05 × 0.2 = 1% of
+accesses reach memory, and they add 1 ns of the 3.5; the L2 adds 0.05 × 10 =
+0.5 ns. Working from the innermost level outward avoids multiplying the wrong
+rates together.
+
+</details>
+
+<LabCard
+  title="02 / Find the reach"
+  command="pnpm exec vitest run labs/computer-architecture-execution/access-time-and-translation/"
+>
+  A TLB has 64 entries. Predict how many bytes it can translate without a miss
+  with 4 KiB pages and with 2 MiB pages, then add assertions with `tlbReach`.
+  Which reach covers a 1 MiB table read in random order?
+</LabCard>
+
+<details>
+<summary>Check after testing</summary>
+
+64 × 4 KiB = 256 KiB, and 64 × 2 MiB = 128 MiB. A 1 MiB table spans 256 pages
+of 4 KiB, four times the entries, so random reads keep missing the TLB; with
+2 MiB pages the whole table needs one or two entries.
+
+</details>
+
+## Check your reasoning
+
+<ConceptCheck
+  id="access-time-global-miss-rate"
+  question="L1 misses 4% of all loads. The L2's local miss rate is 50%. What fraction of all loads goes on to memory?"
+  options={[
+    {
+      label: '2%, because half of the 4% that reach L2 miss it.',
+      correct: true,
+      explanation:
+        'A local rate applies only to the accesses that reach that level. Multiplying the local rates, 0.04 × 0.5, gives the global share of loads that get to memory.',
+    },
+    {
+      label: '50%, because the L2 misses half the time.',
+      explanation:
+        'That reads a local rate as global. The L2 only sees the 4% of loads that missed L1, so half of them is 2% of all loads.',
+    },
+    {
+      label: '54%, the two miss rates added together.',
+      explanation:
+        'Miss rates of nested levels multiply rather than add: a load must miss L1 before it can miss L2.',
+    },
+  ]}
+/>
+
+## Two-minute recap
+
+- Average access time = hit time + miss rate × additional miss penalty; check
+  whether a quoted penalty is additional or total.
+- Each level's penalty is the next level's average, so local miss rates
+  multiply into the share of loads that reach memory.
+- A rare trip to memory can dominate the average.
+- Translation adds a TLB lookup, and a page-table walk on each TLB miss; reach
+  is entries × page size.
+- TLB misses, cache misses and page faults are different events.
+- Averages ignore overlap: measure elapsed time on the target system.

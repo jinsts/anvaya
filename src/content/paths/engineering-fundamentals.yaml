@@ -66,20 +66,17 @@ sections:
     subject: computer-architecture-execution
     lessons:
       - computer-architecture-execution/memory-hierarchy-and-caches
+      - computer-architecture-execution/access-time-and-translation
       - computer-architecture-execution/cache-organization
       - computer-architecture-execution/dram-ssd-and-disks
     # cache-organization took associativity and write policies from
-    # memory-hierarchy-and-caches, which keeps the hierarchy, locality and
-    # access costs. The storage page completes the approved topic "Memory
-    # hierarchy, caches, RAM, and storage".
-    # Split on 2026-11-25 (audit F2; owner decision S1: split above 45
-    # minutes). "Average access time and address translation" goes after
-    # memory-hierarchy-and-caches and takes average access time (additional
-    # against total miss penalty, local and global miss rates) and the TLB,
-    # page walks and page faults. memory-hierarchy-and-caches keeps the
-    # layers, lines, direct-mapped placement and locality.
-    planned:
-      - Average access time and address translation
+    # memory-hierarchy-and-caches. On 2026-11-26 (audit F2; owner decision S1:
+    # split above 45 minutes) access-time-and-translation took average access
+    # time (additional against total penalty, local and global miss rates) and
+    # the TLB, page walks and page faults from it; memory-hierarchy-and-caches
+    # keeps the layers, lines, direct-mapped placement and locality. The
+    # storage page completes the approved topic "Memory hierarchy, caches,
+    # RAM, and storage".
   - id: architecture-processor
     title: Inside the processor
     subject: computer-architecture-execution

@@ -1,16 +1,15 @@
 ---
 title: 'Memory hierarchy: Follow the missing cache line'
 shortTitle: Memory hierarchy and caches
-summary: Trace cache lines through a small memory-access model, distinguish data caching from address translation, and estimate access cost under stated assumptions.
+summary: Trace cache lines through a small direct-mapped cache, relate locality to the layout of the data a program walks, and say what each layer of the hierarchy provides.
 subject: computer-architecture-execution
 path: engineering-fundamentals
 difficulty: foundation
-estimatedMinutes: 55
+estimatedMinutes: 30
 learningObjectives:
   - Trace hits, cold misses and conflict misses in a direct-mapped cache
   - Relate temporal and spatial locality to the layout of a working set
-  - Calculate average access time with a clearly defined miss penalty
-  - Distinguish CPU caches, TLBs, RAM and persistent storage
+  - Distinguish what registers, CPU caches, RAM and persistent storage each provide
 prerequisites:
   - computer-architecture-execution/binary-and-data-representation
 tags: [memory, caches, locality, complexity]
@@ -35,22 +34,6 @@ interviewQuestions:
       associativity allows more blocks in each set, at a hardware cost.
     followUps:
       - How would you distinguish a cold miss from a conflict miss in a trace?
-  - prompt: When is the formula hit time plus miss rate times miss penalty useful?
-    answer: >-
-      It estimates average access latency for a simplified cache model when the
-      penalty is additional time after the cache lookup has already been paid.
-      The miss rate must describe the accesses entering that cache level. If the
-      quoted miss latency already includes the lookup, use a weighted average
-      instead to avoid double counting. Overlap, prefetching, queuing and multiple
-      outstanding requests limit its ability to predict whole-program time.
-  - prompt: Is a TLB miss the same as a data-cache miss or a page fault?
-    answer: >-
-      No, a TLB caches virtual-to-physical address translations, while a data
-      cache holds data blocks. A TLB miss requires finding the translation, often
-      through a hardware page-table walk, and the requested data can still be
-      resident in a CPU cache. A page fault is a separate exceptional condition,
-      such as a missing mapping or an access that violates permissions. It does
-      not necessarily require reading a disk.
   - prompt: Why is a cache write-back different from making file data durable?
     answer: >-
       A write-back cache can hold a dirty copy and update a lower memory level
@@ -65,8 +48,6 @@ sources:
     url: https://diveintosystems.org/book/C11-MemHierarchy/locality.html
   - label: Dive Into Systems — CPU caches, mapping and misses
     url: https://diveintosystems.org/book/C11-MemHierarchy/caching.html
-  - label: OSTEP, chapter 19 — Paging, faster translations and TLBs
-    url: https://pages.cs.wisc.edu/~remzi/OSTEP/vm-tlbs.pdf
 ---
 
 import CacheSlots from '../../../components/diagrams/CacheSlots.astro';
@@ -153,10 +134,20 @@ locality. The **working set** is the data actively needed over a relevant period
 not necessarily the entire allocated data structure.
 
 A row-major matrix stores neighboring columns of a row next to one another.
-Walking rows therefore uses all of each line it fetches, while walking columns
-with a large stride uses one element per line before moving on:
+Predict before opening the figure: in a 4 × 8 matrix of four-byte values with
+16-byte lines, how many different lines do the first eight reads touch when you
+walk it row by row, and how many column by column?
+
+<details>
+<summary>Check after predicting: the two walks</summary>
 
 <TraversalLines />
+
+Walking rows uses all of each line it fetches, so the first eight reads stay
+within two lines. Walking columns with a large stride uses one element per line
+before moving on, so the same eight reads touch four lines.
+
+</details>
 
 Blocking a computation into tiles can retain useful rows or
 columns long enough for reuse. These are predictions to test, not speedup
@@ -170,35 +161,10 @@ cache can hold the only current copy of a modified line until eviction, and
 writing that line back toward RAM still does not make file data durable. Our
 read-only simulator models none of these mechanisms or multicore coherence.
 
-## Estimate one access before predicting the whole program
-
-For a blocking, single-level model:
-
-**Average access time = hit time + miss rate × additional miss penalty.**
-
-If every lookup costs 1 ns, 10% miss, and a miss adds 50 ns, the average is
-1 + 0.1 × 50 = 6 ns. These are invented model parameters used for arithmetic,
-not benchmark results. If 50 ns instead described the entire miss access, the
-weighted average would be 0.9 × 1 + 0.1 × 50 = 5.9 ns.
-
-At multiple levels, a local miss rate is conditional on requests reaching that
-level. Do not treat an L2 local miss rate as a fraction of all original loads.
-Also do not multiply this latency average by every program access to predict
-elapsed time without accounting for overlap. Independent loads, out-of-order
-execution, prefetching and queues can all affect that relationship.
-
-## Translation is a separate lookup
-
-Applications normally use virtual addresses. The **translation lookaside buffer**
-(TLB) caches address translations and associated permissions. A TLB miss looks
-for the translation through the page-table machinery; it does not mean the
-requested data is absent from a data cache.
-
-A **page fault** is a separate event requiring operating-system handling. It may
-reflect missing residency, a lazily established mapping or a permission problem.
-Some faults require storage I/O; others do not. Keep translation misses, data
-cache misses and page faults distinct when reading diagnostic counters. The
-operating-systems subject develops the translation and fault mechanisms further.
+A hit and a miss do not cost the same. The next lesson,
+[access time and translation](/learn/computer-architecture-execution/access-time-and-translation/),
+turns hit and miss rates into an average time per load across several levels,
+and adds the lookup that translates each virtual address first.
 
 ## Trace an explicit model
 
@@ -210,19 +176,21 @@ line, each miss fills the line, and no prefetch or overlapping execution occurs.
 <summary>Inspect the tested model and expected output</summary>
 
 <CodeExample
-  title="A direct-mapped cache and a separate latency calculation"
+  title="A cold direct-mapped cache, one access at a time"
   code={source}
   verified
-  output={'miss hit hit hit miss miss\naverage model time: 6 ns'}
+  output={
+    'read 0: block 0, slot 0, miss\nread 4: block 0, slot 0, hit\nread 8: block 0, slot 0, hit\nread 12: block 0, slot 0, hit\nread 32: block 2, slot 0, miss\nread 0: block 0, slot 0, miss'
+  }
 />
 
 </details>
 
 The tests check this output exactly and the block, slot and result of every
 access in a trace that crosses a line boundary and conflicts in one slot. They
-also check cold and empty traces, the average at the all-hit and all-miss
-extremes, and that invalid geometry, addresses, times and miss rates are
-refused. A separate test checks the lines the traversal figure marks.
+also check cold and empty traces, a one-slot cache, and that invalid geometry
+and addresses are refused. A separate test checks the lines the traversal
+figure marks.
 
 <details>
 <summary>Model contract and simulator costs</summary>
@@ -297,6 +265,6 @@ one line, while the column touches four.
 - Direct mapping can create conflicts even when total capacity is sufficient.
 - Spatial locality, temporal locality and working-set size describe different
   properties of an access stream.
-- State whether a miss penalty is additional or total before applying an average.
-- TLB misses, data-cache misses and page faults are separate events.
+- Capacity grows and speed falls down the hierarchy; latency and bandwidth are
+  different measures.
 - Use model traces to form predictions, then measure the actual target system.

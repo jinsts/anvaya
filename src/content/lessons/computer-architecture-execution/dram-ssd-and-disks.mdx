@@ -143,7 +143,9 @@ then a plateau that is DRAM. Two details need care:
 - **The last step starts early.** Times climb from around 12 MiB, well before
   the nominal 24 MiB L3 is full. The L3 is shared with other cores and the
   operating system, and with 4 KiB pages a random walk over many megabytes also
-  misses the TLB and walks page tables. The sweep cannot separate these causes;
+  misses the
+  [TLB](/learn/computer-architecture-execution/access-time-and-translation/)
+  and walks page tables. The sweep cannot separate these causes;
   hardware counters could.
 - **Runs vary.** This machine runs Linux under WSL2, a virtual machine on a host
   that schedules it. The program interleaves repetitions, visiting every size

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { averageAccessTime, cacheExample, traceCache } from './example';
+import { cacheExample, traceCache } from './example';
 
 describe('a cold direct-mapped cache', () => {
   it('distinguishes byte offsets, blocks and conflicting slots', () => {
@@ -32,17 +32,6 @@ describe('a cold direct-mapped cache', () => {
     }
   });
 
-  it('uses an additional penalty and handles all-hit and all-miss extremes', () => {
-    expect(averageAccessTime(2, 0, 50)).toBe(2);
-    expect(averageAccessTime(2, 1, 50)).toBe(52);
-    expect(averageAccessTime(0, 0.5, 0)).toBe(0);
-    for (const rate of [-0.1, 1.1, NaN]) {
-      expect(() => averageAccessTime(1, rate, 50)).toThrow(RangeError);
-    }
-    expect(() => averageAccessTime(-1, 0.1, 50)).toThrow(RangeError);
-    expect(() => averageAccessTime(1, 0.1, Infinity)).toThrow(RangeError);
-  });
-
   it('gives the practice answer: three cold misses and one conflict miss', () => {
     expect(
       traceCache([32, 36, 0, 48, 32], 16, 2).map(({ block, slot, result }) => [
@@ -61,7 +50,12 @@ describe('a cold direct-mapped cache', () => {
 
   it('checks the exact output displayed by the lesson', () => {
     expect(cacheExample()).toBe(
-      'miss hit hit hit miss miss\naverage model time: 6 ns',
+      'read 0: block 0, slot 0, miss\n' +
+        'read 4: block 0, slot 0, hit\n' +
+        'read 8: block 0, slot 0, hit\n' +
+        'read 12: block 0, slot 0, hit\n' +
+        'read 32: block 2, slot 0, miss\n' +
+        'read 0: block 0, slot 0, miss',
     );
   });
 });
