@@ -1900,3 +1900,20 @@ the first entry of 2026-11-25: zero type errors, warnings or hints; formatting
 and lint passed; 442 tests in 65 files, none skipped, including the native
 drift check; 39 pages; 142 browser tests. No figure changed, so no screenshots
 were taken.
+
+## I/O mechanisms: what the tests check — 2026-11-26
+
+Fixes finding F13 of the 2026-11-17 architecture audit for this lesson with the
+enhance-lesson skill (standard L9). After the buffer model's disclosure, a
+paragraph now says what `example.test.ts` asserts: the output exactly, every
+allowed transition and a set of refused ones, completion sizes at and beyond
+the buffer's limits, malformed byte counts, and that no transition changes an
+earlier state, plus the separate tests of the polling timeline. It is worded so
+that it does not answer practice 01, which asks the learner to predict which
+completion sizes are accepted. `pnpm subject:report` no longer raises L9 for
+the lesson; C4 (55 minutes) is F2's split.
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 442 tests in 65 files,
+none skipped, including the native drift check; 39 pages; 142 browser tests.
+No figure changed, so no screenshots were taken.

@@ -180,6 +180,11 @@ does not claim that the device is still writing after completion.
 
 </details>
 
+The tests check this output exactly, every allowed transition and a set of
+refused ones, completion sizes at and beyond the buffer's limits, malformed
+byte counts, and that no transition changes an earlier state. Separate tests
+check the polling and interrupt timeline drawn below.
+
 An eight-byte buffer can complete with four received bytes. Reclamation does not
 invent the missing four bytes. Zero-byte completion is also allowed by this
 model; the meaning of zero depends on the real interface. Failure marks contents
