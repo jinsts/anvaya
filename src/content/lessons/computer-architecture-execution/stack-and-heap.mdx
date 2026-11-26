@@ -88,9 +88,9 @@ followed the lifetime of the call, that result would disappear too soon.
 
 A stack of trays gives a useful picture of nested calls: remove the top tray
 before reaching the one below. Heap allocations are more like separately checked
-out tools that can be returned in a different order. These analogies explain
-lifetime order, but they do not specify physical addresses, allocation algorithms
-or a programming language's object placement.
+out tools that can be returned in a different order. The analogy stops at
+placement: it explains the order in which lifetimes end, not physical
+addresses, allocation algorithms or where a language places its objects.
 
 The [compilation lesson](/learn/computer-architecture-execution/compilation-and-execution/)
 explains how code reaches execution. The

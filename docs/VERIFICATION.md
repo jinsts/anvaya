@@ -2007,3 +2007,18 @@ Same command and environment as the first entry of 2026-11-25: zero type
 errors, warnings or hints; formatting and lint passed; 442 tests in 65 files,
 none skipped, including the native drift check; 39 pages; 142 browser tests.
 No figure changed, so no screenshots were taken.
+
+## Stack and heap: the analogy's limit in the standard form — 2026-11-26
+
+Fixes finding F9 of the 2026-11-17 architecture audit for this lesson with the
+enhance-lesson skill (standard L3). The hook's limit read "These analogies
+explain lifetime order, but they do not specify…"; it now reads "The analogy
+stops at placement: it explains the order in which lifetimes end, not physical
+addresses, allocation algorithms or where a language places its objects". The
+claims are unchanged. `pnpm subject:report` no longer raises L3 for the lesson;
+C4 (50 minutes) is F2's split.
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 442 tests in 65 files,
+none skipped, including the native drift check; 39 pages; 142 browser tests.
+No figure changed, so no screenshots were taken.
