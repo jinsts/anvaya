@@ -2191,3 +2191,25 @@ Same command and environment as the first entry of 2026-11-25: zero type
 errors, warnings or hints; formatting and lint passed; 442 tests in 65 files,
 none skipped, including the native drift check; 39 pages; 142 browser tests.
 No figure changed, so no screenshots were taken.
+
+## DRAM, SSDs and disks: the sweep's cache labels in a key at 390 px — 2026-11-26
+
+Fixes finding F12 of the 2026-11-17 architecture audit with the enhance-lesson
+skill (standard V3). At narrow widths `WorkingSetSweep` turned its cache-size
+labels vertical, and "L3 24 MiB" overlapped the measured points. Below 560 px
+the labels beside the dashed lines are now hidden and a key under the plot
+names the lines, left to right, as the roofline chart does: "L1d 48 KiB, L2 3
+MiB, L3 24 MiB", computed from the recorded `lscpu --caches` text with the same
+`parseCaches` and `formatBytes` as the labels, each entry kept on one line. At
+wider widths the figure is unchanged and the key is hidden.
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 442 tests in 65 files,
+none skipped, including the native drift check; 39 pages; 142 browser tests.
+
+Visual review: `pnpm shots` with a selector for the sweep at 1280 and 390 px in
+light and dark themes, plus the page without JavaScript; report.json shows no
+overflow or console errors. The first 390 px capture showed "24" and "MiB."
+breaking across lines in the key; non-breaking spaces fixed that, and the
+second capture shows no label touching a point. The 1280 px captures match the
+previous figure.
