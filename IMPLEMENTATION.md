@@ -139,3 +139,24 @@ Owner request, proposed in [ADR 0009](docs/adr/0009-subject-standard-and-authori
       an audit of Computer Architecture & Execution.
 - [ ] Owner review of the standard, the skills and ADR 0009 (approve by
       merging).
+
+## Operating Systems & Runtime Internals, Chapter 1 — 2026-11-28
+
+Owner request, from the approved
+[proposal](docs/proposals/operating-systems-runtime-internals.md).
+
+- [x] Planning change: ten chapters with 38 planned pages in the path, the
+      subject overview aligned, eight sources registered.
+- [x] Shared native runner for every subject's native evidence
+      ([ADR 0010](docs/adr/0010-shared-native-runner.md)), with the
+      architecture registry migrated to it.
+- [x] Chapter 1, "The kernel boundary and processes": system calls,
+      processes, threads, scheduling and context switches drafted, one lesson
+      per commit, each with an attempt lab and recorded evidence.
+- [x] Chapter audit:
+      [docs/reviews](docs/reviews/operating-systems-runtime-internals-chapter-1-audit-2026-11-28.md),
+      P0 0, P1 0, P2 1, P3 4.
+- [ ] Owner review and promotion of the five drafts.
+- [ ] Owner-run recordings on the owner's WSL2 machine; every recording so far
+      comes from a cloud VM.
+- [ ] Chapters 2–10, one chapter per run.

@@ -1986,3 +1986,26 @@ For the owner: the shared-desk analogy; "the likely reason" for involuntary
 switches (the woken partner preempting the writer before its read) is a
 hypothesis; the thread-versus-process gap is small and from a VM; the
 ConceptCheck's unpinned result is described, not measured.
+
+## Chapter 1 audit — 2026-11-28
+
+Audits Chapter 1 of Operating Systems & Runtime Internals (`os-kernel-boundary`)
+at 0189335 with the audit-subject skill and records the result in
+`docs/reviews/operating-systems-runtime-internals-chapter-1-audit-2026-11-28.md`;
+adds the chapter's entry to `IMPLEMENTATION.md`. No lesson changes.
+
+Inventory: `pnpm subject:report
+operating-systems-runtime-internals#os-kernel-boundary` reported five lessons
+(20–30 minutes each, 48 hidden contract cases, every figure computed from a
+lab) and no flags. The audit read all five lessons, labs, READMEs and their
+verification entries, and scored every standard ID: P0 0, P1 0, P2 1 (the
+running thread fades after the processes page), P3 4 (a close analogy, no
+checksum field in the measurements, one loosely rounded interview answer,
+owner-machine recordings still to do). With no P0 or P1 findings, nothing was
+fixed; the rest is listed for the owner. One standard feedback item proposes
+that E4 accept an asserted result in place of a checksum.
+
+Same command as the previous entry, run on this change: zero type errors,
+warnings or hints;
+formatting and lint passed; 536 tests passed and 1 skipped; 45 pages; 168
+browser tests.
