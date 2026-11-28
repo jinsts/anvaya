@@ -598,8 +598,26 @@ export function basicBlocks(listing: Listing): Block[] {
 export type Jump =
   'je' | 'jne' | 'jl' | 'jle' | 'jg' | 'jge' | 'jb' | 'jbe' | 'ja' | 'jae';
 
+const JUMPS: readonly Jump[] = [
+  'je',
+  'jne',
+  'jl',
+  'jle',
+  'jg',
+  'jge',
+  'jb',
+  'jbe',
+  'ja',
+  'jae',
+];
+
 /** Whether `cmpl right, left` followed by the jump jumps, by running it. */
 export function jumpTaken(jump: Jump, left: number, right: number): boolean {
+  if (!JUMPS.includes(jump))
+    throw new RangeError(`Unknown conditional jump ${String(jump)}.`);
+  for (const n of [left, right])
+    if (!Number.isInteger(n) || n < -(2 ** 31) || n > 2 ** 31 - 1)
+      throw new RangeError(`${n} is not a signed 32-bit integer.`);
   const program = parseListing(
     `f:\n\tcmpl\t%esi, %edi\n\t${jump}\t.L1\n\tmovl\t$0, %eax\n\tret\n.L1:\n\tmovl\t$1, %eax\n\tret\n`,
   );

@@ -280,9 +280,10 @@ all four committed listings in the interpreter, and they check those results
 against the native program's assertions. They also check that rbx is preserved,
 that rsp returns to its starting value and is 16-byte aligned at the call, the
 basic blocks of both versions, signed and unsigned jump conditions at their
-overflow edges, and that the annotations match the listings. The native lab recompiles
-the sources and fails if a listing drifts. The interpreter covers only the
-instructions these listings use, and models no timing.
+overflow edges, refusal of unknown jumps and out-of-range operands, and that the
+annotations match the listings. The native lab recompiles the sources and fails
+if a listing drifts. The interpreter covers only the instructions these listings
+use, and models no timing.
 
 ## Practice
 
@@ -292,18 +293,21 @@ instructions these listings use, and models no timing.
 >
   Implement `solve(jump, left, right)` in `starter.ts`: after `cmpl right, left`
   on 32-bit values, return whether the jump is taken. Compute ZF, SF, CF and OF
-  from the subtraction rather than comparing the numbers. Before running the
-  tests, predict `jl` with left −2³¹ and right 1, and `ja` with left 2³¹ − 1 and
-  right −1.
+  from the subtraction rather than comparing the numbers, and throw a
+  `RangeError` for an unknown jump or an operand outside −2³¹ to 2³¹ − 1. Before
+  running the tests, predict `jle` with left 2³¹ − 1 and right −2³¹, and `jb`
+  with left −1 and right 1.
 </LabCard>
 
 <details>
 <summary>Check after attempting</summary>
 
-−2³¹ − 1 overflows: the 32-bit result is 0x7fffffff, so SF is 0 but OF is 1.
-SF ≠ OF, so `jl` jumps, which is correct because −2³¹ is less than 1. For
-`ja`, −1 is the pattern 0xffffffff, the largest unsigned value, so
-0x7fffffff − 0xffffffff borrows: CF is 1 and `ja` does not jump.
+(2³¹ − 1) − (−2³¹) overflows: the 32-bit result is 0xffffffff, so SF is 1 but
+OF is also 1, and ZF is 0. `jle` jumps on ZF or SF ≠ OF, so it does not jump,
+which is correct because 2³¹ − 1 is greater than −2³¹. For `jb`, −1 is the
+pattern 0xffffffff, the largest unsigned value, so 0xffffffff − 1 does not
+borrow: CF is 0 and `jb` does not jump, although −1 is less than 1 as a signed
+number.
 
 </details>
 

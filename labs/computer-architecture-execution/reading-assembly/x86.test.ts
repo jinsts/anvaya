@@ -7,6 +7,7 @@ import {
   codeAddress,
   STACK_TOP,
   int32Bytes,
+  jumpTaken,
   parseListing,
   parseOperand,
   run,
@@ -223,6 +224,10 @@ it('marks flags undefined after imul and rejects unsupported code', () => {
   expect(() => run([unknown], 'f')).toThrow(/Unsupported instruction/);
   const loop = parseListing('f:\n.L1:\n\tjmp\t.L1\n');
   expect(() => run([loop], 'f', { maxSteps: 10 })).toThrow(RangeError);
+  expect(() => jumpTaken('jz' as never, 0, 0)).toThrow(RangeError);
+  for (const n of [2 ** 31, -(2 ** 31) - 1, 0.5, NaN])
+    expect(() => jumpTaken('jl', n, 0)).toThrow(RangeError);
+  expect(jumpTaken('jl', -(2 ** 31), 2 ** 31 - 1)).toBe(true);
 });
 
 it('splits listings into basic blocks with a backward edge for the loop', () => {

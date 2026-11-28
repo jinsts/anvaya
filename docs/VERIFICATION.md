@@ -2618,3 +2618,23 @@ subject:report` raises no new flag. No figure changed.
 Same command and environment as the first entry of 2026-11-25: zero type
 errors, warnings or hints; formatting and lint passed; 497 tests in 71 files,
 none skipped, including the native drift check; 42 pages; 154 browser tests.
+
+## Reading assembly: refusal cases and a fresh prediction — 2026-11-28
+
+Audit 2026-11-28 A1 and A2 (standard P2 and P5). `jumpTaken` threw a plain
+`Error` from the parser for an unknown jump and accepted operands outside 32
+bits; it now throws a `RangeError` for an unknown jump or an operand that is
+not an integer from −2³¹ to 2³¹ − 1, and `x86.test.ts` tests both, including
+the extreme operands that remain valid. The contract gains two refusal cases,
+and card 01, the README and the "tests check" paragraph state the rule. Card 01
+predicted hidden cases 1 and 3; it now predicts `jle` with 2³¹ − 1 and −2³¹ and
+`jb` with −1 and 1, which no case uses. Both were worked by hand from the flags
+before running them through the interpreter: neither jumps.
+
+`pnpm lab computer-architecture-execution/reading-assembly` fails all 11 cases;
+the reference passes them (23 tests in the lab folder). `pnpm subject:report`
+raises no new flag. No figure changed.
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 499 tests in 71 files,
+none skipped, including the native drift check; 42 pages; 154 browser tests.
