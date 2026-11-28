@@ -2740,3 +2740,23 @@ all 9 cases. `pnpm subject:report` raises no new flag. No figure changed.
 Same command and environment as the first entry of 2026-11-25: zero type
 errors, warnings or hints; formatting and lint passed; 501 tests in 71 files,
 none skipped, including the native drift check; 42 pages; 154 browser tests.
+
+## Stack and heap: hidden cases the card does not trace — 2026-11-28
+
+Audit 2026-11-28 A2 (standard P5). Card 01 asks learners to trace a caller that
+keeps a handle while the callee frees the object through its copy, which was
+hidden cases 1 and 2 (before and after the return). Case 1 now also returns and
+then allocates into a second local, so a new object is live while the old
+handle dangles; case 2 passes the handle through a middle frame, so three
+locals dangle. The reference `lifetimeReport` gave the expected values:
+`{ live: [2], dangling: ['main.p'] }` and
+`{ live: [], dangling: ['main.p', 'mid.m', 'release.q'] }`. The card is
+unchanged.
+
+`pnpm lab computer-architecture-execution/stack-and-heap` fails all 5 cases;
+the reference passes them (20 tests in the lab folder). `pnpm subject:report`
+raises no new flag. No figure changed.
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 501 tests in 71 files,
+none skipped, including the native drift check; 42 pages; 154 browser tests.
