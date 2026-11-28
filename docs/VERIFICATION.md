@@ -2726,3 +2726,17 @@ subject:report` raises no new flag. No figure changed.
 Same command and environment as the first entry of 2026-11-25: zero type
 errors, warnings or hints; formatting and lint passed; 501 tests in 71 files,
 none skipped, including the native drift check; 42 pages; 154 browser tests.
+
+## Measuring performance: a prediction no hidden case uses — 2026-11-28
+
+Audit 2026-11-28 A2 (standard P5). Card 01 predicted hidden case 6
+(`[10, 1, 1, 1, 1]`); it now asks for `[4, 9, 2, 7]`, which no case uses and
+which needs the even-count median. By hand and from the reference `summarize`:
+median 5.5, p90 9. The reveal follows. The contract is unchanged.
+
+`pnpm lab computer-architecture-execution/measuring-performance` still fails
+all 9 cases. `pnpm subject:report` raises no new flag. No figure changed.
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 501 tests in 71 files,
+none skipped, including the native drift check; 42 pages; 154 browser tests.
