@@ -36,6 +36,8 @@ export function predict(
     throw new RangeError(`Initial state must be 0 to ${top}.`);
   let state = initial;
   return outcomes.map((outcome) => {
+    if (typeof outcome !== 'boolean')
+      throw new RangeError('Each outcome must be true (taken) or false.');
     const prediction = kind === 'two-bit' ? state >= 2 : state === 1;
     const next =
       kind === 'two-bit'

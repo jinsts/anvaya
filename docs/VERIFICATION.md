@@ -2579,3 +2579,22 @@ raises no new flag. No figure changed.
 Same command and environment as the first entry of 2026-11-25: zero type
 errors, warnings or hints; formatting and lint passed; 494 tests in 71 files,
 none skipped, including the native drift check; 42 pages; 154 browser tests.
+
+## Branch prediction: refusal cases and a fresh prediction — 2026-11-28
+
+Audit 2026-11-28 A1 and A2 (standard P2 and P5). `predict` accepted any value
+as an outcome; it now throws a `RangeError` for one that is not a boolean, and
+`predictor.test.ts` tests it for both predictors. The contract gains two refusal
+cases, and card 01, the README and the "tests check" paragraph state the rule.
+Card 01 traced hidden case 6; it now traces not taken, taken, taken, not taken,
+taken, taken, which no case uses. The reference model gives states 1, 0, 1, 2,
+1, 2 and four mispredictions, which the reveal follows and which I traced by
+hand first.
+
+`pnpm lab computer-architecture-execution/branch-prediction` fails all 8 cases;
+the reference passes them (14 tests in the lab folder). `pnpm subject:report`
+raises no new flag. No figure changed.
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 496 tests in 71 files,
+none skipped, including the native drift check; 42 pages; 154 browser tests.
