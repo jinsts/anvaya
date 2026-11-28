@@ -2760,3 +2760,19 @@ raises no new flag. No figure changed.
 Same command and environment as the first entry of 2026-11-25: zero type
 errors, warnings or hints; formatting and lint passed; 501 tests in 71 files,
 none skipped, including the native drift check; 42 pages; 154 browser tests.
+
+## Text encoding: a prediction no hidden case uses — 2026-11-28
+
+Audit 2026-11-28 A2 (standard P5). Card 01 predicted hidden cases 2 and 4
+(U+00A3 and U+0939); it now asks for U+00E9 and U+20AC, which no case uses. By
+hand from RFC 3629's templates and from Python's encoder: `C3 A9` and
+`E2 82 AC`, which the reference `utf8Bytes` also returns. The reveal follows.
+The contract is unchanged.
+
+`pnpm lab computer-architecture-execution/text-encoding-and-memory-layout`
+still fails all 8 cases. `pnpm subject:report` raises no new flag. No figure
+changed.
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 501 tests in 71 files,
+none skipped, including the native drift check; 42 pages; 154 browser tests.
