@@ -7,7 +7,7 @@ const roots = [path.resolve('src/content'), path.resolve('labs')];
 const checked = (file) =>
   /\.(mdx|md|ya?ml)$/.test(file) ||
   (file.includes(`${path.sep}labs${path.sep}`) &&
-    /\.(ts|c|sh|mjs)$/.test(file) &&
+    /\.(ts|c|sh|mjs|java|go)$/.test(file) &&
     path.basename(file) !== 'starter.ts');
 const markers =
   /\b(TODO|TBD|FIXME|XXX|lorem ipsum)\b|example\.(com|org)|replace-before/i;

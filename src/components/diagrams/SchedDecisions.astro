@@ -1,0 +1,46 @@
+---
+import {
+  EXAMPLE,
+  simulate,
+} from '../../../labs/operating-systems-runtime-internals/scheduling/fair';
+// The decisions of the stepper as a table, for reading without JavaScript.
+const { decisions } = simulate(
+  EXAMPLE.tasks,
+  EXAMPLE.quantum,
+  EXAMPLE.duration,
+);
+const ms = (ns: number) => (ns / 1e6).toFixed(2);
+---
+
+<div
+  class="table-scroll"
+  tabindex="0"
+  role="region"
+  aria-label="Scheduling decisions"
+>
+  <table>
+    <thead>
+      <tr>
+        <th scope="col">At ms</th>
+        <th scope="col">Why</th>
+        <th scope="col">Runnable, lowest vruntime first (ms)</th>
+        <th scope="col">Runs</th>
+      </tr>
+    </thead>
+    <tbody>
+      {decisions.map((d) => (
+        <tr>
+          <td>{d.time}</td>
+          <td>
+            {d.reason}
+            {d.woke.length > 0 ? `; ${d.woke.join(', ')} woke` : ''}
+          </td>
+          <td>
+            {d.candidates.map((c) => `${c.name} ${ms(c.vruntime)}`).join(', ')}
+          </td>
+          <td>{d.picked ?? 'nothing'}</td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+</div>

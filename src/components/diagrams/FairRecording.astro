@@ -1,0 +1,159 @@
+---
+import DiagramFrame from '../learning/DiagramFrame.astro';
+import { pairShare } from '../../../labs/operating-systems-runtime-internals/scheduling/fair';
+import raw from '../../../labs/operating-systems-runtime-internals/scheduling/fair.json?raw';
+// The recording by fair.c: CPU shares of busy pairs beside the model, and
+// how late a sleeping process ran after its timer, alone and beside a busy
+// one.
+const run = JSON.parse(raw) as {
+  date: string;
+  kernel: string;
+  cpu: string;
+  environment: string | null;
+  command: string;
+  shares: { round: number; nice: number[]; cpuUs: number[] }[];
+  wakes: { neighbour: boolean; lateNs: number }[];
+};
+const pct = (x: number) => `${(x * 100).toFixed(1)}%`;
+const pairs = [5, 0].map((niceB) => {
+  const rounds = run.shares.filter((s) => s.nice[1] === niceB);
+  const recorded = rounds.map(({ cpuUs: [a = 0, b = 0] }) => b / (a + b));
+  return {
+    niceB,
+    model: pairShare(0, niceB).b,
+    low: Math.min(...recorded),
+    high: Math.max(...recorded),
+    rounds: rounds.length,
+  };
+});
+const BINS = [
+  { label: 'under 0.05 ms', max: 50_000 },
+  { label: '0.05–0.2 ms', max: 200_000 },
+  { label: '0.2–1 ms', max: 1_000_000 },
+  { label: '1–2 ms', max: 2_000_000 },
+  { label: '2–5 ms', max: 5_000_000 },
+  { label: '5 ms or more', max: Infinity },
+];
+const groups = [false, true].map((neighbour) => {
+  const late = run.wakes
+    .filter((w) => w.neighbour === neighbour)
+    .map((w) => w.lateNs);
+  const counts = BINS.map(
+    (bin, i) =>
+      late.filter((x) => x >= (i ? BINS[i - 1]!.max : 0) && bin.max > x).length,
+  );
+  const sorted = [...late].sort((a, b) => a - b);
+  return {
+    name: neighbour ? 'beside a busy process' : 'alone on the CPU',
+    total: late.length,
+    counts,
+    median: sorted[Math.floor(sorted.length / 2)]!,
+  };
+});
+const widest = Math.max(...groups.flatMap((g) => g.counts));
+const late = groups[1]!.counts.slice(3).reduce((a, b) => a + b, 0);
+const rounds = pairs[0]!.rounds;
+const each = groups[0]!.total;
+const median = ((groups[1]?.median ?? 0) / 1000).toFixed(0);
+const caption = `Recorded by fair.c with every process pinned to one CPU: above, the share of the CPU the second of two busy processes received in each of ${rounds} rounds, against the model's share from the weight table; below, how late a process that sleeps until every 10 ms mark ran after its timer, ${each} wake-ups each alone and beside a busy process at the same nice value. Beside it, the median wake-up was ${median} µs late and ${late} were a millisecond or more late. ${run.command}; Linux ${run.kernel}, ${run.cpu}, recorded ${run.date.slice(0, 10)} in ${run.environment ?? 'an unnamed environment'}.`;
+---
+
+<DiagramFrame caption={caption}>
+  <div class="fair">
+    <h4>CPU share of the second busy process</h4>
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">Nice values</th>
+          <th scope="col">Model</th>
+          <th scope="col">Recorded, lowest to highest round</th>
+        </tr>
+      </thead>
+      <tbody>
+        {pairs.map((p) => (
+          <tr>
+            <th scope="row">0 and {p.niceB}</th>
+            <td>{pct(p.model)}</td>
+            <td>
+              {pct(p.low)} to {pct(p.high)}
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+    <h4>How late the sleeping process ran</h4>
+    {groups.map((g) => (
+      <div class="group">
+        <p class="group-name">{g.name}</p>
+        <ul class="bins">
+          {BINS.map((bin, i) => (
+            <li>
+              <span class="bin">{bin.label}</span>
+              <span class="track" aria-hidden="true">
+                <span
+                  class:list={['bar', i >= 3 && 'late']}
+                  style={`width: ${((g.counts[i] ?? 0) / widest) * 100}%`}
+                />
+              </span>
+              <span class="n">
+                {g.counts[i]}
+                <span class="sr-only"> wake-ups</span>
+              </span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    ))}
+  </div>
+</DiagramFrame>
+<style>
+  .fair {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-3);
+  }
+  h4 {
+    margin: 0;
+    font-size: var(--text-sm);
+  }
+  table {
+    font-size: var(--text-sm);
+  }
+  .group-name {
+    margin: 0 0 var(--space-1);
+    color: var(--muted);
+    font-size: var(--text-xs);
+    font-weight: 600;
+  }
+  ul.bins {
+    display: grid;
+    gap: 2px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .bins li {
+    display: grid;
+    grid-template-columns: 7rem minmax(0, 1fr) 3rem;
+    align-items: center;
+    gap: var(--space-2);
+    margin: 0;
+    font-size: var(--text-xs);
+  }
+  .track {
+    height: 0.8rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .bar {
+    display: block;
+    height: 100%;
+    background: var(--chart-1);
+  }
+  .bar.late {
+    background: var(--chart-2);
+  }
+  .n {
+    font-family: var(--font-mono);
+    text-align: right;
+  }
+</style>

@@ -1,0 +1,8 @@
+name: Brendan Gregg's systems performance site
+kind: reference
+by: Brendan Gregg
+url: https://www.brendangregg.com/
+description: >-
+  The performance engineer's own pages on his analysis methods and tools,
+  including the USE Method (check utilization, saturation and errors for every
+  resource) and flame graphs, the stack-profile visualization he created.

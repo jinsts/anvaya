@@ -1,0 +1,43 @@
+---
+import DiagramFrame from '../learning/DiagramFrame.astro';
+import { RESOURCES } from '../../../labs/operating-systems-runtime-internals/threads/sharing';
+// Every resource the lab asks about, as the tested model classifies it.
+---
+
+<DiagramFrame caption="Each resource between a new thread and the thread that created it, and between a forked child and its parent, from the lesson's tested model. shared: one object both use; copied: each starts with a copy; separate: each has its own, new or empty.">
+  <div
+    class="table-scroll"
+    tabindex="0"
+    role="region"
+    aria-label="What threads share and children copy"
+  >
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">Resource</th>
+          <th scope="col">New thread</th>
+          <th scope="col">Forked child</th>
+          <th scope="col">Manual pages</th>
+        </tr>
+      </thead>
+      <tbody>
+        {RESOURCES.map((row) => (
+          <tr>
+            <th scope="row">{row.name}</th>
+            <td class={row.thread}>{row.thread}</td>
+            <td class={row.fork}>{row.fork}</td>
+            <td>{row.source}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+</DiagramFrame>
+<style>
+  td.shared {
+    font-weight: 700;
+  }
+  td.separate {
+    font-style: italic;
+  }
+</style>

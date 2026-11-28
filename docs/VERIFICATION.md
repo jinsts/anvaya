@@ -1552,3 +1552,460 @@ together: zero type errors, warnings or hints; formatting and lint passed; 421
 tests passed and 1 skipped in 65 files (the native drift check, which needs
 `ANVAYA_CC`); 39 pages; 142 browser tests. No figure changed, so no
 screenshots were taken.
+
+## Operating Systems & Runtime Internals planning change — 2026-11-26
+
+Applies the proposal the owner approved on 2026-11-25, with create-subject
+Phase 4. The subject's single path section becomes ten chapter sections
+(`os-kernel-boundary` through `os-go-runtime`) whose planned lists are the 38
+approved page titles in drafting order; a YAML comment on each chapter keeps
+the proposal's lesson slugs. The subject overview loses its six-chapter
+sketch (C8) and now matches the planned pages (C7): Go joins Node.js and the
+JVM as a case study, containers, signals and diagnostics are named, and three
+claims no page teaches (JVM class loading, actors, heap dumps) are gone. The
+proposal is marked approved, with the owner's final decisions in a dated
+section; its original text is kept. No lesson exists yet, so no competency or
+experiment is recorded as done.
+
+Eight sources were registered for the pages the proposal marked ☐. Pages
+opened on 2026-11-26, each read for its title, publisher and the section a
+later lesson will cite: Brendan Gregg's USE Method and Flame Graphs, the
+Node.js event-loop and "Don't Block the Event Loop" guides, libuv's design
+overview, V8's "Trash talk", the contents of the JVM Specification SE 21, the
+HotSpot GC Tuning Guide (Release 21) index, the JDK 21 `jcmd` manual, JEPs 439
+and 444, Go's `runtime/proc.go` scheduler comment, the `runtime` package
+documentation, the GC guide and the memory model. Claim-level reading happens
+when each lesson cites them.
+
+This run is not on the owner's WSL2 machine. It is a Claude Code cloud
+container: a Firecracker microVM (KVM) with Linux 6.18.44-fc-v880, Ubuntu
+24.04.5 and 4 vCPUs of an "Intel(R) Xeon(R) Processor @ 2.10GHz", working as
+root. Its network proxy refused the documentation hosts until the owner
+approved adding nine to the environment's allowed hosts (`man7.org`,
+`pages.cs.wisc.edu`, `docs.kernel.org`, `www.brendangregg.com`,
+`docs.libuv.org`, `v8.dev`, `docs.oracle.com`, `openjdk.org`, `go.dev`).
+GCC 15.2.0-16ubuntu1 and binutils 2.46 were extracted from Ubuntu 26.04
+packages with the setup scripts the next change adds; `PATH` put their
+`objdump` and `nm` ahead of this host's binutils 2.42 for the unchanged
+architecture runner. Chromium's libraries are all present here, so
+`LD_LIBRARY_PATH` was not needed.
+
+```sh
+PLAYWRIGHT_PORT=4371 PATH=/tmp/anvaya-cc/bin:$PATH \
+  ANVAYA_CC=/tmp/anvaya-cc/compiler ANVAYA_CC_ARM64=/tmp/anvaya-cc-arm64/compiler \
+  pnpm verify
+```
+
+Zero type errors, warnings or hints; formatting and lint passed; 422 tests in
+65 files, none skipped (the architecture native drift test ran); 39 pages;
+144 browser tests, including the new chapter test on desktop and mobile. The
+native drift check, run on its own, reported all 28 artifacts unchanged.
+`pnpm subject:report operating-systems-runtime-internals`: 10 chapters, 38
+planned pages, no flags. The change adds no figure; the built path and
+subject pages were inspected for the ten chapter headings and their anchors,
+and the existing catalog test scans the path page in both themes.
+
+For the owner: the rewritten overview objectives, mechanisms, experiments
+and competencies are agent drafts, and the ten `os-…` section IDs become
+the chapters' anchors.
+
+## Shared native runner — 2026-11-26
+
+The platform change the owner decided on 2026-11-25, recorded in
+[ADR 0010](adr/0010-shared-native-runner.md). `scripts/native.ts` is one
+runner for every subject's native lab: it finds each tool from its variable,
+generates twelve kinds of artifact (the architecture's six plus `strace`
+traces, `javap` listings, Java and Go output, Go escape analysis and container
+output), runs C, Java and Go checks, validates measurements, and reports every
+tool as present or absent and every skipped item with its reason.
+`verify-native.mjs` keeps its path and command and is now only the
+architecture's registry; its `toolchain.json` moved to one entry per tool,
+with the same identities. `labs/operating-systems-runtime-internals/native/`
+holds the new subject's registry (empty until lesson 1), its toolchain record,
+test and README. The two GCC setup scripts moved to `scripts/`, beside new
+ones for strace, the JDK and Go, which share `scripts/ubuntu-packages.sh`.
+
+Same container as the previous entry (Ubuntu 24.04, not the owner's 26.04).
+All five setup scripts recreated their toolchains from empty folders:
+GCC 15.2.0-16ubuntu1 with binutils 2.46 and the ARM64 cross-compiler,
+strace 6.19 and Go 1.26.8 from Ubuntu 26.04 (`ANVAYA_UBUNTU_SUITE=resolute`),
+and OpenJDK 21.0.13.1 from this host's own 24.04 suite
+(`ANVAYA_UBUNTU_SUITE=noble`), because the 26.04 build needs glibc 2.42.
+The first GCC folder reproduced 27 of the 28 artifacts: Ubuntu's GCC runs
+`/usr/bin/x86_64-linux-gnu-as` and `-ld` by absolute path, so the host's
+binutils 2.42 linked `scale-linked.txt` with its alignment NOPs in another
+order. A specs file in the folder now points GCC at the extracted binutils
+2.46; `-v` shows the 2.46 `as` and `ld` running, and all 28 compare the same.
+
+The runner's tests (`tests/unit/native-runner.test.ts`) use stand-in tools,
+so they run in every gate: tool detection and skip reasons, a `ptrace`
+refusal, recording then comparing every artifact kind, a changed artifact, a
+version mismatch that skips only the artifacts needing that tool, an absent
+tool's recorded identity kept on `--record`, quick and recorded measurements
+with their provenance, trace normalization and the listing helpers. Three
+more run against the real JDK (`javap` shows `imul`; the program prints 42),
+Go (`moved to heap: x`) and strace (process IDs become P1) when their
+variables are set. The architecture registry run on its own: 28 artifacts
+same, 8 checks, 5 measurements validated. With a tool removed it reports, for
+example, `cc-arm64 is absent (ANVAYA_CC_ARM64 is not set)`; with this host's
+`objdump` (2.42) on `PATH` instead of `ANVAYA_BINUTILS`, all 28 are skipped
+with the differing identity. Docker's command line is installed here but no
+daemon runs, so the runner reports Docker absent with the daemon's error.
+
+```sh
+PLAYWRIGHT_PORT=4371 \
+  ANVAYA_CC=/tmp/anvaya-cc/compiler ANVAYA_BINUTILS=/tmp/anvaya-cc/bin \
+  ANVAYA_CC_ARM64=/tmp/anvaya-cc-arm64/compiler \
+  ANVAYA_STRACE=/tmp/anvaya-strace/strace \
+  ANVAYA_JAVA_HOME=/tmp/anvaya-jdk/root/usr/lib/jvm/java-21-openjdk-amd64 \
+  ANVAYA_GO=/tmp/anvaya-go/root/usr/lib/go-1.26/bin/go \
+  pnpm verify
+```
+
+Zero type errors, warnings or hints; formatting and lint passed; 442 tests
+passed and 1 skipped in 67 files (the skip is the Docker test, with
+`ANVAYA_DOCKER` unset because no daemon runs here); 39 pages; 144 browser
+tests. No content or figure changed, so no screenshots were taken.
+
+For the owner: the moved GCC scripts now also extract binutils 2.46, so the
+compiler wrapper no longer uses the system's `as` and `ld` on your machine
+either (the same version there). Set `ANVAYA_BINUTILS=/tmp/anvaya-cc/bin`
+with `ANVAYA_CC`, or the architecture listings are skipped if your system
+binutils is not 2.46. Docker recordings need your machine.
+
+## System calls lesson — 2026-11-26
+
+Drafts `operating-systems-runtime-internals/system-calls`, the first page of
+Chapter 1, with the draft-lesson skill; it moves from the chapter's planned
+list to its lessons. The page follows a C library call through the kernel's
+system-call table and back, shows the vDSO answering `clock_gettime` in the
+process, and counts serve's system calls the way `strace -c` does. It
+introduces `serve` (`labs/operating-systems-runtime-internals/native/serve.c`),
+the subject's running example. The architecture hardware–software lesson now
+links forward to it, and the catalog test's sidebar list includes the new
+chapter.
+
+Evidence, registered in `native/registry.ts` and run by the shared runner
+with GCC 15.2 and strace 6.19: `numbers.txt` (system-call numbers from
+`<sys/syscall.h>`), `serve-trace.txt` and `serve-missing-trace.txt` (serve's
+own calls from its first `openat`, with and without its request file) are
+drift-checked; `serve-strace.json` (`strace -f -C` of the whole run, with
+strace's summary), `cost.json` and `cost-traced.json` (`cost.c`, fifteen
+alternated rounds of `getpid` and `clock_gettime`, without and under strace)
+are recordings. Each stores its date, tools, kernel, CPU and command; all were
+made on 2026-11-26 in this Claude Code cloud container (Linux 6.18.44-fc-v880,
+"Intel(R) Xeon(R) Processor @ 2.10GHz", KVM, 4 vCPUs, unpinned, as root),
+not on the owner's WSL2 machine. The run counted 35 calls, 29 of them before
+serve's own code and 1 error (`access` of `/etc/ld.so.preload`); `exit_group`
+is in the trace but not in strace's summary; no `clock_gettime` appears.
+Medians: `getpid` 90.4 ns and `clock_gettime` 29.1 ns; under strace 52.6 µs
+and 29.6 ns. The tests assert only what the lesson says: `getpid` slower in
+every round, a median ratio between 2.5 and 3.5 ("about three times"), every
+traced `getpid` round over 100 times the slowest untraced one ("hundreds of
+times"), and traced `clock_gettime` within 0.8–1.25 of untraced.
+
+Model and tests: `trace.ts` parses the strace line forms the lesson uses
+(returned, failed, unreturned, unfinished and resumed calls, signal and exit
+lines) and refuses others with the line number, counts as `strace -c` does,
+reads strace's summary table, and gives the call paths the figure draws.
+Twelve model tests and nine hidden contract cases pass; `pnpm lab
+operating-systems-runtime-internals/system-calls` fails all nine against the
+starter. Independent checks: the model's count of serve's recorded run equals
+strace's own summary row by row (calls and errors), and a separate Python
+implementation written from the contract's wording agreed with all nine
+hidden cases.
+
+Sources opened on 2026-11-26 before citing: syscall(2), intro(2), vdso(7),
+getpid(2), open(2), read(2), exit_group(2), stdin(3), ld.so(8), strace(1)
+and ptrace(2) on man7.org (man-pages 6.19); the kernel documentation's
+"Adding a New System Call" and "Kernel Entries"; OSTEP chapter 6. The
+proposal found no fitting problem, and none is linked.
+
+Same command as the previous entry, with `ANVAYA_STRACE`, `ANVAYA_JAVA_HOME`
+and `ANVAYA_GO` set: zero type errors, warnings or hints; formatting and lint
+passed; 464 tests passed and 1 skipped in 69 files (the Docker test); 41
+pages; 148 browser tests, including the per-lesson checks with and without
+JavaScript for this page. `pnpm subject:report
+operating-systems-runtime-internals/system-calls`: no flags.
+
+First-run failures and fixes: `perror` added `dup`, `fcntl` and `close`
+calls whose behaviour belongs to the host's C library, so serve reports errors
+with one `write`. serve first printed its process ID, which made the `write`
+length depend on the ID's digits; it now uses `getpid` only to check for
+PID 1. After a session restart, four-digit process IDs exposed that strace
+pads the ID column to five characters, which the runner's normalization kept
+(`P1  openat`); the runner now writes the label and one space, with a unit
+test. The model first rejected the runner's `P1` labels, and said rax where
+syscall(2) names eax for the number. The runner gained an expected exit
+status for traced programs (serve's failure path exits 1) and names a
+measured program in its recorded command. The study sidebar test expected one
+subject label.
+
+Visual review: `pnpm shots` captured the visible call-path figure at 1280 and
+390 px in both themes and the page at 390 px without JavaScript; a scratch
+script captured all three figures with every disclosure open. Review changed:
+each call-path step on its own row with elbows where the call crosses into and
+out of the kernel; the trace chart's names lost the prose inline-code boxes
+and its bars stack under their labels on phones; the cost chart shows every
+other axis label on phones; long trace lines in a disclosure widened the
+chart's grid and overflowed the page until the grid's column was constrained.
+
+For the owner: the bank-counter analogy comes from the approved proposal and
+is close in spirit to the architecture lesson's service desk, though it is
+used for the vDSO's limit rather than privilege. All timings are from a
+virtual machine; the lesson gives ratios and says so. The statement that
+strace -c leaves out `exit_group` is what the recording shows; the lesson
+does not claim why.
+
+## Processes lesson — 2026-11-26
+
+Drafts `operating-systems-runtime-internals/processes`, Chapter 1's second
+page, with the draft-lesson skill. The learner predicts the processes a
+program builds with `fork`, `exec` and `wait`, steps through a launcher that
+starts `serve`, and sees why every exited child is a zombie until its parent,
+or whoever adopts it, waits. Figures: a lifecycle diagram drawn from the
+model's `LIFECYCLE` table, the `ForkStepper` island over the model's events
+(with a prediction of which process init adopts), and its events as a table
+in a "Check after stepping" disclosure.
+
+Evidence: `launcher.c` runs the model's `LAUNCHER` program on Linux, with
+`serve` built beside it. It catches P3 as a zombie (`WNOWAIT`, then state `Z`
+in `/proc/<pid>/stat`), shows `/proc/<pid>` gone after the reap, and makes
+itself a child subreaper so the orphaned P5 comes to it. It prints P1 to P5,
+not process IDs; the shared runner drift-checks `launcher-output.txt`, which
+was the same on three consecutive runs. The runner's `output` kind gained
+`programs`, other C programs built into the working folder, with a unit test.
+
+Model and tests: `process.ts` simulates fork, exec (successful or missing),
+wait (oldest unreaped child), exit and pause, names children in reading order
+so the result does not depend on the scheduler, and refuses statuses outside
+0–255 and unknown actions. Nine model tests (including the practice card's
+answer) and ten hidden contract cases pass; `pnpm lab
+operating-systems-runtime-internals/processes` fails all ten against the
+starter. Independent checks: the model's statuses and ends agree with the
+recorded launcher, and a separate Python implementation that runs the newest
+process first passed all ten hidden cases through the contracts themselves.
+Two component tests cover the stepper (a zombie before its reap, the scored
+adoption prediction, reset), and a new `tests/e2e/operating-systems.spec.ts`
+steps it by keyboard.
+
+Sources opened on 2026-11-26 before citing: OSTEP chapter 5 (the process
+API); fork(2) (including its copy-on-write note), execve(2), \_exit(2),
+wait(2), PR_SET_CHILD_SUBREAPER(2const), proc_pid_stat(5) and
+pid_namespaces(7) on man7.org. No fitting problem exists in the registered
+bank; none is linked.
+
+Same command as the previous entry: zero type errors, warnings or hints;
+formatting and lint passed; 486 tests passed and 1 skipped in 72 files (the
+Docker test); 42 pages; 154 browser tests. `pnpm subject:report
+operating-systems-runtime-internals/processes`: no flags.
+
+First-run failures and fixes: the first gate run failed four search tests on
+both projects. Pagefind also matches an indexed word that begins the query,
+and the lesson's zombie state, a lone "Z", made the tests' empty query
+`zzqqxv` match it; probing every first letter showed that a query starting
+with "a" never matches, so both tests now search for `aqqjjxv`, with a comment
+saying why. Earlier, the model left an adopted child that exited later as a
+zombie and P1 unreaped; both are reaped now, as in Linux.
+
+Visual review: `pnpm shots` captured the lifecycle figure and the stepper at
+1280 and 390 px in both themes and the page without JavaScript; a scratch
+script captured the stepper after the first zombie and after the adoption,
+and the event table, in both widths and themes. No overflow; the review found
+nothing to change.
+
+For the owner: the model sends orphans to init, while the recording uses a
+subreaper; the lesson says so. "Exits with 127 after a failed exec" is
+`launcher.c`'s own choice, not a rule the lesson states. Whether a container
+runtime starts a small init as PID 1 is left to the containers chapter.
+
+## Threads lesson — 2026-11-26
+
+Drafts `operating-systems-runtime-internals/threads`, Chapter 1's third page,
+with the draft-lesson skill. The learner says what two threads of one process
+share and what each keeps, contrasts it with what a forked child copies, and
+reads a process's threads from `/proc`. Figures: two address-space panels
+(threads against parent and child) and the full sharing table, both drawn
+from the model's `RESOURCES`; the table sits in the first practice card's
+"Check after attempting" disclosure so it does not give the answers away.
+
+Evidence: `share.c` starts a second thread T and, while T still runs, forks
+a child. Each reads `/proc/thread-self/status` and uses a global and a file
+descriptor. It prints comparisons and counts, never IDs, so
+`share-output.txt` is the same on every run; the shared runner builds it with
+`-pthread` and drift-checks it. It shows T with the main thread's process ID
+and its own thread ID, the main thread reading T's 42, descriptor 7 shared by
+the threads and copied into the child, the child's 7 and descriptor 8
+staying in the child, and the child having one thread.
+
+Model and tests: `sharing.ts` classifies twelve resources as shared, copied
+or separate for a new thread and for a forked child, each with the manual
+page that says so, and throws a `RangeError` for anything else. Six model
+tests pass, including one that checks the model against `share-output.txt`
+and the practice card's answer; nine hidden contract cases pass; `pnpm lab
+operating-systems-runtime-internals/threads` fails all nine against the
+starter. Independent checks: the recorded program for memory, descriptors,
+process and thread IDs; pthreads(7), pthread_create(3), fork(2) and signal(7)
+for the rest.
+
+Sources opened on 2026-11-26 before citing: pthreads(7), clone(2),
+pthread_create(3), fork(2), signal(7), gettid(2), proc_pid_status(5) and
+proc_pid_task(5) on man7.org. No fitting problem exists in the registered
+bank; none is linked.
+
+Same command as the previous entry: zero type errors, warnings or hints;
+formatting and lint passed; 501 tests passed and 1 skipped in 74 files (the
+Docker test); 43 pages; 158 browser tests. `pnpm subject:report
+operating-systems-runtime-internals/threads`: no flags.
+
+Visual review: `pnpm shots` captured both figures at 1280 and 390 px in both
+themes and the page without JavaScript; a scratch script captured the table
+inside its disclosure. No page overflow; on phones the table scrolls inside
+its labelled, focusable region.
+
+For the owner: the office analogy; the twelve resources chosen; "CPU time
+used" classed as shared for threads (the process's total) and separate for a
+child; NPTL's per-thread nice value, which the lesson mentions and the
+scheduling lesson uses.
+
+## Scheduling lesson — 2026-11-28
+
+Drafts `operating-systems-runtime-internals/scheduling`, Chapter 1's fourth
+page, with the draft-lesson skill. The learner computes the order and CPU
+shares a weighted fair scheduler gives busy and sleeping tasks, sees nice
+values become weights, and compares the model with what Linux did on one
+pinned CPU. Figures: the `SchedStepper` island over the model's decisions
+for the running example (a prediction before each decision), the same
+decisions as a table in a "Check after stepping" disclosure, a
+millisecond-by-millisecond timeline computed by the model, and the
+recording's shares and wake-up delays.
+
+Evidence: `fair.c` pins its children to one CPU (`sched_setaffinity`, no
+privilege), runs busy pairs at nice 0/0 and 0/5 for 2 s each and reads
+their CPU time with `wait4`, then times 100 wake-ups of a process that sleeps
+until every 10 ms mark (timer slack 1 ns), alone and beside a busy process.
+Five rounds, orders swapped each round, recorded through the shared runner as
+`fair.json` on 2026-11-28 in the cloud container (Linux 6.18.44, KVM, 4
+vCPUs), not on the owner's WSL2 machine. The second busy process received
+24.67–24.76% at nice 5 (model 24.65%) and 49.94–50.07% at nice 0. Alone, the
+median wake-up was 114 µs late and none reached 1 ms; beside the busy
+process the median was 36 µs, and 128 of 500 waited 2–5 ms (one 9 ms). An
+earlier exploratory run during a gate showed the same pattern with more
+noise and was discarded.
+
+Model and tests: `fair.ts` runs tasks millisecond by millisecond: weights
+from the kernel table in OSTEP chapter 9, vruntime in whole nanoseconds,
+decisions at slice ends, sleeps and idle wake-ups, lowest vruntime first with
+ties to the task that ran longest ago, and a waking task placed at the
+larger of its own vruntime and the lowest runnable one. Eight model tests
+pass, including a decision sequence for nice 0 against nice 5 computed by
+hand in the test (the independent check), convergence to the weights' shares
+over 3 s, and agreement with the recording's shares and the shape of its
+wake-ups; eleven hidden contract cases pass; `pnpm lab
+operating-systems-runtime-internals/scheduling` fails all eleven against the
+starter. Two component tests cover the stepper and a keyboard test in
+`tests/e2e/operating-systems.spec.ts` steps it.
+
+Sources opened on 2026-11-26 and 2026-11-28 before citing: OSTEP chapters 7
+and 9; sched(7), getpriority(2), sched_setaffinity(2) and
+PR_SET_TIMERSLACK(2const) on man7.org; the kernel's EEVDF and CFS pages on
+docs.kernel.org. No fitting problem exists in the registered bank; none is
+linked.
+
+Same command as the previous entry: zero type errors, warnings or hints;
+formatting and lint passed; 522 tests passed and 1 skipped in 77 files (the
+Docker test); 44 pages; 164 browser tests. `pnpm subject:report
+operating-systems-runtime-internals/scheduling`: no flags.
+
+First-run failures and fixes: `astro check` failed on `FairRecording.astro`
+because a comment with an odd number of apostrophes and a non-null assertion
+before a division (`x! / y`) made the compiler misread the frontmatter; the
+comment was reworded and the divisions rewritten. The lesson first listed a
+skill (`performance`) that is not in the catalog; the build named it.
+
+Visual review: `pnpm shots` captured the stepper, the timeline and the
+recording at 1280 and 390 px in both themes and the page without
+JavaScript; a scratch script captured the stepper after three decisions at
+both widths. No overflow; the intro text of the stepper was rewritten after
+review.
+
+For the owner: the kitchen analogy; the model's wake rule follows OSTEP's
+CFS description, not EEVDF, and the lesson says so; "an idle CPU probably
+first had to leave a power-saving state" is a hypothesis, marked as such;
+the 2–5 ms waits are described, not explained, because explaining which
+wake-ups wait needs the kernel source; the recording comes from a VM.
+
+## Context switches lesson — 2026-11-28
+
+Drafts `operating-systems-runtime-internals/context-switches`, the last page
+of Chapter 1, with the draft-lesson skill. The learner says what a switch
+saves and restores and what it costs indirectly, tells voluntary from
+involuntary switches in `/proc`, and estimates one switch's cost from a
+recorded ping-pong. Figures: one round trip of the ping-pong from the
+model's `ROUND_TRIP` steps, and the recorded per-switch estimates for two
+processes and two threads with the model's median and p90, inside the
+prediction's "Check after predicting" disclosure.
+
+Evidence: `switch.c` follows OSTEP chapter 6's lmbench method. Pinned to one
+CPU, it times 15 batches of 100,000 round trips of the pipe work alone, a
+parent and forked child, and two threads, rotating the order every batch,
+checks every byte, and reads the measuring thread's switch counts from
+`/proc/thread-self/status`. Recorded through the shared runner as
+`switch.json` on 2026-11-28 in the cloud container (Linux 6.18.44, KVM, 4
+vCPUs), not on the owner's WSL2 machine. Per switch: processes median
+1,211 ns, p90 1,464 ns; threads median 1,022 ns, p90 1,253 ns; batches
+spread over 680–1,480 ns. Voluntary plus involuntary switches equalled the
+round trips (to within 1) in every batch, 56% voluntary. A smoke run during
+the scheduling gate showed the same split and was discarded.
+
+Model and tests: `switches.ts` turns each batch into (ping-pong − pipe) / 2
+and summarizes with the measuring-performance lab's `summarize`, so the
+median and nearest-rank p90 follow that convention. Five model tests pass,
+including a hand computation on the first three recorded batches (the
+independent check) and the recording's one-switch-per-trip relationship;
+nine hidden contract cases pass; `pnpm lab
+operating-systems-runtime-internals/context-switches` fails all nine against
+the starter. The scheduling lesson now links here.
+
+Sources opened on 2026-11-28 before citing: OSTEP chapters 6, 19 and 26;
+proc_pid_status(5) and sched_setaffinity(2) on man7.org. No fitting problem
+exists in the registered bank; none is linked.
+
+Same command as the previous entry: zero type errors, warnings or hints;
+formatting and lint passed; 536 tests passed and 1 skipped in 79 files (the
+Docker test); 45 pages; 168 browser tests. `pnpm subject:report
+operating-systems-runtime-internals/context-switches`: no flags.
+
+Visual review: `pnpm shots` captured the round-trip figure at 1280 and 390 px
+in both themes and the page without JavaScript; a scratch script captured
+both figures with disclosures open. No overflow. Review fixed the step
+badges, which stretched over two-line steps, and the cost figure's key,
+which wrapped apart on phones.
+
+For the owner: the shared-desk analogy; "the likely reason" for involuntary
+switches (the woken partner preempting the writer before its read) is a
+hypothesis; the thread-versus-process gap is small and from a VM; the
+ConceptCheck's unpinned result is described, not measured.
+
+## Chapter 1 audit — 2026-11-28
+
+Audits Chapter 1 of Operating Systems & Runtime Internals (`os-kernel-boundary`)
+at 0189335 with the audit-subject skill and records the result in
+`docs/reviews/operating-systems-runtime-internals-chapter-1-audit-2026-11-28.md`;
+adds the chapter's entry to `IMPLEMENTATION.md`. No lesson changes.
+
+Inventory: `pnpm subject:report
+operating-systems-runtime-internals#os-kernel-boundary` reported five lessons
+(20–30 minutes each, 48 hidden contract cases, every figure computed from a
+lab) and no flags. The audit read all five lessons, labs, READMEs and their
+verification entries, and scored every standard ID: P0 0, P1 0, P2 1 (the
+running thread fades after the processes page), P3 4 (a close analogy, no
+checksum field in the measurements, one loosely rounded interview answer,
+owner-machine recordings still to do). With no P0 or P1 findings, nothing was
+fixed; the rest is listed for the owner. One standard feedback item proposes
+that E4 accept an asserted result in place of a checksum.
+
+Same command as the previous entry, run on this change: zero type errors,
+warnings or hints;
+formatting and lint passed; 536 tests passed and 1 skipped; 45 pages; 168
+browser tests.

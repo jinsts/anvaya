@@ -1,0 +1,268 @@
+---
+title: 'Context switches: What switching costs'
+shortTitle: Context switches
+summary: Say what the kernel saves and restores in a context switch, tell voluntary from involuntary switches in /proc, and estimate what one switch costs from a recorded ping-pong between two processes and two threads.
+subject: operating-systems-runtime-internals
+path: engineering-fundamentals
+difficulty: intermediate
+estimatedMinutes: 20
+learningObjectives:
+  - Say what a context switch saves and restores, and name its indirect costs
+  - Tell voluntary from involuntary switches in /proc/<pid>/status and say what causes each
+  - Estimate the cost of one switch, with its spread, from ping-pong measurements
+prerequisites:
+  - operating-systems-runtime-internals/scheduling
+tags: [kernel, execution, performance]
+skills: [profiling-measurement, debugging, trade-off-analysis]
+status: draft
+drafter: agent
+interviewQuestions:
+  - prompt: What happens in a context switch, and what does it cost?
+    answer: >-
+      The kernel saves the running task's registers, program counter and
+      kernel stack pointer and restores those of the next task, which then
+      returns to user space where it left off. The direct cost is about a
+      microsecond on current hardware; in this lesson's recording on a cloud
+      virtual machine it was about 1.2 µs between processes and 1.0 µs
+      between threads at the median. The indirect cost can be larger: the next
+      task finds caches and the TLB filled with someone else's data and
+      translations, and pays in misses afterwards.
+  - prompt: What is the difference between a voluntary and an involuntary context switch?
+    answer: >-
+      A voluntary switch happens when the task gives up the CPU itself, by
+      blocking on I/O, a lock or a sleep. An involuntary one happens when the
+      kernel takes the CPU away from a task that could still run, because its
+      slice ended or another task woke with a better claim. Linux counts both
+      per thread in `/proc/<pid>/status`. Many involuntary switches suggest
+      CPU contention; many voluntary ones suggest a task that waits a lot.
+    followUps:
+      - A service shows involuntary switches climbing while its latency rises. What do you check next?
+  - prompt: Why does a thread-per-request server stop scaling?
+    answer: >-
+      Each request costs a thread's stack and kernel structures, and while
+      the threads outnumber the CPUs, each switch between them costs about a
+      microsecond plus the cache and TLB misses afterwards. With thousands of
+      mostly blocked threads the switches and the memory add up, and under
+      load the scheduler spreads CPU across all of them, so tail latency
+      grows. Event loops and runtimes with their own lightweight tasks
+      multiplex many requests over few threads instead; the runtime chapters
+      cover them.
+  - prompt: Why is switching between two threads of one process cheaper than between two processes?
+    answer: >-
+      Threads of one process share an address space, so the kernel does not
+      switch page tables, and on hardware without address-space tags the TLB
+      keeps its translations. Between processes it must switch page tables,
+      and the TLB either is flushed or relies on address-space identifiers.
+      The register save and restore is the same. In this lesson's recording
+      the difference was about 0.2 µs at the median; the indirect cost on a
+      real workload can differ more.
+sources:
+  - label: 'OSTEP, chapter 6 — limited direct execution, the context switch and how lmbench measures it'
+    url: https://pages.cs.wisc.edu/~remzi/OSTEP/cpu-mechanisms.pdf
+  - label: 'OSTEP, chapter 26 — threads share an address space, so their switch keeps the page table'
+    url: https://pages.cs.wisc.edu/~remzi/OSTEP/threads-intro.pdf
+  - label: 'OSTEP, chapter 19 — the TLB on a context switch: flushing or address-space identifiers'
+    url: https://pages.cs.wisc.edu/~remzi/OSTEP/vm-tlbs.pdf
+  - label: 'proc_pid_status(5) — voluntary_ctxt_switches and nonvoluntary_ctxt_switches'
+    url: https://man7.org/linux/man-pages/man5/proc_pid_status.5.html
+  - label: 'sched_setaffinity(2) — pinning both tasks to one CPU'
+    url: https://man7.org/linux/man-pages/man2/sched_setaffinity.2.html
+---
+
+import RoundTrip from '../../../components/diagrams/RoundTrip.astro';
+import SwitchCost from '../../../components/diagrams/SwitchCost.astro';
+
+import switchSource from '../../../../labs/operating-systems-runtime-internals/context-switches/switch.c?raw';
+import model from '../../../../labs/operating-systems-runtime-internals/context-switches/switches.ts?raw';
+
+## What the scheduler's decisions cost
+
+The [scheduling lesson](/learn/operating-systems-runtime-internals/scheduling/)
+counted who runs; every change of who runs is a **context switch**, and it is
+not free. A server with one thread per request switches each time a request
+blocks and another becomes ready. How much does one switch cost, and when does
+it matter?
+
+Think of a desk shared by two people in shifts. At a change of shift, the
+first packs their papers into a drawer and the second unpacks theirs. The
+analogy stops at what is left behind: the next person does not only unpack,
+they also find the shelves within reach full of the other person's books.
+Caches and the TLB play the shelves, and the cost of refilling them comes
+after the switch, not during it.
+
+## What a switch saves and restores
+
+When the kernel has the CPU, after a system call or a timer interrupt, the
+scheduler may choose another task. The switch itself saves the running task's
+general-purpose registers, program counter and kernel stack pointer, and
+restores those of the next task; returning from the kernel then resumes the
+next task where it stopped (OSTEP chapter 6). The
+[hardware lesson](/learn/computer-architecture-execution/hardware-software-interaction/)
+showed how the CPU enters and leaves the kernel.
+
+The indirect costs come later. Between processes the page tables change too,
+and the TLB's translations belong to the old process, so it is flushed or its
+entries are told apart by an address-space identifier (OSTEP chapter 19).
+Threads of one process share the address space, so a switch between them
+keeps the page table (OSTEP chapter 26). Either way, the next task's data is
+probably no longer in the caches the
+[memory hierarchy lesson](/learn/computer-architecture-execution/memory-hierarchy-and-caches/)
+described.
+
+Linux counts switches for each thread in `/proc/<pid>/status`:
+`voluntary_ctxt_switches` when it gave up the CPU, for example by blocking,
+and `nonvoluntary_ctxt_switches` when the kernel took the CPU away while it
+could still run (proc_pid_status(5)).
+
+## Measure a switch with a ping-pong
+
+A switch is too short to time alone, so OSTEP describes how lmbench measures
+it: two tasks on one CPU pass a byte back and forth through two pipes. Each
+blocks in `read` until the other writes, so every round trip makes two
+switches. Pinning both to one CPU with `sched_setaffinity`
+(sched_setaffinity(2)) makes the switch happen on one CPU instead of the two
+tasks running side by side on two.
+
+<RoundTrip />
+
+A round trip also does two writes and two reads, so `switch.c` times the same
+pipe work done by one process alone, with no switch, and the model subtracts
+it: one switch costs (ping-pong − pipe) / 2. It times 15 batches of 100,000
+round trips for a parent and a forked child, for two threads, and for the pipe
+work alone, rotating the order every batch so that a slow stretch of the
+machine does not land on one kind.
+
+Predict before you look: is a switch between two threads cheaper than one
+between two processes, and by how much?
+
+<details>
+<summary>Check after predicting</summary>
+
+<SwitchCost />
+
+Cheaper, but not by much: about 1.0 µs between threads against 1.2 µs
+between processes at the median, with batches spread over several hundred
+nanoseconds in both. The register work is the same; the processes also switch
+page tables. The spread is the machine's, a cloud virtual machine, so the
+median and p90 matter more than any one batch.
+
+</details>
+
+The counts in the figure answer a second question. Every round trip took the
+measuring thread off the CPU exactly once, but /proc counted a little over
+half of those switches as voluntary and the rest as involuntary. The likely
+reason is the scheduling lesson's wake-up preemption: when the thread writes,
+its partner wakes and often takes the CPU before the thread reaches its own
+`read`, so the thread is preempted while it could still run.
+
+<details>
+<summary>Inspect switch.c</summary>
+
+<CodeExample title="switch.c" code={switchSource} language="c" />
+
+</details>
+
+<details>
+<summary>Inspect the tested model and expected output</summary>
+
+<CodeExample
+  title="Estimating one switch from ping-pong batches"
+  code={model}
+  verified
+  output={'per switch: 900, 790, 1105, 845 ns\nmedian 872.5 ns, p90 1105 ns'}
+/>
+
+The example's timings are illustrative; the figure's come from `switch.json`.
+
+</details>
+
+The tests check that a round trip has two switches, that the estimate agrees
+with a hand computation on the first three recorded batches, that each
+ping-pong batch is paired with its own batch's pipe timing, and that every
+recorded round trip switched the measuring thread out once. The median and
+p90 follow the
+[measuring-performance lesson](/learn/computer-architecture-execution/measuring-performance/)'s
+convention and reuse its code.
+
+A common mistake is to measure without pinning. On an idle machine with
+several CPUs the two tasks can each run on a CPU of their own, and the
+ping-pong then measures waking a task on another CPU, not switching on one.
+
+## Practice
+
+<LabCard
+  title="01 / Estimate the cost of a switch"
+  command="pnpm lab operating-systems-runtime-internals/context-switches"
+>
+  Implement `solve(batches)` in `starter.ts`: turn each batch's ping-pong and
+  pipe timings into an estimate of one switch and return the median and p90,
+  following the lab's README. Before running the tests, work out the answer for
+  three batches: ping-pong 2000 ns with pipe 1000 ns, 2400 with 600, and 2200
+  with 1200.
+</LabCard>
+
+<details>
+<summary>Check after attempting</summary>
+
+The estimates are 500, 900 and 500 ns. Sorted, they are 500, 500, 900: the
+median is 500 ns and the p90, at rank ceil(0.9 × 3) = 3, is 900 ns. The
+second batch's pipe work was faster, so more of its round trip is switching.
+
+</details>
+
+<LabCard title="02 / Read a service's switches">
+  A service's threads show `nonvoluntary_ctxt_switches` rising by thousands a
+  second while its p99 latency rises, and `voluntary_ctxt_switches` steady. What
+  does that suggest, and what would you check?
+</LabCard>
+
+<details>
+<summary>Check after attempting</summary>
+
+The threads are being preempted while they could still run: they compete for
+CPU, either with each other or with other work on the machine. Check the CPU
+use and run-queue length, how many runnable threads there are against the
+CPUs available (including a container's CPU limit), and whether a batch job
+shares the CPUs. Steady voluntary switches say the waiting on I/O or locks has
+not changed.
+
+</details>
+
+## Check your reasoning
+
+<ConceptCheck
+  id="context-switches-pinning"
+  question="You run the ping-pong without pinning on an idle four-CPU machine and get a smaller number than with both tasks pinned to one CPU. What did the unpinned run measure?"
+  options={[
+    {
+      label:
+        'Mostly waking a task that runs on another CPU, so fewer or no switches on one CPU were in the time.',
+      correct: true,
+      explanation:
+        'With CPUs to spare, each task can stay on its own CPU, and a write wakes the partner there. Pinning both to one CPU forces the switch that the measurement is meant to time.',
+    },
+    {
+      label: 'The true cost of a switch, because pinning adds overhead.',
+      explanation:
+        'Pinning only restricts where the tasks run; it adds nothing to each round trip. Without it the round trip may not contain a switch on one CPU at all.',
+    },
+    {
+      label: 'The cost of a switch between threads, which is always smaller.',
+      explanation:
+        'Both kinds can be run pinned or unpinned. What changes the result here is whether the two tasks share a CPU.',
+    },
+  ]}
+/>
+
+## Two-minute recap
+
+- A context switch saves one task's registers, program counter and kernel
+  stack pointer and restores another's; between processes the page tables
+  change too.
+- Its indirect cost is the cache and TLB misses the next task pays
+  afterwards.
+- `/proc/<pid>/status` counts voluntary switches (the task blocked) and
+  involuntary ones (the kernel took the CPU away).
+- Pinned to one CPU of a cloud VM, one switch cost about 1.2 µs between
+  processes and 1.0 µs between threads at the median: small alone, but large
+  when thousands of threads take turns.

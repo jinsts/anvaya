@@ -28,7 +28,7 @@ skills:
   - skill: debugging
     focus: >-
       Diagnose hangs, leaks and contention with `strace`, `/proc`, thread dumps
-      and heap dumps.
+      and garbage-collection logs.
   - skill: profiling-measurement
     focus: >-
       Profile CPU time, allocation and garbage collection, and separate time
@@ -44,49 +44,65 @@ skills:
     focus: >-
       Rehearse concurrency and runtime deep-dive questions from the mechanisms
       rather than from memorized answers.
+# Aligned with the approved proposal on 2026-11-26; its ten chapters are the
+# path sections in engineering-fundamentals.yaml.
 overview:
   introduction: >-
     An operating system turns one machine into many isolated, concurrent
-    programs. This subject studies how the kernel does it, through processes,
-    threads, scheduling, virtual memory, system calls and filesystems, and then
-    moves up into the language runtimes that add their own scheduling, memory
-    management and concurrency models. Linux is the reference system; Node.js
-    and the JVM are the runtime case studies.
+    programs. This subject studies how the Linux kernel does it, through system
+    calls, processes and threads, scheduling, virtual memory, synchronization,
+    file descriptors and I/O, and the namespaces and cgroups that containers
+    are made of, and how to read the evidence each leaves. It then moves up
+    into the language runtimes that add their own scheduling, memory management
+    and concurrency models, with Node.js, the JVM and Go as the three case
+    studies. It starts where Computer Architecture & Execution stops, and treats
+    filesystems only as far as services need them: descriptors, the page cache
+    and `fsync`.
   whyItMatters: >-
     Many production incidents that are not logic errors happen at this layer:
     exhausted thread pools, memory that is never returned, leaked file
-    descriptors, an event loop blocked by one synchronous call, or long
-    garbage-collection pauses. Engineers who understand the kernel and the
-    runtime can read the evidence these failures leave, and can design services
-    that cooperate with the scheduler and memory manager instead of fighting
-    them.
+    descriptors, a container killed at its memory limit, an event loop blocked
+    by one synchronous call, or long garbage-collection pauses. Engineers who
+    understand the kernel and the runtime can read the evidence these failures
+    leave, and can design services that cooperate with the scheduler and memory
+    manager instead of fighting them.
   objectives:
-    - Explain the boundary between user space and the kernel, and what a system
-      call costs.
+    - Explain the boundary between user space and the kernel, what a system
+      call costs, and when the vDSO avoids one.
     - Describe how processes and threads are created, scheduled and switched,
-      and how they share or isolate state.
-    - Explain virtual memory, paging and the page cache, and how they determine
-      a process's real memory use.
+      and what they share or copy.
+    - Explain page tables, page faults, copy-on-write, the page cache and
+      allocators, and how they determine a process's real memory use.
     - Reason about race conditions, deadlocks and contention, and choose
       appropriate synchronization.
-    - Explain how the Node.js event loop and the JVM's threads and garbage
-      collectors run application code.
-    - Diagnose a misbehaving process on Linux with standard tools.
+    - Explain blocking, readiness and completion I/O, and what `fsync`
+      promises.
+    - Explain how containers isolate and limit processes with namespaces and
+      cgroups, and how a service shuts down cleanly on a signal.
+    - Diagnose a misbehaving process on one Linux host with standard tools.
+    - Explain how the Node.js event loop, the JVM and the Go runtime schedule
+      application code and collect garbage, and choose between them for a
+      service.
   mechanisms:
-    - Privilege levels, system call entry and exit, and the vDSO for cheap calls
+    - System-call entry and dispatch by number, and the vDSO for cheap calls
       such as reading the clock.
     - The process lifecycle (`fork`, `exec`, `wait`), threads, context switches
-      and the fairness model of the Linux scheduler.
-    - Virtual address spaces, page tables, page faults, copy-on-write, the page
-      cache and memory overcommit.
-    - Mutexes, condition variables, semaphores and atomics, and the futex
-      mechanism beneath Linux locks.
-    - File descriptors, blocking and non-blocking I/O, readiness notification
-      with `epoll`, and completion-based I/O with `io_uring`.
-    - The V8 heap and garbage collector, the phases and thread pool of libuv's
-      event loop, and the microtask queues of Node.js.
-    - JVM class loading, JIT compilation, the thread model, memory areas, and
-      generational and concurrent garbage collectors.
+      and the weighted fairness of the Linux scheduler.
+    - Page tables, page faults, copy-on-write, overcommit, the page cache and
+      user-space allocators.
+    - Mutexes and the futex beneath them, condition variables, semaphores,
+      reader–writer locks and lock ordering.
+    - File descriptors and open-file descriptions, non-blocking I/O, readiness
+      notification with `epoll`, completion-based I/O with `io_uring`, and
+      `fsync`.
+    - PID, mount, network and user namespaces, cgroup CPU quotas and memory
+      limits, and signal delivery.
+    - The phases and thread pool of libuv's event loop, the microtask queues of
+      Node.js, and V8's garbage collector.
+    - JVM bytecode, interpretation and JIT tiers, the G1 and ZGC collectors,
+      and platform and virtual threads.
+    - Go's G-M-P scheduler, its garbage collector with `GOGC` and
+      `GOMEMLIMIT`, and channels under the Go memory model.
   applications:
     - Sizing thread pools and connection pools from a workload's mix of
       computation and blocking I/O.
@@ -95,28 +111,35 @@ overview:
     - Finding the synchronous call or long task that blocks a Node.js event
       loop.
     - Choosing and tuning a JVM garbage collector for latency or throughput.
+    - Setting `GOGC` and `GOMEMLIMIT` for a Go service under a memory limit.
     - Tracking down file descriptor leaks, lock contention and runaway
       processes.
     - Understanding how containers use namespaces and cgroups to isolate and
-      limit processes.
+      limit processes, and stopping them without losing work.
   experiments:
-    - Trace a simple program with `strace -c` and count the system calls that
-      one file read needs.
+    - Trace a small program with `strace` and count the system calls that one
+      file read needs, including those made before `main` runs.
     - Create a child process and a thread from the same program, and compare
       what they share through `/proc`.
+    - Measure a context switch with a pipe ping-pong between two processes and
+      between two threads.
     - Increment a shared counter from several threads without synchronization,
       observe lost updates, then fix it with a mutex and with an atomic.
-    - Construct a deadlock between two locks, inspect it in a thread dump, and
-      remove it with a lock ordering.
-    - Block the Node.js event loop with a CPU-heavy function and measure the
-      delay it adds to timers and requests.
-    - Allocate heavily in a JVM program, enable garbage-collection logging, and
-      compare pause behaviour under two collectors.
+    - Construct a deadlock between two locks, inspect it in a JVM thread dump,
+      and remove it with a lock ordering.
     - Memory-map a large file and watch page faults and the page cache with
       `vmstat` and `/proc/meminfo`.
+    - Run a process in a container under a CPU quota and a memory limit, and
+      read its throttling and out-of-memory records.
+    - Block the Node.js event loop with a CPU-heavy function and measure the
+      delay it adds to timers.
+    - Allocate heavily in a JVM program, enable garbage-collection logging, and
+      compare pause behaviour under G1 and ZGC.
+    - Trace Go's garbage collector with `GODEBUG=gctrace=1` under different
+      `GOGC` settings.
   architecture:
     - Concurrency models, such as a thread per request, event loops, virtual
-      threads and actors, follow from scheduling and blocking costs.
+      threads and goroutines, follow from scheduling and blocking costs.
     - Process and container boundaries define failure isolation, resource
       limits and the unit of deployment.
     - Back-pressure, bounded queues and pool sizing are architectural responses
@@ -126,25 +149,22 @@ overview:
     - Durability guarantees depend on what `fsync` and the page cache actually
       promise.
   competencies:
-    - Explain step by step what happens when a process reads a file or accepts
-      a connection.
+    - Explain step by step what happens when a process reads a file or waits
+      for a connection.
     - Identify a race condition or deadlock in code and correct it.
-    - Use `top`, `vmstat`, `/proc`, `strace` and thread or heap dumps to locate a
-      resource problem.
-    - Predict how a Node.js or JVM service behaves under computation-bound and
-      I/O-bound load.
+    - Use `top`, `vmstat`, `/proc`, `strace`, thread dumps and
+      garbage-collection logs to locate a resource problem.
+    - Explain what a container's memory limit and CPU quota do to the processes
+      inside it.
+    - Predict how a Node.js, JVM or Go service behaves under computation-bound
+      and I/O-bound load.
   interview:
     - Concurrency questions about race conditions, deadlocks, thread safety and
       producer–consumer designs are common in coding interviews.
     - Deep dives often ask how the event loop works, what a context switch
-      costs or how garbage collection affects latency.
+      costs, how goroutines or virtual threads are scheduled, or how garbage
+      collection affects latency.
+    - Platform and SRE interviews ask what happens when a container reaches its
+      memory limit or CPU quota, and how to diagnose a stuck process.
     - System design estimates improve when they account for threads, memory per
       connection and blocking I/O.
-  chapters:
-    - 'The kernel boundary: processes, threads, system calls and scheduling'
-    - 'Memory: virtual memory, paging, the page cache and allocation'
-    - 'Concurrency: synchronization primitives, races, deadlocks and contention'
-    - Files, I/O and resource management on Linux
-    - 'Linux diagnostics: observing processes, memory and I/O'
-    - 'Language runtimes: V8 and the Node.js event loop; the JVM, its threads
-      and garbage collectors'

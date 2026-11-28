@@ -1,0 +1,273 @@
+---
+title: "Threads: What they share and what they don't"
+shortTitle: Threads
+summary: Say what two threads of one process share and what each keeps, contrast it with what a forked child copies, and read a process's threads from /proc.
+subject: operating-systems-runtime-internals
+path: engineering-fundamentals
+difficulty: foundation
+estimatedMinutes: 20
+learningObjectives:
+  - Say which resources two threads of one process share and which each keeps, and contrast them with what a forked child copies
+  - Read a process's thread count and its threads' IDs from /proc
+  - Explain why forking a program that runs several threads is risky
+prerequisites:
+  - operating-systems-runtime-internals/processes
+tags: [kernel, execution, memory]
+skills: [debugging, implementation]
+status: draft
+drafter: agent
+interviewQuestions:
+  - prompt: What is the difference between a thread and a process?
+    answer: >-
+      A process has its own address space, descriptor table and process ID. A
+      thread is one flow of execution inside a process: it has its own
+      registers, stack and thread ID, and shares the process's memory,
+      descriptors and process ID with the other threads. On Linux both are
+      tasks made by `clone`, whose flags decide what is shared. Threads can
+      therefore exchange data through memory directly, which is fast but
+      needs synchronization, while processes are isolated and talk through
+      the kernel.
+  - prompt: One thread writes a global variable. Does another thread see the change? Does a child forked earlier?
+    answer: >-
+      Another thread can, because it uses the same memory, although it needs
+      synchronization to be sure when the write becomes visible. A child does
+      not: `fork` gave it a copy of the parent's memory, and writes on either
+      side afterwards stay on that side. In this lesson's recording the main
+      thread read the 42 its thread wrote, and the 7 the child wrote never
+      reached the parent.
+  - prompt: Why is calling `fork` in a program that runs several threads risky?
+    answer: >-
+      The child gets only the thread that called `fork`, but a copy of all the
+      memory, including every mutex in whatever state it was. A mutex that
+      another thread held is locked in the child, and no thread there will
+      ever unlock it, so a child that takes it waits forever. fork(2)
+      therefore allows the child only async-signal-safe functions until it
+      calls `execve`; the safe pattern is to exec right after forking.
+    followUps:
+      - Which library functions does a child of a multithreaded program have to avoid before it execs?
+  - prompt: How do you see the threads of a running process on Linux?
+    answer: >-
+      `/proc/<pid>/status` shows a `Threads` count, and `/proc/<pid>/task/`
+      holds one directory per thread, named by its thread ID. In a thread's
+      own status file, `Tgid` is the process ID and `Pid` is the thread ID,
+      which is what `gettid` returns. In a single-threaded process the two
+      are equal; in a multithreaded one all threads share the process ID and
+      each has its own thread ID.
+sources:
+  - label: 'pthreads(7) — what threads share, what each has, and NPTL’s nice-value exception'
+    url: https://man7.org/linux/man-pages/man7/pthreads.7.html
+  - label: 'clone(2) — CLONE_VM, CLONE_FILES and CLONE_THREAD decide what a new task shares'
+    url: https://man7.org/linux/man-pages/man2/clone.2.html
+  - label: 'pthread_create(3) — what a new thread inherits'
+    url: https://man7.org/linux/man-pages/man3/pthread_create.3.html
+  - label: 'fork(2) — one thread in the child, copied descriptors, the multithreaded caveat'
+    url: https://man7.org/linux/man-pages/man2/fork.2.html
+  - label: 'signal(7) — a forked child’s copies of signal dispositions and mask'
+    url: https://man7.org/linux/man-pages/man7/signal.7.html
+  - label: 'gettid(2) — thread IDs and process IDs'
+    url: https://man7.org/linux/man-pages/man2/gettid.2.html
+  - label: 'proc_pid_status(5) — Tgid, Pid and Threads'
+    url: https://man7.org/linux/man-pages/man5/proc_pid_status.5.html
+  - label: 'proc_pid_task(5) — one directory per thread'
+    url: https://man7.org/linux/man-pages/man5/proc_pid_task.5.html
+---
+
+import AddressSpaces from '../../../components/diagrams/AddressSpaces.astro';
+import SharingTable from '../../../components/diagrams/SharingTable.astro';
+
+import shareSource from '../../../../labs/operating-systems-runtime-internals/threads/share.c?raw';
+import shareOutput from '../../../../labs/operating-systems-runtime-internals/threads/share-output.txt?raw';
+import model from '../../../../labs/operating-systems-runtime-internals/threads/sharing.ts?raw';
+
+## A second worker in the same process
+
+The [processes lesson](/learn/operating-systems-runtime-internals/processes/)'s
+launcher started a new process for each request: a full, isolated copy. A
+server can instead start a second **thread** inside the process it already
+is. Both run the same program; the question is what they have in common, and
+how that differs from a child made by `fork`.
+
+Think of two colleagues in one office. They use the same filing cabinets and
+the same phone line, while each has a desk and a notepad. Opening a branch
+office as a copy of the first gives the new staff the same files on day one,
+but from then on, changes in one office stay there. The analogy stops at the
+desks: a thread's stack is its own, but it lies in the same address space as
+everything else, so another thread holding a pointer into it can read or
+overwrite it.
+
+## What a thread shares, and what a child copies
+
+<AddressSpaces />
+
+POSIX threads in one process "share the same global memory (data and heap
+segments), but each thread has its own stack" (pthreads(7)). They also share
+the process's open file descriptors and its process ID, while each has its own
+thread ID. A child made by `fork` gets the reverse arrangement:
+its own process ID, and copies of the memory and the descriptor table that
+start identical and then go their own ways (fork(2)).
+
+On Linux both are made by the same system call, `clone`, and its flags decide
+what is shared. With `CLONE_VM` the new task runs in the same memory space;
+without it, in "a separate copy … as with fork(2)". With `CLONE_FILES` it
+shares the descriptor table; without it, it inherits a copy. `CLONE_THREAD`
+puts it in the caller's thread group (clone(2)). That is why every thread
+reports the same process ID but a unique thread ID: the process ID is the
+thread group's (gettid(2)).
+
+pthreads(7) lists more than a dozen other attributes that POSIX makes process-wide and a
+few that each thread keeps; the practice asks you to sort them. It also notes
+one place where Linux's thread library still departs from POSIX: threads do
+not share a common nice value, which matters for scheduling. The figure and the
+model describe Linux with glibc's threads, not every system.
+
+## Watch a thread and a child
+
+`share.c` starts a thread T, which sets the global `counter` to 42 and opens a
+descriptor. Then, while T is still running, the main thread forks a child,
+which sets `counter` to 7 and opens another descriptor. Predict what the main
+thread reads for `counter` at the end, whether it can use the child's new
+descriptor, and how many threads the child has.
+
+<details>
+<summary>Check after predicting</summary>
+
+<CodeExample
+  title="share.c's output (share-output.txt)"
+  code={shareOutput}
+  language="text"
+/>
+
+The main thread reads 42: T's write went into the memory they share, and the
+child's 7 went into the child's copy. Descriptor 7, which T opened before the
+fork, is open in the child too, because the child got a copy of the table; the
+descriptor 8 that the child opened afterwards exists only in the child. And
+the child has one thread, although its parent had two when it forked: fork(2)
+creates the child "with a single thread—the one that called fork()".
+
+</details>
+
+<details>
+<summary>Inspect share.c</summary>
+
+<CodeExample title="share.c" code={shareSource} language="c" />
+
+</details>
+
+The program prints comparisons instead of IDs, so its output is the same on
+every run, and the shared native runner fails if it changes.
+
+## Read threads in /proc
+
+Each thread reads `/proc/thread-self/status`. In a thread's status file,
+`Tgid` is the thread group ID, which is the process ID, `Pid` is the thread
+ID, and `Threads` is the number of threads in the process
+(proc_pid_status(5)). `/proc/<pid>/task/` holds one directory per thread,
+named by thread ID (proc_pid_task(5)). In a single-threaded process the
+thread ID equals the process ID (gettid(2)).
+
+A common mistake follows from the child having one thread. The child copies
+every mutex in the state it was in, and fork(2) warns that a child of a
+multithreaded program may call only async-signal-safe functions until it
+calls `execve`. Forking and then exec'ing at once, as the launcher did, is the
+safe pattern.
+
+<details>
+<summary>Inspect the tested model and expected output</summary>
+
+<CodeExample
+  title="What a new thread shares and a forked child copies"
+  code={model}
+  verified
+  output={
+    'new thread: shared globals and heap, file descriptors, process ID, signal dispositions, current directory, CPU time used; copied signal mask; separate stack, registers, errno, thread ID, pending signals\nforked child: shared nothing; copied globals and heap, stack, registers, errno, file descriptors, signal dispositions, signal mask, current directory; separate process ID, thread ID, pending signals, CPU time used'
+  }
+/>
+
+</details>
+
+The tests check that every resource has a classification for both relations
+and a manual page behind it, that nothing a thread shares is shared with a
+forked child, and that the model agrees with what `share.c` recorded for the
+process ID, thread ID, memory and descriptors, including the child's single
+thread.
+
+## Practice
+
+<LabCard
+  title="01 / Sort what is shared"
+  command="pnpm lab operating-systems-runtime-internals/threads"
+>
+  Implement `solve(resource, relation)` in `starter.ts`: return `shared`,
+  `copied` or `separate` for each resource the lab's README lists, between a new
+  thread and its creator or a forked child and its parent. Reason from the
+  manual pages the README names. Before running the tests, decide the answer for
+  the registers, for both relations.
+</LabCard>
+
+<details>
+<summary>Check after attempting</summary>
+
+The registers are separate for a new thread, which starts in its own start
+routine, and copied for a forked child, which continues from the same point
+as its parent with `fork`'s different return value. The tested model's full
+table:
+
+<SharingTable />
+
+</details>
+
+<LabCard title="02 / Predict a stuck child">
+  One thread holds a mutex while another thread of the same program calls
+  `fork`. The child then calls a function that takes that mutex. Predict what
+  happens to the child, and how the program should have been written.
+</LabCard>
+
+<details>
+<summary>Check after attempting</summary>
+
+The child's copy of the mutex is locked, and the thread that held it does not
+exist in the child, so the child waits forever. A program with several threads
+should call only async-signal-safe functions in the child and `exec` at once,
+as fork(2) says; fork(2) also points to `pthread_atfork` for the cases where
+that is not possible.
+
+</details>
+
+## Check your reasoning
+
+<ConceptCheck
+  id="threads-descriptor-table"
+  question="Thread T opens a file and gets descriptor 5. Then the main thread forks, and in the child descriptor 5 is closed. Can T, still in the parent, use descriptor 5?"
+  options={[
+    {
+      label:
+        'Yes: the child closed its own copy of the table, and the table that main and T share is unchanged.',
+      correct: true,
+      explanation:
+        'The child got a copy of the descriptor table at fork. Closing a descriptor in one copy does not affect the other, while the two threads keep sharing theirs.',
+    },
+    {
+      label:
+        'No: threads share descriptors, so closing it anywhere closes it for T.',
+      explanation:
+        'T shares its table with the main thread, not with the child. The child is a different process with a copy of the table.',
+    },
+    {
+      label: 'No: fork moved the descriptors to the child.',
+      explanation:
+        'fork copies the table; the parent keeps every descriptor it had.',
+    },
+  ]}
+/>
+
+## Two-minute recap
+
+- Threads of one process share its memory, descriptor table and process ID;
+  each has its own registers, stack and thread ID.
+- A forked child gets copies of the memory and descriptors, identical at first
+  and independent afterwards, and a process ID of its own.
+- On Linux both are made by `clone`; its flags decide what is shared.
+- A child forked from a program with several threads has only the calling
+  thread, but copies every lock: exec right after forking.
+- `/proc/<pid>/status` shows the thread count; `/proc/<pid>/task/` holds one
+  directory per thread, named by its thread ID.

@@ -1,0 +1,5089 @@
+{
+  "date": "2026-11-28T13:44:17.919Z",
+  "compiler": "gcc-15 (Ubuntu 15.2.0-16ubuntu1) 15.2.0",
+  "target": "x86_64-linux-gnu",
+  "platform": "linux",
+  "arch": "x64",
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "caches": "NAME ONE-SIZE ALL-SIZE WAYS TYPE        LEVEL   SETS PHY-LINE COHERENCY-SIZE\nL1d       48K     192K   12 Data            1     64        1             64\nL1i       32K     128K    8 Instruction     1     64        1             64\nL2         2M       8M   16 Unified         2   2048        1             64\nL3       260M     260M   20 Unified         3 212992        1             64\n",
+  "flags": ["-std=c17", "-O2"],
+  "kernel": "6.18.44-fc-v880",
+  "os": "Ubuntu 24.04.5 LTS",
+  "hypervisor": "KVM",
+  "wsl": false,
+  "cpus": 4,
+  "root": true,
+  "environment": "Claude Code cloud container: a Firecracker microVM under KVM, 4 vCPUs, not the owner's WSL2 machine",
+  "command": "./fair 2000 100 5",
+  "tools": {
+    "cc": {
+      "version": "(Ubuntu 15.2.0-16ubuntu1) 15.2.0",
+      "target": "x86_64-linux-gnu",
+      "binutils": "GNU objdump (GNU Binutils for Ubuntu) 2.46"
+    }
+  },
+  "shares": [
+    {
+      "round": 0,
+      "nice": [0, 0],
+      "cpuUs": [991343, 993776],
+      "runUs": 2000000
+    },
+    {
+      "round": 0,
+      "nice": [0, 5],
+      "cpuUs": [1491536, 489445],
+      "runUs": 2000000
+    },
+    {
+      "round": 1,
+      "nice": [0, 5],
+      "cpuUs": [1497804, 490564],
+      "runUs": 2000000
+    },
+    {
+      "round": 1,
+      "nice": [0, 0],
+      "cpuUs": [987302, 989998],
+      "runUs": 2000000
+    },
+    {
+      "round": 2,
+      "nice": [0, 0],
+      "cpuUs": [992543, 993226],
+      "runUs": 2000000
+    },
+    {
+      "round": 2,
+      "nice": [0, 5],
+      "cpuUs": [1501247, 492028],
+      "runUs": 2000000
+    },
+    {
+      "round": 3,
+      "nice": [0, 5],
+      "cpuUs": [1457936, 478014],
+      "runUs": 2000000
+    },
+    {
+      "round": 3,
+      "nice": [0, 0],
+      "cpuUs": [987594, 988286],
+      "runUs": 2000000
+    },
+    {
+      "round": 4,
+      "nice": [0, 0],
+      "cpuUs": [997510, 994995],
+      "runUs": 2000000
+    },
+    {
+      "round": 4,
+      "nice": [0, 5],
+      "cpuUs": [1498496, 493176],
+      "runUs": 2000000
+    }
+  ],
+  "wakes": [
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 145754
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 27820
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 88457
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 141878
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 82994
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 76968
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 89840
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 91228
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 74386
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 156614
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 95503
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 111286
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 112266
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 116604
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 96288
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 86442
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 101599
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 111321
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 84326
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 141737
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 119827
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 68624
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 132143
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 111852
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 83929
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 106433
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 127648
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 109657
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 131411
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 169337
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 93805
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 100775
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 123302
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 66506
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 80143
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 71536
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 78717
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 138579
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 110841
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 184568
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 150794
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 135757
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 112608
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 124084
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 113790
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 126955
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 106059
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 121597
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 124540
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 109455
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 124595
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 102213
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 125989
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 137723
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 128092
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 122916
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 116045
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 125692
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 107314
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 133285
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 103120
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 150942
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 106609
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 134390
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 127230
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 115590
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 121374
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 124133
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 111742
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 126911
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 133239
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 127453
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 107575
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 155219
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 125637
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 111465
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 119294
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 110155
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 117737
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 175894
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 96860
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 120040
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 139890
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 82914
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 110003
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 103734
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 78353
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 108031
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 84098
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 96907
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 83162
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 109690
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 109831
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 153328
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 134008
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 138981
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 137532
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 151477
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 131065
+    },
+    {
+      "round": 0,
+      "neighbour": false,
+      "lateNs": 131448
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 54776
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 3831692
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 45463
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 33602
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 36931
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 3825742
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 40085
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 31884
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 37216
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 3827818
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 39678
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 33011
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 35355
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 3825148
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 36867
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 30812
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 38519
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 3832710
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 35947
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 32976
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 39145
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 3835035
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 36426
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 34428
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 37631
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 3826170
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 34158
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 31829
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 39547
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 3835635
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 39580
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 30832
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 38134
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 3832958
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 36718
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 33215
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 38149
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 3826873
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 33311
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 33723
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 38070
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 3832565
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 36364
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 32624
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 34745
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 3838138
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 37045
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 33692
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 28371
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 3830078
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 44380
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 30422
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 48817
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 3808730
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 24496
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 22792
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 24115
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 3819937
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 32339
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 30395
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 23242
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 3810099
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 26439
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 25491
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 22025
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 3804888
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 29610
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 20452
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 22065
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 3806287
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 21971
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 20154
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 58802
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 3825138
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 21269
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 18967
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 24325
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 3806572
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 18774
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 20233
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 19944
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 3817007
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 17525
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 24588
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 23340
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 3812454
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 37841
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 32693
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 34590
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 3821893
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 35050
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 32829
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 33882
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 3822657
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 34799
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 33794
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 34395
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 3821035
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 35422
+    },
+    {
+      "round": 0,
+      "neighbour": true,
+      "lateNs": 33085
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 56838
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 2365739
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 34032
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 40197
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 33890
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 2378779
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 36159
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 39203
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 31960
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 2364577
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 32005
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 33410
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 33912
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 2366262
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 34384
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 34946
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 37588
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 2376620
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 44460
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 41151
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 42497
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 2372538
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 46040
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 35621
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 40499
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 2367248
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 42240
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 35527
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 57012
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 2378702
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 47531
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 35654
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 52741
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 2378184
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 49212
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 39984
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 41078
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 2376946
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 44079
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 35692
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 40037
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 2373766
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 31275
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 20754
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 24900
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 2366159
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 25367
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 43865
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 31977
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 2355068
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 20209
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 28747
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 24596
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 2349509
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 19820
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 18506
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 18567
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 2368894
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 21730
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 18465
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 19109
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 2347121
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 18233
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 18916
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 18761
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 2348144
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 21346
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 17817
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 18785
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 2347892
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 18126
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 18691
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 18201
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 2356391
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 18748
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 17853
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 18732
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 2348856
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 18828
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 17886
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 27541
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 2351261
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 26491
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 20902
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 19758
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 2348814
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 20931
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 19203
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 20174
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 2350691
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 21584
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 21707
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 28057
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 2359329
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 19517
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 19566
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 19711
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 2358208
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 22834
+    },
+    {
+      "round": 1,
+      "neighbour": true,
+      "lateNs": 19871
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 172895
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 166731
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 140983
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 146279
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 136944
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 136994
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 146535
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 95776
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 141568
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 172392
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 148787
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 86952
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 98287
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 147111
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 144068
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 198467
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 154597
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 182517
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 135375
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 102459
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 149601
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 84464
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 133105
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 144943
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 135018
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 126824
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 95717
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 125070
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 132809
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 130886
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 90946
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 144296
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 151554
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 95625
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 168009
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 96135
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 163725
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 104069
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 145907
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 142264
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 159636
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 154010
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 129782
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 130133
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 153988
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 137076
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 182568
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 134053
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 162792
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 134201
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 139930
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 97699
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 91723
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 127209
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 92504
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 84379
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 153965
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 102629
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 130529
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 127182
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 97627
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 83815
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 106767
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 57352
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 105837
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 159441
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 147468
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 152726
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 156428
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 103678
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 151060
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 82412
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 153875
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 68897
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 124001
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 94627
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 149986
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 98111
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 104774
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 149422
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 149696
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 163521
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 173285
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 150420
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 146391
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 85871
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 129645
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 130085
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 156632
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 76099
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 86696
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 102975
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 136309
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 88576
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 180313
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 89428
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 132405
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 149538
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 132750
+    },
+    {
+      "round": 1,
+      "neighbour": false,
+      "lateNs": 152256
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 139669
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 104886
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 159192
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 131644
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 106880
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 168006
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 127409
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 50985
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 111485
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 141433
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 176859
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 153249
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 102134
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 148223
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 122726
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 104879
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 134540
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 101621
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 138693
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 141077
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 146973
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 162547
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 156849
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 139791
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 100789
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 120801
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 104082
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 161069
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 157241
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 143887
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 152062
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 158126
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 78782
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 145522
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 144123
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 215067
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 123386
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 96702
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 150700
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 122879
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 159344
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 137596
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 153558
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 96063
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 97935
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 118131
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 107429
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 128355
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 143728
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 114511
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 99859
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 122007
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 91471
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 131899
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 126033
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 127033
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 91308
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 137637
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 109841
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 127208
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 125197
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 122786
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 182513
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 117291
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 112458
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 127691
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 101419
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 122674
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 96006
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 110144
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 110797
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 177242
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 99356
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 151333
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 144990
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 175181
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 126334
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 95200
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 129289
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 156383
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 152505
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 100441
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 103319
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 89767
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 72101
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 172752
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 108828
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 78386
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 136851
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 110096
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 103027
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 99944
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 71728
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 115362
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 150824
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 163024
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 188866
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 138510
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 210652
+    },
+    {
+      "round": 2,
+      "neighbour": false,
+      "lateNs": 170933
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 3813451
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 21961
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 28097
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 26791
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 3793441
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 31288
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 34665
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 26353
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 3780694
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 27224
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 27252
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 23019
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 3795807
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 28096
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 36211
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 46538
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 3809004
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 21953
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 26617
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 40183
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 3798603
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 43243
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 29986
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 32225
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 3811097
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 35604
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 30827
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 34533
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 3792502
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 34994
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 31228
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 34183
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 3793349
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 34105
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 30544
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 33952
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 3809285
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 32226
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 29577
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 44819
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 3795772
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 35210
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 36469
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 35169
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 3800999
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 33644
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 30290
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 33089
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 3824387
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 35458
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 31577
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 35562
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 3802791
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 33467
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 27943
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 46661
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 3782896
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 23736
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 37937
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 24176
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 3794348
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 23255
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 20979
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 26791
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 3790805
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 20146
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 26336
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 22916
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 3799170
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 21611
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 36011
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 28581
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 3796325
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 23285
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 19672
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 29654
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 3791061
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 30872
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 26320
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 32325
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 3811422
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 23720
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 26743
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 32372
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 3798652
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 44377
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 26756
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 34521
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 3800511
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 25674
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 3126253
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 9071184
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 3719142
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 36379
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 3788013
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 41406
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 29169
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 35930
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 3788424
+    },
+    {
+      "round": 2,
+      "neighbour": true,
+      "lateNs": 24514
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 2620626
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 28094
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 38521
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 36106
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 2620652
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 48062
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 33369
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 19794
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 2604710
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 34970
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 20578
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 19776
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 2589103
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 19626
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 23585
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 49217
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 2605487
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 38230
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 36524
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 49386
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 2597689
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 21423
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 23515
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 22111
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 2625729
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 38577
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 38663
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 36273
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 2619046
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 37264
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 39361
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 160096
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 2622656
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 22969
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 25253
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 22430
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 2605842
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 20115
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 26565
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 19996
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 2595293
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 85604
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 48440
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 33282
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 2600729
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 25102
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 30655
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 25652
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 2602465
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 24692
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 28777
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 44279
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 2590908
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 25761
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 23977
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 47930
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 2632598
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 44980
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 36040
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 79582
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 2617337
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 49025
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 49993
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 35026
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 2594436
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 33541
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 28928
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 29025
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 2592774
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 24923
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 18828
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 20180
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 2598177
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 27116
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 26683
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 26992
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 2589079
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 19786
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 28641
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 23503
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 2591369
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 26989
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 26658
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 25056
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 2589307
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 25624
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 26080
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 30326
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 2588095
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 18808
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 26616
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 37668
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 2597523
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 33701
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 33453
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 23731
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 2616247
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 36954
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 37458
+    },
+    {
+      "round": 3,
+      "neighbour": true,
+      "lateNs": 42286
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 122629
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 86149
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 125087
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 182141
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 124630
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 201206
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 100113
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 83824
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 131593
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 194413
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 93443
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 88150
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 89707
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 216811
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 120152
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 98210
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 115456
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 119509
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 110991
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 117838
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 93796
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 90197
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 93831
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 96516
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 93156
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 244444
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 102002
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 199065
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 66046
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 113970
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 92124
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 76643
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 65636
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 92109
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 81277
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 94749
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 145055
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 177470
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 104921
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 117672
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 92438
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 68829
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 72054
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 109784
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 79780
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 91887
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 77376
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 99478
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 98712
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 107269
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 79084
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 96639
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 133955
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 113108
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 111612
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 119718
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 155888
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 189169
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 148704
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 131926
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 126346
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 97207
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 93226
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 107582
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 93685
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 130156
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 145905
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 194125
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 85178
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 74475
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 108696
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 88729
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 80953
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 104353
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 113150
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 94252
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 131401
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 102000
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 63855
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 103582
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 123290
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 123094
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 82787
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 70512
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 68259
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 178307
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 136019
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 148473
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 82582
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 172798
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 75685
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 121001
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 118370
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 126476
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 117511
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 193262
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 99348
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 99424
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 107221
+    },
+    {
+      "round": 3,
+      "neighbour": false,
+      "lateNs": 84387
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 141417
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 105844
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 102330
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 111556
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 86075
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 74258
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 128294
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 116879
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 86075
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 68905
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 123562
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 156955
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 74375
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 132695
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 68308
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 71497
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 77720
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 85359
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 79062
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 131706
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 122974
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 114095
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 87225
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 129423
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 108511
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 102536
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 95566
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 111834
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 128855
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 97988
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 151417
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 91517
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 102726
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 114056
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 91746
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 104522
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 85281
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 109738
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 109504
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 108083
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 162486
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 106057
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 128239
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 113039
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 80491
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 95143
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 110085
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 90117
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 112135
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 115849
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 90496
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 82057
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 81067
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 110428
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 78831
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 86675
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 84951
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 91929
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 69056
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 91360
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 85344
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 94860
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 88073
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 96144
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 99882
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 128284
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 89053
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 87116
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 83012
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 84412
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 62757
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 106442
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 71916
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 84195
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 107901
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 130384
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 95400
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 103784
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 110855
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 101622
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 97432
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 98577
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 98521
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 102784
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 102793
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 200684
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 137678
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 124929
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 125600
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 153247
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 435623
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 141243
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 165735
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 145825
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 123387
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 70763
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 105178
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 190538
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 101589
+    },
+    {
+      "round": 4,
+      "neighbour": false,
+      "lateNs": 109183
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 46059
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 37253
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 2173408
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 38845
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 33273
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 33276
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 2169302
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 52223
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 33243
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 31961
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 2174076
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 33154
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 36194
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 30470
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 2171520
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 34839
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 31625
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 47279
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 2171930
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 35046
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 31734
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 47989
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 2169516
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 34566
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 37942
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 37033
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 2161185
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 21528
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 20889
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 21108
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 2155161
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 18953
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 18601
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 20350
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 2158537
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 28674
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 20205
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 19052
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 2155151
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 21424
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 19571
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 18864
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 2157270
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 18184
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 24134
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 19038
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 2161100
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 21169
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 21083
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 18126
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 2179818
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 23473
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 26448
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 23731
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 2166484
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 23661
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 34341
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 25442
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 2160583
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 47470
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 28656
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 24930
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 2165273
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 19521
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 38406
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 44361
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 2165383
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 25919
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 51789
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 44366
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 2173115
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 45038
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 28851
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 43839
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 2173654
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 89680
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 2185344
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 57171
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 49451
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 48924
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 2182031
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 45844
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 27103
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 35597
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 2193837
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 46345
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 33102
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 39416
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 2195762
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 53769
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 50187
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 53040
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 2190199
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 41268
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 39108
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 42907
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 2179850
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 67129
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 40901
+    },
+    {
+      "round": 4,
+      "neighbour": true,
+      "lateNs": 48403
+    }
+  ]
+}

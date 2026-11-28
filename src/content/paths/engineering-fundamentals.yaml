@@ -91,22 +91,101 @@ sections:
     lessons:
       - computer-architecture-execution/architecture-and-performance
       - computer-architecture-execution/measuring-performance
-  - id: operating-systems-runtime-internals
-    title: Operating Systems & Runtime Internals
+  # Operating Systems & Runtime Internals, divided into ten chapters on
+  # 2026-11-26 from the owner-approved proposal
+  # (docs/proposals/operating-systems-runtime-internals.md, approved
+  # 2026-11-25). Planned titles are the approved pages in drafting order, and
+  # each chapter's comment gives their lesson slugs. Privilege entry, the TLB,
+  # coherence and atomic instructions, and tracing GC basics stay with
+  # Computer Architecture & Execution; these chapters link to it.
+  - id: os-kernel-boundary
+    title: The kernel boundary and processes
     subject: operating-systems-runtime-internals
+    # system-calls, processes, threads, scheduling, context-switches
+    lessons:
+      - operating-systems-runtime-internals/system-calls
+      - operating-systems-runtime-internals/processes
+      - operating-systems-runtime-internals/threads
+      - operating-systems-runtime-internals/scheduling
+      - operating-systems-runtime-internals/context-switches
+  - id: os-memory
+    title: Memory
+    subject: operating-systems-runtime-internals
+    # page-tables, page-faults, resident-memory, allocators
     planned:
-      - Operating system architecture
-      - Kernel and user space
-      - Processes, threads, and scheduling
-      - System calls and I/O
-      - Virtual memory and memory management
-      - Concurrency and synchronization
-      - Race conditions, deadlocks, and resource contention
-      - Filesystems and resource management
-      - Linux fundamentals and diagnostics
-      - Language runtime internals
-      - Node.js, V8, and the event loop
-      - JVM internals, garbage collection, and threading
+      - 'Page tables: Translating an address'
+      - Page faults, copy-on-write and overcommit
+      - Resident memory and the page cache
+      - 'Allocators: Why freed memory stays'
+  - id: os-concurrency
+    title: Concurrency and synchronization
+    subject: operating-systems-runtime-internals
+    # race-conditions, mutexes, condition-variables, semaphores, deadlock
+    planned:
+      - Race conditions and critical sections
+      - Mutexes, futexes and contention
+      - Condition variables and bounded queues
+      - Semaphores and reader–writer locks
+      - Deadlock and lock ordering
+  - id: os-files-io
+    title: Files and I/O for services
+    subject: operating-systems-runtime-internals
+    # file-descriptors, epoll, io-uring, fsync
+    planned:
+      - File descriptors and the open-file table
+      - Blocking, non-blocking and readiness with epoll
+      - Completion-based I/O with io_uring
+      - 'Durability: What fsync promises'
+  - id: os-containers
+    title: Containers and process control
+    subject: operating-systems-runtime-internals
+    # namespaces, cgroups-cpu, memory-limits, signals
+    planned:
+      - 'Namespaces: What a container sees'
+      - 'cgroups: CPU quotas and throttling'
+      - Memory limits and OOM kills
+      - Signals, pipes and graceful shutdown
+  - id: os-diagnostics
+    title: Linux diagnostics
+    subject: operating-systems-runtime-internals
+    # use-method, stuck-processes, flame-graphs
+    planned:
+      - The USE method on one host
+      - Diagnosing a stuck process
+      - CPU profiles and flame graphs
+  - id: os-runtime-models
+    title: Runtime models
+    subject: operating-systems-runtime-internals
+    # concurrency-models, gc-designs
+    planned:
+      - 'Concurrency models: Event loop, threads, M:N'
+      - Garbage collection designs
+  - id: os-nodejs
+    title: Node.js and V8
+    subject: operating-systems-runtime-internals
+    # event-loop, microtasks, blocking-the-loop
+    planned:
+      - The libuv event loop and its thread pool
+      - Microtasks, promises and nextTick
+      - "Blocking the loop and V8's garbage collector"
+  - id: os-jvm
+    title: The JVM
+    subject: operating-systems-runtime-internals
+    # jvm-execution, jvm-g1, jvm-zgc, jvm-threads
+    planned:
+      - Bytecode, interpretation and JIT tiers
+      - Heap generations and the G1 collector
+      - Low-latency collection with ZGC
+      - Platform threads, virtual threads and thread dumps
+  - id: os-go-runtime
+    title: Go and choosing a runtime
+    subject: operating-systems-runtime-internals
+    # go-scheduler, go-gc, go-concurrency, choosing-a-runtime
+    planned:
+      - Goroutines and the G-M-P scheduler
+      - "Go's garbage collector, GOGC and GOMEMLIMIT"
+      - Channels, the memory model and data races
+      - Choosing a runtime and sizing pools
   - id: computer-networking
     title: Computer Networking
     subject: computer-networking

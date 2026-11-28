@@ -1,0 +1,8 @@
+name: Java SE 21 documentation
+kind: documentation
+by: Oracle
+url: https://docs.oracle.com/en/java/javase/21/
+description: >-
+  Oracle's documentation for JDK 21, including the HotSpot Virtual Machine
+  Garbage Collection Tuning Guide and the manual pages of tools such as jcmd,
+  which sends diagnostic commands to a running JVM.

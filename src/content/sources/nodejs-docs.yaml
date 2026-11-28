@@ -1,0 +1,8 @@
+name: Node.js documentation
+kind: documentation
+by: OpenJS Foundation and Node.js contributors
+url: https://nodejs.org/en/learn/
+description: >-
+  The Node.js project's official guides, including how the event loop's phases
+  run timers, I/O and process.nextTick callbacks, and how to avoid blocking
+  the event loop and the worker pool.

@@ -1,0 +1,7 @@
+read 0
+write 1
+openat 257
+close 3
+getpid 39
+clock_gettime 228
+exit_group 231

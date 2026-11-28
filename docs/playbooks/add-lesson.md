@@ -53,7 +53,8 @@ static equivalent). `dsa/arrays` predates the standard.
    - The README titled "Independent practice".
 
 3. **Record native evidence** where the subject has a toolchain (E3–E6): add
-   programs, listings or measurements to the subject's native runner, record
+   programs, listings, traces or measurements to the subject's native registry
+   (the shared runner `scripts/native.ts` builds and compares them), record
    them with provenance, and test only the relationships the prose will state.
    Tools you cannot run get an owner-run script with a tested refusal path.
 

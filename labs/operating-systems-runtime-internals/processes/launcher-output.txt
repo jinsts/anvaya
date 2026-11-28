@@ -1,0 +1,11 @@
+P1 is a child subreaper
+P1 forks P2, which execs ./serve request.txt
+serve: ok, 11 bytes
+P1 reaps P2: exited with status 0
+P1 forks P3, which execs ./missing
+P3: exec failed (No such file or directory), so P3 runs on and exits with 127
+P3 has exited (status 127) and is not reaped: /proc/P3/stat shows Z
+P1 reaps P3: exited with status 127; /proc/P3 is gone
+P1 forks P4, which forks P5 and exits
+P1 reaps P4: exited with status 0
+P1 reaps P5: exited with status 0, so P5's new parent was P1

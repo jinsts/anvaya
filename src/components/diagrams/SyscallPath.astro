@@ -1,0 +1,182 @@
+---
+import DiagramFrame from '../learning/DiagramFrame.astro';
+import {
+  callPath,
+  parseNumbers,
+} from '../../../labs/operating-systems-runtime-internals/system-calls/trace';
+import numbersText from '../../../labs/operating-systems-runtime-internals/system-calls/numbers.txt?raw';
+// Two calls that look alike from C, run through the lesson's tested
+// call-path model, with the numbers recorded from <sys/syscall.h>.
+const numbers = parseNumbers(numbersText);
+const paths = [callPath('getpid', numbers), callPath('clock_gettime', numbers)];
+const read = callPath('read', numbers);
+---
+
+<DiagramFrame
+  caption={`The path of two calls on x86-64 Linux, from the lesson's tested model with the system-call numbers recorded from <sys/syscall.h>. getpid() crosses into the kernel and back by its number, ${paths[0]!.number}; clock_gettime() never leaves the process. read() takes getpid's path with number ${read.number}.`}
+>
+  <div class="paths">
+    {paths.map((path) => (
+      <section
+        class="path"
+        aria-label={`${path.name}: ${path.entersKernel ? `system call ${path.number}, ${path.steps.filter((s) => s.where === 'kernel').length} steps in the kernel` : 'answered by the vDSO, no kernel steps'}`}
+      >
+        <h4>
+          <code>{path.name}()</code>
+          <span class:list={['kind', path.entersKernel ? 'system' : 'vdso']}>
+            {path.entersKernel ? `system call ${path.number}` : 'vDSO'}
+          </span>
+        </h4>
+        <div class="lanes" aria-hidden="true">
+          <span>User mode</span>
+          <span>Kernel mode</span>
+        </div>
+        <ol class="steps">
+          {path.steps.map((step, index) => (
+            <li
+              class:list={[
+                'step',
+                step.where,
+                index > 0 &&
+                  path.steps[index - 1]!.where !== step.where &&
+                  `cross-${step.where}`,
+              ]}
+              style={`grid-row: ${index + 1}`}
+            >
+              <span class="label">
+                <span class="index">{index + 1}</span> {step.label}
+              </span>
+              <span class="what">
+                {step.where === 'kernel' ? 'Kernel: ' : 'User: '}
+                {step.what}.
+              </span>
+            </li>
+          ))}
+        </ol>
+      </section>
+    ))}
+  </div>
+</DiagramFrame>
+<style>
+  .paths {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+    gap: var(--space-4);
+  }
+  .path {
+    display: grid;
+    align-content: start;
+    gap: var(--space-2);
+    padding: var(--space-3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg);
+  }
+  h4 {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-2);
+    margin: 0;
+    font-size: var(--text-sm);
+  }
+  .kind {
+    padding: 0 var(--space-2);
+    border: 1px solid;
+    border-radius: var(--radius-full);
+    font-size: var(--text-xs);
+    font-weight: 600;
+  }
+  .kind.system {
+    border-color: var(--tone-violet);
+    color: var(--tone-violet);
+  }
+  .kind.vdso {
+    border-color: var(--tone-green);
+    color: var(--tone-green);
+  }
+  .lanes,
+  .steps {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: var(--space-2);
+  }
+  .lanes span {
+    color: var(--muted);
+    font-size: var(--text-xs);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .lanes span + span {
+    padding-left: var(--space-2);
+    border-left: 1px dashed var(--border-strong);
+  }
+  .path ol.steps {
+    row-gap: var(--space-4);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .path .steps li.step {
+    position: relative;
+    display: grid;
+    gap: var(--space-1);
+    margin: 0;
+    padding: var(--space-2);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    font-size: var(--text-xs);
+    line-height: 1.35;
+  }
+  .step.user {
+    grid-column: 1;
+    background: var(--tone-blue-soft);
+  }
+  .step.kernel {
+    grid-column: 2;
+    border-style: dashed;
+    border-color: var(--tone-violet);
+    background: var(--tone-violet-soft);
+  }
+  /* A line from each step down to the next one; a step that changes lane
+     gets an elbow from the previous step's column. */
+  .path .steps li.step + li.step::before,
+  .path .steps li.step.cross-kernel::after,
+  .path .steps li.step.cross-user::after {
+    position: absolute;
+    top: calc(-1 * var(--space-4));
+    background: var(--text);
+    content: '';
+  }
+  .path .steps li.step + li.step::before {
+    left: calc(50% - 1px);
+    width: 2px;
+    height: var(--space-4);
+  }
+  .path .steps li.step.cross-kernel::after,
+  .path .steps li.step.cross-user::after {
+    width: calc(100% + var(--space-2));
+    height: 2px;
+  }
+  .path .steps li.step.cross-kernel::after {
+    left: calc(-50% - var(--space-2));
+  }
+  .path .steps li.step.cross-user::after {
+    left: 50%;
+  }
+  .label {
+    font-family: var(--font-mono);
+    font-weight: 700;
+    overflow-wrap: anywhere;
+  }
+  .index {
+    display: inline-block;
+    min-width: 1.2em;
+    color: var(--muted);
+  }
+  .what {
+    color: var(--text);
+  }
+</style>

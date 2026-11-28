@@ -1,0 +1,211 @@
+{
+  "date": "2026-11-26T03:03:50.041Z",
+  "compiler": "gcc-15 (Ubuntu 15.2.0-16ubuntu1) 15.2.0",
+  "target": "x86_64-linux-gnu",
+  "platform": "linux",
+  "arch": "x64",
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "caches": "NAME ONE-SIZE ALL-SIZE WAYS TYPE        LEVEL   SETS PHY-LINE COHERENCY-SIZE\nL1d       48K     192K   12 Data            1     64        1             64\nL1i       32K     128K    8 Instruction     1     64        1             64\nL2         2M       8M   16 Unified         2   2048        1             64\nL3       260M     260M   20 Unified         3 212992        1             64\n",
+  "flags": ["-std=c17", "-O2"],
+  "kernel": "6.18.44-fc-v880",
+  "os": "Ubuntu 24.04.5 LTS",
+  "hypervisor": "KVM",
+  "wsl": false,
+  "cpus": 4,
+  "root": true,
+  "environment": "Claude Code cloud container: a Firecracker microVM under KVM, 4 vCPUs, not the owner's WSL2 machine",
+  "command": "strace -f -e trace=getpid -o strace.txt ./cost 10000 15",
+  "tools": {
+    "cc": {
+      "version": "(Ubuntu 15.2.0-16ubuntu1) 15.2.0",
+      "target": "x86_64-linux-gnu",
+      "binutils": "GNU objdump (GNU Binutils for Ubuntu) 2.46"
+    },
+    "strace": {
+      "version": "strace -- version 6.19"
+    }
+  },
+  "traced": "strace -f -e trace=getpid",
+  "records": [
+    {
+      "call": "getpid",
+      "round": 0,
+      "nsPerCall": 51409.21,
+      "calls": 10000
+    },
+    {
+      "call": "clock_gettime",
+      "round": 0,
+      "nsPerCall": 28,
+      "calls": 10000
+    },
+    {
+      "call": "clock_gettime",
+      "round": 1,
+      "nsPerCall": 27.67,
+      "calls": 10000
+    },
+    {
+      "call": "getpid",
+      "round": 1,
+      "nsPerCall": 52333.1,
+      "calls": 10000
+    },
+    {
+      "call": "getpid",
+      "round": 2,
+      "nsPerCall": 51786.93,
+      "calls": 10000
+    },
+    {
+      "call": "clock_gettime",
+      "round": 2,
+      "nsPerCall": 36.66,
+      "calls": 10000
+    },
+    {
+      "call": "clock_gettime",
+      "round": 3,
+      "nsPerCall": 36.57,
+      "calls": 10000
+    },
+    {
+      "call": "getpid",
+      "round": 3,
+      "nsPerCall": 52637.06,
+      "calls": 10000
+    },
+    {
+      "call": "getpid",
+      "round": 4,
+      "nsPerCall": 53597.95,
+      "calls": 10000
+    },
+    {
+      "call": "clock_gettime",
+      "round": 4,
+      "nsPerCall": 29.94,
+      "calls": 10000
+    },
+    {
+      "call": "clock_gettime",
+      "round": 5,
+      "nsPerCall": 28.75,
+      "calls": 10000
+    },
+    {
+      "call": "getpid",
+      "round": 5,
+      "nsPerCall": 53696.43,
+      "calls": 10000
+    },
+    {
+      "call": "getpid",
+      "round": 6,
+      "nsPerCall": 57030.36,
+      "calls": 10000
+    },
+    {
+      "call": "clock_gettime",
+      "round": 6,
+      "nsPerCall": 29.61,
+      "calls": 10000
+    },
+    {
+      "call": "clock_gettime",
+      "round": 7,
+      "nsPerCall": 29.84,
+      "calls": 10000
+    },
+    {
+      "call": "getpid",
+      "round": 7,
+      "nsPerCall": 51837.96,
+      "calls": 10000
+    },
+    {
+      "call": "getpid",
+      "round": 8,
+      "nsPerCall": 52322.24,
+      "calls": 10000
+    },
+    {
+      "call": "clock_gettime",
+      "round": 8,
+      "nsPerCall": 31.68,
+      "calls": 10000
+    },
+    {
+      "call": "clock_gettime",
+      "round": 9,
+      "nsPerCall": 28.63,
+      "calls": 10000
+    },
+    {
+      "call": "getpid",
+      "round": 9,
+      "nsPerCall": 56668.75,
+      "calls": 10000
+    },
+    {
+      "call": "getpid",
+      "round": 10,
+      "nsPerCall": 53052.51,
+      "calls": 10000
+    },
+    {
+      "call": "clock_gettime",
+      "round": 10,
+      "nsPerCall": 30.1,
+      "calls": 10000
+    },
+    {
+      "call": "clock_gettime",
+      "round": 11,
+      "nsPerCall": 28.28,
+      "calls": 10000
+    },
+    {
+      "call": "getpid",
+      "round": 11,
+      "nsPerCall": 51345.8,
+      "calls": 10000
+    },
+    {
+      "call": "getpid",
+      "round": 12,
+      "nsPerCall": 50210.17,
+      "calls": 10000
+    },
+    {
+      "call": "clock_gettime",
+      "round": 12,
+      "nsPerCall": 28.3,
+      "calls": 10000
+    },
+    {
+      "call": "clock_gettime",
+      "round": 13,
+      "nsPerCall": 28.63,
+      "calls": 10000
+    },
+    {
+      "call": "getpid",
+      "round": 13,
+      "nsPerCall": 56868.22,
+      "calls": 10000
+    },
+    {
+      "call": "getpid",
+      "round": 14,
+      "nsPerCall": 56931.74,
+      "calls": 10000
+    },
+    {
+      "call": "clock_gettime",
+      "round": 14,
+      "nsPerCall": 39.2,
+      "calls": 10000
+    }
+  ]
+}

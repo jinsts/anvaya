@@ -1,0 +1,291 @@
+---
+title: 'Processes: fork, exec and wait'
+shortTitle: Processes
+summary: Predict the processes a program creates with fork, exec and wait, and explain why every child that exits stays a zombie until its parent, or the process that adopts it, waits.
+subject: operating-systems-runtime-internals
+path: engineering-fundamentals
+difficulty: foundation
+estimatedMinutes: 25
+learningObjectives:
+  - Predict the processes, programs and exit statuses that a short fork, exec and wait program produces
+  - Explain why a child that has exited stays a zombie until it is reaped, and who reaps a child whose parent exits first
+  - Explain why the first process in a container has to reap the children it adopts
+prerequisites:
+  - operating-systems-runtime-internals/system-calls
+tags: [kernel, execution, debugging]
+skills: [debugging, implementation]
+status: draft
+drafter: agent
+interviewQuestions:
+  - prompt: What is the difference between `fork` and `exec`, and why are they separate calls?
+    answer: >-
+      `fork` duplicates the calling process: the child gets its own PID and a
+      copy of the parent's memory, and `fork` returns the child's PID in the
+      parent and 0 in the child. `exec` replaces the program the calling
+      process runs while keeping the process and its PID, and it returns
+      only when it fails. Keeping them apart lets the child run code between
+      them, for example to point its standard output at a file before the
+      new program starts, which is how a shell redirects a command's output.
+      This describes POSIX systems such as Linux.
+    followUps:
+      - What runs after `exec` when the program cannot be found?
+  - prompt: What is a zombie process, and how do you get rid of zombies?
+    answer: >-
+      A zombie is a child that has exited but whose parent has not yet waited
+      for it. The kernel keeps its PID, exit status and resource usage so
+      that the parent can collect them, and it keeps a slot in the process
+      table; if the table fills up, no new process can be created. The fix is
+      in the parent: it must wait for its children, or set `SIGCHLD` to be
+      ignored so they are not kept. If the parent exits, init adopts the
+      zombies and waits for them itself.
+  - prompt: What happens to a child process when its parent exits first?
+    answer: >-
+      It becomes an orphan and is reparented, by default to the init process
+      of its PID namespace, or to the nearest living ancestor that marked
+      itself a child subreaper with `prctl`. `getppid` in the orphan then
+      returns the new parent's PID, and the new parent receives its exit and
+      waits for it. Nothing else about the orphan changes: it keeps running
+      the same program.
+  - prompt: Why must the first process in a container reap children, and what goes wrong if it does not?
+    answer: >-
+      In a container's PID namespace the first process has PID 1 and is that
+      namespace's init: every process orphaned inside the namespace is
+      reparented to it. If it never waits, each adopted child that exits stays
+      a zombie, and they accumulate until process creation fails. A service
+      that was not written to reap children should therefore run under a
+      small init process as PID 1, or reap them itself. This assumes the
+      container has its own PID namespace, as containers normally do.
+sources:
+  - label: 'OSTEP, chapter 5 — The process API: fork, exec and wait, and why they are separate'
+    url: https://pages.cs.wisc.edu/~remzi/OSTEP/cpu-api.pdf
+  - label: 'fork(2) — the child’s ID, the two return values, copy-on-write'
+    url: https://man7.org/linux/man-pages/man2/fork.2.html
+  - label: 'execve(2) — replaces the program, keeps the PID, returns only on failure'
+    url: https://man7.org/linux/man-pages/man2/execve.2.html
+  - label: '_exit(2) — the low byte of the status goes to the parent'
+    url: https://man7.org/linux/man-pages/man2/_exit.2.html
+  - label: 'wait(2) — zombies, adoption by init or a subreaper, WNOWAIT'
+    url: https://man7.org/linux/man-pages/man2/wait.2.html
+  - label: 'PR_SET_CHILD_SUBREAPER(2const) — a subreaper adopts its descendants’ orphans'
+    url: https://man7.org/linux/man-pages/man2/PR_SET_CHILD_SUBREAPER.2const.html
+  - label: 'proc_pid_stat(5) — the state field, Z for a zombie'
+    url: https://man7.org/linux/man-pages/man5/proc_pid_stat.5.html
+  - label: 'pid_namespaces(7) — the namespace’s init process adopts its orphans'
+    url: https://man7.org/linux/man-pages/man7/pid_namespaces.7.html
+---
+
+import ProcessEvents from '../../../components/diagrams/ProcessEvents.astro';
+import ProcessLifecycle from '../../../components/diagrams/ProcessLifecycle.astro';
+import ForkStepper from '../../../components/interactive/ForkStepper';
+
+import launcherSource from '../../../../labs/operating-systems-runtime-internals/processes/launcher.c?raw';
+import launcherOutput from '../../../../labs/operating-systems-runtime-internals/processes/launcher-output.txt?raw';
+import model from '../../../../labs/operating-systems-runtime-internals/processes/process.ts?raw';
+
+## A server that starts a worker
+
+`serve` handles one request and exits. A server that takes requests one after
+another can start a fresh `serve` for each: a launcher makes a copy of itself,
+the copy turns into `serve`, and the launcher waits to hear how it went. On
+Linux those are three system calls, `fork`, `exec` and `wait`, made through
+the path the [system-calls lesson](/learn/operating-systems-runtime-internals/system-calls/)
+traced.
+
+Think of a cell that divides in two, after which one of the copies becomes a
+different kind of cell. The analogy stops at copying: a dividing cell
+duplicates its contents, but Linux implements `fork` with copy-on-write pages,
+so parent and child share the same memory until one of them writes
+(fork(2)); the memory chapter shows what that saves.
+
+## fork, exec, exit and wait
+
+<ProcessLifecycle />
+
+**fork** creates a new process by duplicating the calling one. The child gets
+its own process ID (PID), and its parent's PID is the caller's. `fork` returns
+twice: the child's PID in the parent and 0 in the child, which is how the code
+tells the two apart (fork(2)). Which of them runs first is up to the scheduler,
+so output from both can come in either order.
+
+**exec** (the `execve` system call and the C library's `exec` functions)
+replaces the program the calling process runs. execve(2) calls describing it as
+starting a new process "highly misleading": the process and its PID stay; only
+the program changes. A successful exec never returns, so nothing after it in
+the old program runs. A failed one returns -1, and the code after it does run.
+
+**exit** ends a process; the low byte of its status, 0 to 255, goes to the
+parent (\_exit(2)). **wait** collects it. Until then the child is a **zombie**:
+it has exited, but the kernel keeps its PID, exit status and resource usage so
+the parent can still ask, and it keeps a slot in the process table. If the
+table fills up, no new process can be created (wait(2)).
+
+When a parent exits before its children, they are **orphans**. The kernel
+reparents each one to init, or to the nearest living ancestor that called
+`prctl(PR_SET_CHILD_SUBREAPER)`, and that process waits for it
+(wait(2), PR_SET_CHILD_SUBREAPER(2const)).
+
+OSTEP explains why creating a process takes two calls: a shell runs code in
+the child between `fork` and `exec`, for example to point the child's standard
+output at a file before the command starts.
+
+## Step through a launcher
+
+The launcher below forks three children. P2 execs `serve`; P3 tries to exec a
+program that does not exist; P4 forks P5 and exits at once. Before you step,
+predict which processes will be zombies at some point, and which one init
+will adopt.
+
+<ForkStepper client:visible />
+
+<details>
+<summary>Check after stepping: the same events without JavaScript</summary>
+
+<ProcessEvents />
+
+Every child that exits is a zombie until it is reaped: P2, P3 and P4 each
+show as a zombie between their exit and P1's wait. P5 outlives its parent:
+when P4 exits, init adopts P5 and reaps it when it exits. The stepper shows
+one order of events; because each wait names the child it reaps, every order
+the scheduler could choose ends the same way.
+
+</details>
+
+The model leaves out what it does not need: real process IDs, signals,
+threads, and the subreapers of the next section. It runs every program to the
+point where no process can move.
+
+## The launcher on Linux
+
+`launcher.c` runs the same steps for real, with one addition: it makes itself
+a child subreaper, so that the orphan comes to it instead of to init and it can
+report what happened. It prints P1 to P5 rather than process IDs, so its
+output is the same on every run, and the shared native runner fails if it
+changes:
+
+<CodeExample
+  title="launcher.c's output (launcher-output.txt)"
+  code={launcherOutput}
+  language="text"
+/>
+
+<details>
+<summary>Inspect launcher.c</summary>
+
+<CodeExample title="launcher.c" code={launcherSource} language="c" />
+
+</details>
+
+Read it against the model:
+
+- `serve`'s own line, `serve: ok, 11 bytes`, appears between P1's fork and its
+  reap: P2 ran `serve` as P2, with P2's PID.
+- P3's exec failed with "No such file or directory", so the code after the
+  exec ran and chose status 127.
+- P1 waited for P3 with `WNOWAIT`, which leaves a child waitable (wait(2)), so
+  P3 was still a zombie: the state field of `/proc/<pid>/stat` was `Z`
+  (proc_pid_stat(5)). After P1 reaped it, its `/proc` directory was gone.
+- P5 was orphaned when P4 exited, and `getppid` in P5 returned P1's PID: as a
+  subreaper, P1 took the place init would have taken, and its `waitpid` for
+  P5 worked only because P5 had become its child.
+
+A common mistake is a parent that forks workers and never waits for them. Each
+finished worker stays a zombie and holds a process-table slot, however little
+else it costs.
+
+<details>
+<summary>Inspect the tested model and expected output</summary>
+
+<CodeExample
+  title="fork, exec, exit and wait as a process model"
+  code={model}
+  verified
+  output={
+    'P1 program status 0: reaped by parent\nP2 serve status 0: reaped by parent\nP3 program status 127: reaped by parent\nP4 program status 0: reaped by parent\nP5 program status 0: reaped by init\nwith a parent that never waits: P1 running, P2 zombie'
+  }
+/>
+
+</details>
+
+The tests check that the model runs the launcher to the same statuses and ends
+that `launcher.c` recorded, that code after a successful exec never runs and
+code after a failed one does, that a child stays a zombie while its parent runs
+without waiting, that orphans go to init, that a parent waiting on a child that
+never exits blocks forever, and that children are named the same whatever the
+scheduler does. A separate Python implementation that runs the newest process
+first agreed on every hidden case.
+
+## Practice
+
+<LabCard
+  title="01 / Predict a process tree"
+  command="pnpm lab operating-systems-runtime-internals/processes"
+>
+  Implement `solve(program)` in `starter.ts`: run the program's actions and
+  return each process's name, parent, program, exit status and end, following
+  the lab's README. Before running the tests, predict the result for a program
+  that forks a child which execs `serve` (exiting with 0), forks a second child
+  which exits with 2, waits once and then ends.
+</LabCard>
+
+<details>
+<summary>Check after attempting</summary>
+
+P2 runs `serve` and exits with 0; P1's single wait reaps it, because P2 is
+its oldest child. P3 exits with 2, but P1 never waits for it and ends first, so
+init adopts P3 and reaps it. P1 exits with 0 and is reaped by the shell.
+
+</details>
+
+<LabCard title="02 / Find the zombie leak">
+  A server forks one worker per request and never calls `wait`. After a thousand
+  requests, what does the process list show, what eventually fails, and what are
+  two ways to fix the server?
+</LabCard>
+
+<details>
+<summary>Check after attempting</summary>
+
+A thousand zombies, each in state `Z` and holding a process-table slot. Once
+the system runs out of process slots, `fork` fails and the server can start no
+more workers. Fix it by waiting for each worker, for example in a loop that
+reaps every finished child, or by setting `SIGCHLD` to be ignored, which
+wait(2) says stops children from becoming zombies at all.
+
+</details>
+
+## Check your reasoning
+
+<ConceptCheck
+  id="processes-zombie"
+  question="A launcher forks a child, which execs a program that exits with status 3. The launcher keeps running and never calls wait. What does /proc show for the child?"
+  options={[
+    {
+      label:
+        'A zombie, state Z: it keeps its PID and status until the launcher waits or exits.',
+      correct: true,
+      explanation:
+        'The kernel keeps an exited child until its parent collects the status. Only when the launcher exits would init (or a subreaper) adopt the child and reap it.',
+    },
+    {
+      label: 'Nothing: the child disappears as soon as it exits.',
+      explanation:
+        'An exited child stays in the process table as a zombie, so that the parent can still collect its status with wait.',
+    },
+    {
+      label: 'It is adopted by init, which reaps it.',
+      explanation:
+        'Adoption happens when the parent exits. While the launcher runs, the child remains its zombie.',
+    },
+  ]}
+/>
+
+## Two-minute recap
+
+- `fork` duplicates the calling process: the child gets a new PID, and `fork`
+  returns twice, 0 in the child and the child's PID in the parent.
+- `exec` replaces the program a process runs but keeps the process and its
+  PID; it returns only when it fails.
+- Every child that exits is a zombie, holding its PID and status, until its
+  parent waits for it.
+- A child whose parent exits first is adopted by init, or by the nearest
+  subreaper, which waits for it. In a container, PID 1 inherits that job.

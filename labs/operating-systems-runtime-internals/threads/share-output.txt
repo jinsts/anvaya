@@ -1,0 +1,8 @@
+main thread: Threads 1
+thread T: process ID same as main's, thread ID different; Threads 2
+T set counter to 42; main reads 42
+T opened descriptor 7; main writes to it: ok
+child: process ID different, parent is main's process: yes; Threads 1
+child set counter to 7 and opened descriptor 8; it still has descriptor 7: yes
+after the child: main reads counter 42; descriptor 8 in main: not open
+after T exits: Threads 1

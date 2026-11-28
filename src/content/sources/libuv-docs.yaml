@@ -1,0 +1,8 @@
+name: libuv documentation
+kind: documentation
+by: libuv contributors
+url: https://docs.libuv.org/en/v1.x/
+description: >-
+  The official documentation of libuv, the cross-platform asynchronous I/O
+  library originally written for Node.js, including its design overview of the
+  event loop's iteration and the thread pool used for file I/O.

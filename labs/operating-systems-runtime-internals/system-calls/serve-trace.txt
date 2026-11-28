@@ -1,0 +1,8 @@
+P1 openat(AT_FDCWD, "request.txt", O_RDONLY) = 3
+P1 read(3, "GET /hello\n", 255)      = 11
+P1 read(3, "", 244)                  = 0
+P1 close(3)                          = 0
+P1 getpid()                          = P1
+P1 write(1, "serve: ok, 11 bytes\n", 20) = 20
+P1 exit_group(0)                     = ?
+P1 +++ exited with 0 +++

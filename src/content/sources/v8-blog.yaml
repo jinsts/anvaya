@@ -1,0 +1,8 @@
+name: V8 blog
+kind: documentation
+by: The V8 JavaScript engine project
+url: https://v8.dev/blog/
+description: >-
+  Articles by the developers of V8, the JavaScript engine in Chrome and
+  Node.js, including "Trash talk", their account of how the Orinoco project
+  made the garbage collector mostly parallel and concurrent.

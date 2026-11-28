@@ -135,7 +135,10 @@ test('global search reaches indexed lessons and restores query on reload', async
   await page.reload();
   await expect(search).toHaveValue('memory');
   await expect(arraysResult).toBeVisible();
-  await search.fill('zzqqxv');
+  // Pagefind also matches an indexed word that begins the query, so an
+  // empty search needs a first letter that is never a word on its own: a
+  // lone "z" now appears (a zombie's process state), "a" never matches.
+  await search.fill('aqqjjxv');
   await expect(page.locator('#empty')).toBeVisible();
   await page.getByRole('button', { name: 'Clear', exact: true }).click();
   await expect(page).toHaveURL('/concepts/');
@@ -279,7 +282,12 @@ test('a subject with several chapters is grouped on path, subject and lesson pag
   const sidebar = page.locator(
     '[data-path-sidebar="engineering-fundamentals"]',
   );
-  await expect(sidebar.locator('.path-subject')).toHaveText(subject);
+  // Each subject with several chapters gets its label; a chapter appears once
+  // it has a lesson, so Operating Systems shows only its first chapter so far.
+  await expect(sidebar.locator('.path-subject')).toHaveText([
+    subject,
+    'Operating Systems & Runtime Internals',
+  ]);
   await expect(sidebar.locator('.path-section summary')).toHaveText([
     'Machine state and data representation',
     'From source to running process',
@@ -287,7 +295,39 @@ test('a subject with several chapters is grouped on path, subject and lesson pag
     'Inside the processor',
     'Devices and the hardware–software boundary',
     'Performance on real hardware',
+    'The kernel boundary and processes',
   ]);
+});
+
+test('operating systems is ten chapters from its approved proposal', async ({
+  page,
+}) => {
+  await page.goto('/paths/engineering-fundamentals/');
+  const chapters = page
+    .locator('#subject-operating-systems-runtime-internals')
+    .locator('xpath=ancestor::section[1]')
+    .getByRole('heading', { level: 3 });
+  await expect(chapters).toHaveCount(10);
+  await expect(chapters.first()).toHaveText(
+    /^Chapter 1 The kernel boundary and processes$/,
+  );
+  await expect(chapters.last()).toHaveText(
+    /^Chapter 10 Go and choosing a runtime$/,
+  );
+
+  // The path sections are the only outline: no overview chapter sketch.
+  await page.goto('/subjects/operating-systems-runtime-internals/');
+  await expect(page.locator('#future-chapters')).toHaveCount(0);
+  await page
+    .getByRole('heading', {
+      level: 3,
+      name: 'Chapter 4 Files and I/O for services',
+    })
+    .getByRole('link')
+    .click();
+  await expect(page).toHaveURL(
+    '/paths/engineering-fundamentals/#section-os-files-io',
+  );
 });
 
 test('catalog and subject pages fit both themes and pass accessibility scans', async ({

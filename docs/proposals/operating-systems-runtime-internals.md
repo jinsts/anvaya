@@ -1,8 +1,9 @@
 ---
 title: Operating Systems & Runtime Internals curriculum proposal
-status: draft
+status: approved
 drafter: agent
 proposedDate: 2026-11-17
+approvedDate: 2026-11-25
 basedOnCommit: cdfa711
 ---
 
@@ -14,6 +15,30 @@ owner; then a separate planning change applies it. It starts from the
 [2026-11-17 outline audit](../reviews/operating-systems-runtime-internals-audit-2026-11-17.md)
 and resolves its findings. IDs refer to
 [SUBJECT_STANDARD.md](../SUBJECT_STANDARD.md).
+
+## Approval
+
+Approved by the owner on 2026-11-25, as written, with these final
+decisions. The planning change of 2026-11-26 applied it: ten chapter sections
+in `src/content/paths/engineering-fundamentals.yaml` whose planned titles are
+the 38 pages below, the subject overview aligned with them and the sources
+marked ☐ registered.
+
+- **Size and boundaries:** 38 pages in 10 chapters, and the ownership table
+  under "Scope and boundary".
+- **Native runner:** extracted into one shared runner that both subjects use,
+  as a separate platform change before lesson 1
+  ([ADR 0010](../adr/0010-shared-native-runner.md)).
+- **Go version:** Go 1.26.
+- **Root:** tools are extracted without root and containers run
+  unprivileged; a lesson that needs root says why.
+- **Languages:** TypeScript models in the gate; Node.js, the JVM and Go as the
+  three full runtime case studies.
+- **Checkpoints:** for this build, the intake answer "pause after every
+  lesson" is replaced by "pause after each chapter, at its pull request".
+
+The original text below, including "Decisions for the owner", is kept as
+proposed.
 
 ## Intake
 

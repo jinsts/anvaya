@@ -1,0 +1,192 @@
+---
+import DiagramFrame from '../learning/DiagramFrame.astro';
+import {
+  parseSummary,
+  parseTrace,
+  splitAt,
+  summarize,
+} from '../../../labs/operating-systems-runtime-internals/system-calls/trace';
+import raw from '../../../labs/operating-systems-runtime-internals/system-calls/serve-strace.json?raw';
+// serve's whole recorded run: every counted call, split at serve's first own
+// call, and strace's own summary of the same run beside the model's count.
+const run = JSON.parse(raw) as {
+  date: string;
+  kernel: string;
+  cpu: string;
+  environment: string | null;
+  command: string;
+  tools: { strace: { version: string } };
+  trace: string[];
+  summary: string[];
+};
+const trace = run.trace.join('\n');
+const { before, after } = splitAt(trace, 'openat(AT_FDCWD, "request.txt"');
+const start = summarize(parseTrace(before));
+const own = summarize(parseTrace(after));
+const all = summarize(parseTrace(trace));
+const strace = parseSummary(run.summary.join('\n'));
+const total = (s: { calls: Record<string, number> }) =>
+  Object.values(s.calls).reduce((a, b) => a + b, 0);
+const rows = Object.keys(all.calls)
+  .map((name) => ({
+    name,
+    start: start.calls[name] ?? 0,
+    own: own.calls[name] ?? 0,
+    errors: all.errors[name] ?? 0,
+  }))
+  .sort(
+    (a, b) =>
+      b.start + b.own - (a.start + a.own) || a.name.localeCompare(b.name),
+  );
+const widest = Math.max(...rows.map((r) => r.start + r.own));
+const pct = (n: number) => `${(n / widest) * 100}%`;
+const errors = Object.values(all.errors).reduce((a, b) => a + b, 0);
+const straceTotal = strace.reduce((n, r) => n + r.calls, 0);
+const straceErrors = strace.reduce((n, r) => n + r.errors, 0);
+const unreturned = parseTrace(after).filter((c) => c.result === null);
+---
+
+<DiagramFrame
+  caption={`Every system call strace counted for one run of serve, by name: ${total(start)} started the program before serve's own code ran and ${total(own)} were serve's, with ${errors} error. strace's own summary of the same run counted ${straceTotal} calls and ${straceErrors} error. ${run.command}; ${run.tools.strace.version}, Linux ${run.kernel}, recorded ${run.date.slice(0, 10)} in ${run.environment ?? 'an unnamed environment'}.`}
+>
+  <div class="counts">
+    <p class="key" aria-hidden="true">
+      <span class="swatch start"></span> starting the program
+      <span class="swatch own"></span> serve's own code
+    </p>
+    <ul class="bars">
+      {rows.map((row) => (
+        <li>
+          <span class="name">{row.name}</span>
+          <span class="track" aria-hidden="true">
+            <span class="bar start" style={`width: ${pct(row.start)}`} />
+            <span class="bar own" style={`width: ${pct(row.own)}`} />
+          </span>
+          <span class="n">
+            {row.start + row.own}
+            <span class="sr-only">
+              {` calls: ${row.start} starting the program, ${row.own} by serve`}
+            </span>
+            {row.errors ? ` (${row.errors} failed)` : ''}
+          </span>
+        </li>
+      ))}
+    </ul>
+    <p class="note">
+      {unreturned.map((c) => c.name).join(', ')} appears in the trace but never
+      returned; strace's summary leaves it out, and so does the model.
+    </p>
+    <details>
+      <summary>The recorded trace, {run.trace.length} lines</summary>
+      <div
+        class="table-scroll"
+        tabindex="0"
+        role="region"
+        aria-label="Recorded trace of serve"
+      >
+        <pre>{run.trace.join('\n')}</pre>
+      </div>
+    </details>
+  </div>
+</DiagramFrame>
+<style>
+  .counts {
+    display: grid;
+    /* Long trace lines scroll in their region instead of widening the figure. */
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-3);
+  }
+  .key {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-1) var(--space-3);
+    margin: 0;
+    color: var(--muted);
+    font-size: var(--text-xs);
+  }
+  .swatch {
+    display: inline-block;
+    width: 0.9rem;
+    height: 0.9rem;
+    margin-right: calc(-1 * var(--space-2));
+    border: 1px solid var(--border-strong);
+    border-radius: 3px;
+  }
+  .swatch.start,
+  .bar.start {
+    background: var(--chart-1);
+  }
+  .swatch.own,
+  .bar.own {
+    background: var(--chart-2);
+    background-image: repeating-linear-gradient(
+      45deg,
+      transparent 0 3px,
+      var(--surface) 3px 4px
+    );
+  }
+  ul.bars {
+    display: grid;
+    gap: var(--space-1);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .bars li {
+    display: grid;
+    grid-template-areas: 'name track n';
+    grid-template-columns: 8rem minmax(0, 1fr) 6rem;
+    align-items: center;
+    gap: var(--space-2);
+    margin: 0;
+    font-size: var(--text-xs);
+  }
+  .name {
+    grid-area: name;
+    font-family: var(--font-mono);
+    overflow-wrap: anywhere;
+  }
+  .track {
+    grid-area: track;
+  }
+  .n {
+    grid-area: n;
+  }
+  /* On a phone the bar takes the full width under its name and count. */
+  @media (max-width: 40rem) {
+    .bars li {
+      grid-template-areas: 'name n' 'track track';
+      grid-template-columns: minmax(0, 1fr) auto;
+      row-gap: 0;
+    }
+    ul.bars {
+      gap: var(--space-2);
+    }
+  }
+  .bars .track {
+    display: flex;
+    height: 0.85rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .bar {
+    height: 100%;
+  }
+  .n {
+    font-family: var(--font-mono);
+  }
+  .note {
+    margin: 0;
+    font-size: var(--text-xs);
+  }
+  details {
+    font-size: var(--text-sm);
+  }
+  details .table-scroll {
+    margin-top: var(--space-2);
+  }
+  pre {
+    margin: 0;
+    font-size: var(--text-xs);
+  }
+</style>

@@ -1,0 +1,8 @@
+name: OpenJDK JDK Enhancement Proposals
+kind: documentation
+by: OpenJDK
+url: https://openjdk.org/jeps/
+description: >-
+  The OpenJDK project's records of JDK features, each with its motivation,
+  design and release, such as JEP 439 (generational ZGC) and JEP 444 (virtual
+  threads), both delivered in JDK 21.

@@ -1,0 +1,99 @@
+---
+import DiagramFrame from '../learning/DiagramFrame.astro';
+import { LIFECYCLE } from '../../../labs/operating-systems-runtime-internals/processes/process';
+// The lifecycle the tested process model follows: each state in order, the
+// events that lead to the next one, and the event that keeps a state.
+const states = [...new Set(LIFECYCLE.flatMap((t) => [t.from, t.to]))];
+const NOTE: Record<string, string> = {
+  parent: 'a running process calls fork',
+  running: 'runs, blocks in wait, or pauses',
+  zombie: 'exited; the kernel keeps its PID and status',
+  reaped: 'its status was collected; its slot is free',
+};
+const steps = states.map((state, index) => ({
+  state,
+  stays: LIFECYCLE.filter((t) => t.from === state && t.to === state).map(
+    (t) => t.event,
+  ),
+  next: LIFECYCLE.filter(
+    (t) => t.from === state && t.to === states[index + 1],
+  ).map((t) => t.event),
+}));
+---
+
+<DiagramFrame caption="A process's life, as the lesson's tested model follows it. fork makes a new running process; exec changes the program a process runs but not the process; exit leaves a zombie that holds the exit status until someone waits for it: the parent, or init when the parent has already exited.">
+  <ol class="life">
+    {steps.map((step) => (
+      <li class:list={['stage', `s-${step.state}`]}>
+        <span class="state">
+          {step.state === 'parent' ? 'parent process' : step.state}
+        </span>
+        <span class="note">{NOTE[step.state]}</span>
+        {step.stays.length > 0 && (
+          <span class="stays">
+            ↻ {step.stays.join(', ')}: same process, new program
+          </span>
+        )}
+        {step.next.length > 0 && (
+          <span class="next">
+            {step.next.map((event) => (
+              <span class="edge">↓ {event}</span>
+            ))}
+          </span>
+        )}
+      </li>
+    ))}
+  </ol>
+</DiagramFrame>
+<style>
+  ol.life {
+    display: grid;
+    gap: var(--space-2);
+    max-width: 34rem;
+    margin: 0 auto;
+    padding: 0;
+    list-style: none;
+  }
+  .life li.stage {
+    display: grid;
+    gap: var(--space-1);
+    margin: 0;
+    padding: var(--space-3);
+    border: 2px solid var(--border-strong);
+    border-radius: var(--radius);
+    background: var(--bg);
+  }
+  .stage.s-running {
+    border-color: var(--tone-blue);
+    background: var(--tone-blue-soft);
+  }
+  .stage.s-zombie {
+    border-style: dashed;
+    border-color: var(--tone-amber);
+    background: var(--tone-amber-soft);
+  }
+  .stage.s-reaped {
+    border-style: dotted;
+  }
+  .state {
+    font-family: var(--font-mono);
+    font-size: var(--text-base);
+    font-weight: 700;
+  }
+  .note,
+  .stays {
+    font-size: var(--text-sm);
+  }
+  .note {
+    color: var(--muted);
+  }
+  .next {
+    display: grid;
+    gap: var(--space-1);
+    margin-top: var(--space-1);
+    padding-top: var(--space-2);
+    border-top: 1px solid var(--border);
+    font-size: var(--text-sm);
+    font-weight: 600;
+  }
+</style>

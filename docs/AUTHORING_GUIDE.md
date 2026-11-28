@@ -116,15 +116,15 @@ with `import source from '../../../../labs/<subject>/<slug>/file.ts?raw'`.
 
 ## Lab layout
 
-| File                                                | Purpose                                                                                              |
-| --------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| `README.md`                                         | "Independent practice": the contract, the run command, artifact provenance                           |
-| `contracts.ts`                                      | `contracts(solve)` with at least five `unseen case N` tests, refusals with specific errors           |
-| `starter.ts`                                        | The learner's attempt; throws `Implement your attempt` until written                                 |
-| `exercises.attempt.test.ts`                         | Runs the contracts on the starter; only `pnpm lab` runs it                                           |
-| `practice.test.ts`                                  | Runs the same contracts on the reference model inside the gate                                       |
-| `example.ts` (or a domain name) and its `*.test.ts` | The tested reference model and an `*Example()` output the lesson shows                               |
-| `*.c`, `*.txt`, `*.json`                            | Native programs and recorded artifacts, regenerated and drift-checked by the subject's native runner |
+| File                                                | Purpose                                                                                                                                                          |
+| --------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `README.md`                                         | "Independent practice": the contract, the run command, artifact provenance                                                                                       |
+| `contracts.ts`                                      | `contracts(solve)` with at least five `unseen case N` tests, refusals with specific errors                                                                       |
+| `starter.ts`                                        | The learner's attempt; throws `Implement your attempt` until written                                                                                             |
+| `exercises.attempt.test.ts`                         | Runs the contracts on the starter; only `pnpm lab` runs it                                                                                                       |
+| `practice.test.ts`                                  | Runs the same contracts on the reference model inside the gate                                                                                                   |
+| `example.ts` (or a domain name) and its `*.test.ts` | The tested reference model and an `*Example()` output the lesson shows                                                                                           |
+| `*.c`, `*.java`, `*.go`, `*.txt`, `*.json`          | Native programs and recorded artifacts, registered in the subject's native registry and regenerated and drift-checked by the shared runner (`scripts/native.ts`) |
 
 Figures and widgets import the model or the recorded files from `labs/`.
 
