@@ -79,8 +79,13 @@ it('never puts two instructions in one stage in the same cycle', () => {
     }
 });
 
-it('rejects empty programs and branches without a target', () => {
+it('rejects empty programs, unknown kinds and branches without a target', () => {
   expect(() => schedule([], { forwarding: true })).toThrow(RangeError);
+  expect(() =>
+    schedule([{ text: 'mul', kind: 'mul' as never, sources: [] }], {
+      forwarding: true,
+    }),
+  ).toThrow(RangeError);
   expect(() =>
     schedule([{ text: 'b', kind: 'branch', sources: [], taken: true }], {
       forwarding: true,

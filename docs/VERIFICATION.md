@@ -2598,3 +2598,23 @@ raises no new flag. No figure changed.
 Same command and environment as the first entry of 2026-11-25: zero type
 errors, warnings or hints; formatting and lint passed; 496 tests in 71 files,
 none skipped, including the native drift check; 42 pages; 154 browser tests.
+
+## Pipelining: refusal case and a fresh prediction — 2026-11-28
+
+Audit 2026-11-28 A1 and A2 (standard P2 and P5). `schedule` accepted any
+instruction kind; it now throws a `RangeError` for one it does not know, and
+`pipeline.test.ts` tests it. The contract gains a refusal case, and card 01 and
+the README state the rule. Card 01 predicted cases 1 and 2, whose program the
+lesson's load-use figure also shows with one more instruction. Those cases now
+use an ALU result, a load whose address depends on it, and an ALU use of the
+load. Card 01 predicts two dependent loads feeding a store, which no case uses.
+By hand and from the reference: 2 bubbles with forwarding, 4 without; the new
+cases give 1 and 4.
+
+`pnpm lab computer-architecture-execution/pipelining-and-hazards` fails all 9
+cases; the reference passes them (15 tests in the lab folder). `pnpm
+subject:report` raises no new flag. No figure changed.
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 497 tests in 71 files,
+none skipped, including the native drift check; 42 pages; 154 browser tests.

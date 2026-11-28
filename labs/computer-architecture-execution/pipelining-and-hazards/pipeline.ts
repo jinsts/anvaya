@@ -50,6 +50,13 @@ export interface Schedule {
   flushed: number;
 }
 
+const KINDS: readonly Instruction['kind'][] = [
+  'alu',
+  'load',
+  'store',
+  'branch',
+];
+
 export function schedule(
   program: readonly Instruction[],
   { forwarding }: { forwarding: boolean },
@@ -69,6 +76,10 @@ export function schedule(
     if (rows.length >= maxInstructions)
       throw new RangeError('Too many instructions.');
     const instruction = program[pc]!;
+    if (!KINDS.includes(instruction.kind))
+      throw new RangeError(
+        `Unknown instruction kind ${String(instruction.kind)}.`,
+      );
     const f: number =
       redirectAt ?? (previous ? Math.max(previous.f + 1, previous.d) : 1);
     redirectAt = null;
