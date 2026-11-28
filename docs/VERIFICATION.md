@@ -1934,3 +1934,55 @@ CFS description, not EEVDF, and the lesson says so; "an idle CPU probably
 first had to leave a power-saving state" is a hypothesis, marked as such;
 the 2–5 ms waits are described, not explained, because explaining which
 wake-ups wait needs the kernel source; the recording comes from a VM.
+
+## Context switches lesson — 2026-11-28
+
+Drafts `operating-systems-runtime-internals/context-switches`, the last page
+of Chapter 1, with the draft-lesson skill. The learner says what a switch
+saves and restores and what it costs indirectly, tells voluntary from
+involuntary switches in `/proc`, and estimates one switch's cost from a
+recorded ping-pong. Figures: one round trip of the ping-pong from the
+model's `ROUND_TRIP` steps, and the recorded per-switch estimates for two
+processes and two threads with the model's median and p90, inside the
+prediction's "Check after predicting" disclosure.
+
+Evidence: `switch.c` follows OSTEP chapter 6's lmbench method. Pinned to one
+CPU, it times 15 batches of 100,000 round trips of the pipe work alone, a
+parent and forked child, and two threads, rotating the order every batch,
+checks every byte, and reads the measuring thread's switch counts from
+`/proc/thread-self/status`. Recorded through the shared runner as
+`switch.json` on 2026-11-28 in the cloud container (Linux 6.18.44, KVM, 4
+vCPUs), not on the owner's WSL2 machine. Per switch: processes median
+1,211 ns, p90 1,464 ns; threads median 1,022 ns, p90 1,253 ns; batches
+spread over 680–1,480 ns. Voluntary plus involuntary switches equalled the
+round trips (to within 1) in every batch, 56% voluntary. A smoke run during
+the scheduling gate showed the same split and was discarded.
+
+Model and tests: `switches.ts` turns each batch into (ping-pong − pipe) / 2
+and summarizes with the measuring-performance lab's `summarize`, so the
+median and nearest-rank p90 follow that convention. Five model tests pass,
+including a hand computation on the first three recorded batches (the
+independent check) and the recording's one-switch-per-trip relationship;
+nine hidden contract cases pass; `pnpm lab
+operating-systems-runtime-internals/context-switches` fails all nine against
+the starter. The scheduling lesson now links here.
+
+Sources opened on 2026-11-28 before citing: OSTEP chapters 6, 19 and 26;
+proc_pid_status(5) and sched_setaffinity(2) on man7.org. No fitting problem
+exists in the registered bank; none is linked.
+
+Same command as the previous entry: zero type errors, warnings or hints;
+formatting and lint passed; 536 tests passed and 1 skipped in 79 files (the
+Docker test); 45 pages; 168 browser tests. `pnpm subject:report
+operating-systems-runtime-internals/context-switches`: no flags.
+
+Visual review: `pnpm shots` captured the round-trip figure at 1280 and 390 px
+in both themes and the page without JavaScript; a scratch script captured
+both figures with disclosures open. No overflow. Review fixed the step
+badges, which stretched over two-line steps, and the cost figure's key,
+which wrapped apart on phones.
+
+For the owner: the shared-desk analogy; "the likely reason" for involuntary
+switches (the woken partner preempting the writer before its read) is a
+hypothesis; the thread-versus-process gap is small and from a VM; the
+ConceptCheck's unpinned result is described, not measured.

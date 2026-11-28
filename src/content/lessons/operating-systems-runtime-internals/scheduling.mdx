@@ -218,6 +218,10 @@ not on the owner's WSL2 machine, so other hardware will give other delays.
 
 </details>
 
+Every change of who runs is a context switch; the
+[context switches lesson](/learn/operating-systems-runtime-internals/context-switches/)
+measures what one costs.
+
 A common mistake is to expect a nice value to work across a whole machine.
 With autogroups enabled, processes started from different sessions, such as
 two terminals, are in different groups, and CPU time is shared between the

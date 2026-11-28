@@ -1,0 +1,183 @@
+---
+import DiagramFrame from '../learning/DiagramFrame.astro';
+import {
+  estimate,
+  pair,
+  perSwitch,
+  type Recorded,
+} from '../../../labs/operating-systems-runtime-internals/context-switches/switches';
+import raw from '../../../labs/operating-systems-runtime-internals/context-switches/switch.json?raw';
+// The recorded ping-pong batches as estimates of one switch, per kind, with
+// the median and p90 from the tested model.
+const run = JSON.parse(raw) as {
+  date: string;
+  kernel: string;
+  cpu: string;
+  environment: string | null;
+  command: string;
+  records: Recorded[];
+};
+const kinds = (['processes', 'threads'] as const).map((kind) => {
+  const values = pair(run.records, kind).map(perSwitch);
+  const rows = run.records.filter((r) => r.kind === kind);
+  const voluntary = rows.reduce((n, r) => n + r.voluntary, 0);
+  const involuntary = rows.reduce((n, r) => n + r.involuntary, 0);
+  return {
+    kind,
+    values,
+    ...estimate(pair(run.records, kind)),
+    voluntary,
+    involuntary,
+  };
+});
+const top = Math.ceil(Math.max(...kinds.flatMap((k) => k.values)) / 500) * 500;
+const at = (ns: number) => `${(ns / top) * 100}%`;
+const ticks = Array.from({ length: top / 500 + 1 }, (_, i) => i * 500);
+const ns = (x: number) => Math.round(x).toLocaleString('en-US');
+const batches = kinds[0]?.values.length ?? 0;
+const caption = `Estimated cost of one context switch in each of ${batches} recorded batches of 100,000 round trips, for two processes and for two threads pinned to one CPU: the ping-pong time minus the same pipe work without switching, halved. Bars mark the median and p90 from the tested model. ${run.command}; Linux ${run.kernel}, ${run.cpu}, recorded ${run.date.slice(0, 10)} in ${run.environment ?? 'an unnamed environment'}.`;
+---
+
+<DiagramFrame caption={caption}>
+  <div class="cost">
+    {kinds.map((k) => (
+      <div class="row">
+        <p class="name">
+          <strong>two {k.kind}</strong>
+          <span>
+            median {ns(k.median)} ns · p90 {ns(k.p90)} ns
+          </span>
+        </p>
+        <div class="strip" aria-hidden="true">
+          {k.values.map((v) => (
+            <span class="dot" style={`left: ${at(v)}`} />
+          ))}
+          <span class="mark median" style={`left: ${at(k.median)}`} />
+          <span class="mark p90" style={`left: ${at(k.p90)}`} />
+        </div>
+        <p class="sr-only">
+          {`Batches, nanoseconds per switch: ${k.values.map(ns).join(', ')}.`}
+        </p>
+        <p class="counts">
+          The measuring thread was switched out{' '}
+          {(k.voluntary + k.involuntary).toLocaleString('en-US')} times:{' '}
+          {k.voluntary.toLocaleString('en-US')} voluntary,{' '}
+          {k.involuntary.toLocaleString('en-US')} involuntary.
+        </p>
+      </div>
+    ))}
+    <div class="axis" aria-hidden="true">
+      {ticks.map((t) => (
+        <span class="tick" style={`left: ${at(t)}`}>
+          {t}
+        </span>
+      ))}
+    </div>
+    <p class="key">
+      <span>
+        <span class="swatch dot-key"></span>one batch
+      </span>
+      <span>
+        <span class="swatch median-key"></span>median
+      </span>
+      <span>
+        <span class="swatch p90-key"></span>p90
+      </span>
+      <span>nanoseconds per switch</span>
+    </p>
+  </div>
+</DiagramFrame>
+<style>
+  .cost {
+    display: grid;
+    gap: var(--space-3);
+    font-size: var(--text-xs);
+  }
+  .name {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: var(--space-1) var(--space-3);
+    margin: 0 0 var(--space-1);
+    font-size: var(--text-sm);
+  }
+  .name span {
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+  }
+  .strip,
+  .axis {
+    position: relative;
+    margin: 0 var(--space-2);
+  }
+  .strip {
+    height: 1.6rem;
+    border-bottom: 1px solid var(--border-strong);
+  }
+  .dot {
+    position: absolute;
+    top: 0.45rem;
+    width: 0.7rem;
+    height: 0.7rem;
+    border-radius: var(--radius-full);
+    background: var(--chart-1);
+    opacity: 0.7;
+    transform: translateX(-50%);
+  }
+  .mark {
+    position: absolute;
+    top: 0;
+    width: 2px;
+    height: 100%;
+    transform: translateX(-50%);
+  }
+  .mark.median {
+    background: var(--text);
+  }
+  .mark.p90 {
+    background: var(--chart-2);
+  }
+  .counts {
+    margin: var(--space-1) 0 0;
+    color: var(--muted);
+  }
+  .axis {
+    height: 1rem;
+  }
+  .tick {
+    position: absolute;
+    font-family: var(--font-mono);
+    color: var(--muted);
+    transform: translateX(-50%);
+  }
+  .key {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-1) var(--space-3);
+    margin: 0;
+    color: var(--muted);
+  }
+  .swatch {
+    display: inline-block;
+    width: 0.8rem;
+    height: 0.8rem;
+    margin-right: var(--space-1);
+    vertical-align: -0.1rem;
+  }
+  .key > span {
+    white-space: nowrap;
+  }
+  .dot-key {
+    border-radius: var(--radius-full);
+    background: var(--chart-1);
+  }
+  .median-key {
+    width: 2px;
+    background: var(--text);
+  }
+  .p90-key {
+    width: 2px;
+    background: var(--chart-2);
+  }
+</style>

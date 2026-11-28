@@ -132,6 +132,35 @@ function fairRecords(csv: string) {
   return { shares, wakes };
 }
 
+/** kind,batch,ns,trips,voluntary,involuntary lines from switch.c. */
+function switchRecords(csv: string) {
+  const records = csv
+    .trim()
+    .split('\n')
+    .map((line) => {
+      const [kind, batch, ns, trips, voluntary, involuntary] = line.split(',');
+      return {
+        kind,
+        batch: Number(batch),
+        nsPerRoundTrip: Number(ns),
+        roundTrips: Number(trips),
+        voluntary: Number(voluntary),
+        involuntary: Number(involuntary),
+      };
+    });
+  if (
+    records.some(
+      (r) =>
+        !['pipe', 'processes', 'threads'].includes(r.kind!) ||
+        !(r.nsPerRoundTrip > 0) ||
+        !Number.isInteger(r.voluntary) ||
+        !Number.isInteger(r.involuntary),
+    )
+  )
+    throw new Error('Invalid context-switch measurement');
+  return records;
+}
+
 export const MEASUREMENTS: Measurement[] = [
   // system-calls: serve's whole run, with strace's own summary of it.
   {
@@ -181,6 +210,16 @@ export const MEASUREMENTS: Measurement[] = [
     args: { quick: ['100', '10', '1'], full: ['2000', '100', '5'] },
     file: 'scheduling/fair.json',
     parse: (csv) => fairRecords(csv),
+  },
+  // context-switches: a byte passed back and forth through two pipes by two
+  // processes and by two threads on one CPU, and the same pipe work done by
+  // one process without switching, in rotating order.
+  {
+    source: 'context-switches/switch.c',
+    flags: [...C17, '-pthread'],
+    args: { quick: ['1000', '2'], full: ['100000', '15'] },
+    file: 'context-switches/switch.json',
+    parse: (csv) => ({ records: switchRecords(csv) }),
   },
 ];
 

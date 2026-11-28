@@ -107,8 +107,7 @@ sections:
       - operating-systems-runtime-internals/processes
       - operating-systems-runtime-internals/threads
       - operating-systems-runtime-internals/scheduling
-    planned:
-      - 'Context switches: What switching costs'
+      - operating-systems-runtime-internals/context-switches
   - id: os-memory
     title: Memory
     subject: operating-systems-runtime-internals
