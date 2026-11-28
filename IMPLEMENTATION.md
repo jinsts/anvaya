@@ -119,7 +119,8 @@ Owner request, proposed in [ADR 0008](docs/adr/0008-subject-chapters-and-lesson-
 - [x] Draft the planned pages, one lesson per change, moving material out of the
       existing lessons named in the path's YAML comments: every planned Computer
       Architecture & Execution page is now an agent draft, merged in PR #9, and
-      no planned entry remains in its chapters (19 lessons).
+      no planned entry remains in its chapters (19 lessons, 22 since the
+      2026-11-28 splits below).
 - [ ] Owner review and promotion of those drafts.
 
 ## Subject standard and agent skills — 2026-11-17
@@ -135,7 +136,26 @@ Owner request, proposed in [ADR 0009](docs/adr/0009-subject-standard-and-authori
       with the standard; add `verify-change.md`.
 - [x] Project skills: `create-subject`, `draft-lesson`, `enhance-lesson`,
       `audit-subject`.
-- [ ] Prove them: outline audits of six subjects, a create-subject dry run, and
-      an audit of Computer Architecture & Execution.
-- [ ] Owner review of the standard, the skills and ADR 0009 (approve by
-      merging).
+- [x] Prove them: outline audits of six subjects and a create-subject dry run
+      (`docs/reviews/*-audit-2026-11-17.md`,
+      `docs/proposals/operating-systems-runtime-internals.md`), and an audit of
+      Computer Architecture & Execution
+      (`docs/reviews/computer-architecture-execution-audit-2026-11-17.md`).
+- [x] Owner review of the standard, the skills and ADR 0009: approved by merging
+      PR #12.
+
+## Computer Architecture & Execution audit fixes — 2026-11-28
+
+Owner request: bring the subject to the standard and record it in one draft PR.
+
+- [x] 2026-11-17 audit: F1, F3 and F4 merged in PRs #13 and #14; F2 and F5–F13
+      fixed, one lesson per commit. F2 split memory, stack and heap, and I/O
+      into three new pages, `access-time-and-translation`, `call-frames` and
+      `polling-interrupts-and-dma`, keeping the original URLs: 22 lessons, each
+      30–40 minutes.
+- [x] Final audit of the whole subject
+      (`docs/reviews/computer-architecture-execution-audit-2026-11-28.md`): P0
+      0, P1 0, P2 2, P3 2. Both P2s fixed: every lab now refuses invalid input
+      in its hidden contract, and no first card predicts a hidden case.
+- [ ] Owner review and promotion of the subject's drafts, and a decision on
+      standard feedback S5.

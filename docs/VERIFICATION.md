@@ -2776,3 +2776,15 @@ changed.
 Same command and environment as the first entry of 2026-11-25: zero type
 errors, warnings or hints; formatting and lint passed; 501 tests in 71 files,
 none skipped, including the native drift check; 42 pages; 154 browser tests.
+
+## Implementation record: ADR 0009 and the architecture audit fixes — 2026-11-28
+
+`IMPLEMENTATION.md` ticks the ADR 0009 proof items (the six outline audits,
+the create-subject dry run and the architecture audit) and its owner review,
+merged in PR #12, and adds an entry for this branch's audit fixes. Owner review
+and promotion stay open. The 2026-11-28 audit gains a resolution note: both of
+its P2 findings were fixed afterwards on this branch.
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 501 tests in 71 files,
+none skipped, including the native drift check; 42 pages; 154 browser tests.

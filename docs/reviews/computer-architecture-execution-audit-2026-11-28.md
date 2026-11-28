@@ -226,3 +226,13 @@ At `99faf4e`, on 2026-11-28:
 
 Not done: re-reading every cited page of the lessons this branch did not
 change; a screen-reader or real-device check.
+
+## Resolution — 2026-11-28
+
+Both P2 findings were fixed on the same branch after this audit, one lesson
+per commit, each with the full gate. A1: all seven contracts now have refusal
+cases; the branch, pipelining, reading-assembly and SIMD models were changed to
+refuse first. A2: all fourteen first cards now predict inputs no hidden case
+uses, or, where the lesson body showed a case (cache organization, pipelining,
+hardware-software interaction, stack and heap), the case changed instead. The
+P3 findings and standard feedback S5 remain for the owner.
