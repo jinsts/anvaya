@@ -1818,3 +1818,52 @@ For the owner: the model sends orphans to init, while the recording uses a
 subreaper; the lesson says so. "Exits with 127 after a failed exec" is
 `launcher.c`'s own choice, not a rule the lesson states. Whether a container
 runtime starts a small init as PID 1 is left to the containers chapter.
+
+## Threads lesson — 2026-11-26
+
+Drafts `operating-systems-runtime-internals/threads`, Chapter 1's third page,
+with the draft-lesson skill. The learner says what two threads of one process
+share and what each keeps, contrasts it with what a forked child copies, and
+reads a process's threads from `/proc`. Figures: two address-space panels
+(threads against parent and child) and the full sharing table, both drawn
+from the model's `RESOURCES`; the table sits in the first practice card's
+"Check after attempting" disclosure so it does not give the answers away.
+
+Evidence: `share.c` starts a second thread T and, while T still runs, forks
+a child. Each reads `/proc/thread-self/status` and uses a global and a file
+descriptor. It prints comparisons and counts, never IDs, so
+`share-output.txt` is the same on every run; the shared runner builds it with
+`-pthread` and drift-checks it. It shows T with the main thread's process ID
+and its own thread ID, the main thread reading T's 42, descriptor 7 shared by
+the threads and copied into the child, the child's 7 and descriptor 8
+staying in the child, and the child having one thread.
+
+Model and tests: `sharing.ts` classifies twelve resources as shared, copied
+or separate for a new thread and for a forked child, each with the manual
+page that says so, and throws a `RangeError` for anything else. Six model
+tests pass, including one that checks the model against `share-output.txt`
+and the practice card's answer; nine hidden contract cases pass; `pnpm lab
+operating-systems-runtime-internals/threads` fails all nine against the
+starter. Independent checks: the recorded program for memory, descriptors,
+process and thread IDs; pthreads(7), pthread_create(3), fork(2) and signal(7)
+for the rest.
+
+Sources opened on 2026-11-26 before citing: pthreads(7), clone(2),
+pthread_create(3), fork(2), signal(7), gettid(2), proc_pid_status(5) and
+proc_pid_task(5) on man7.org. No fitting problem exists in the registered
+bank; none is linked.
+
+Same command as the previous entry: zero type errors, warnings or hints;
+formatting and lint passed; 501 tests passed and 1 skipped in 74 files (the
+Docker test); 43 pages; 158 browser tests. `pnpm subject:report
+operating-systems-runtime-internals/threads`: no flags.
+
+Visual review: `pnpm shots` captured both figures at 1280 and 390 px in both
+themes and the page without JavaScript; a scratch script captured the table
+inside its disclosure. No page overflow; on phones the table scrolls inside
+its labelled, focusable region.
+
+For the owner: the office analogy; the twelve resources chosen; "CPU time
+used" classed as shared for threads (the process's total) and separate for a
+child; NPTL's per-thread nice value, which the lesson mentions and the
+scheduling lesson uses.

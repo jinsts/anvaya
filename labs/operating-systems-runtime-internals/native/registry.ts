@@ -94,6 +94,14 @@ export const ARTIFACTS: Artifact[] = [
     programs: { serve: SERVE },
     file: 'processes/launcher-output.txt',
   },
+  // threads: share.c compares a thread and a forked child through /proc and
+  // a shared global and descriptor. It prints comparisons, not IDs.
+  {
+    kind: 'output',
+    source: 'threads/share.c',
+    flags: [...C17, '-pthread'],
+    file: 'threads/share-output.txt',
+  },
 ];
 
 export const MEASUREMENTS: Measurement[] = [

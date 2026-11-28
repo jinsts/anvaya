@@ -105,8 +105,8 @@ sections:
     lessons:
       - operating-systems-runtime-internals/system-calls
       - operating-systems-runtime-internals/processes
+      - operating-systems-runtime-internals/threads
     planned:
-      - "Threads: What they share and what they don't"
       - 'Scheduling: Sharing a CPU fairly'
       - 'Context switches: What switching costs'
   - id: os-memory
