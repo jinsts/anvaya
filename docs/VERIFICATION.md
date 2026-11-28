@@ -2558,3 +2558,24 @@ subject:report` raises no new flag. No figure changed.
 Same command and environment as the first entry of 2026-11-25: zero type
 errors, warnings or hints; formatting and lint passed; 491 tests in 71 files,
 none skipped, including the native drift check; 42 pages; 154 browser tests.
+
+## Multicore: refusal cases and a fresh prediction — 2026-11-28
+
+Audit 2026-11-28 A1 and A2 (standard P2 and P5). The reference adapter read any
+first letter other than `A` as core B and any operation other than `w` as a
+read, so it could not refuse bad input. A new `parseAccesses` in `models.ts`
+accepts only `A` or `B` followed by `r` or `w` and throws a `RangeError`
+otherwise; `models.test.ts` tests it, and `practice.test.ts` now uses it. The
+contract gains two refusal cases, a third core and an unknown operation, and
+card 01 and the README state the rule. Card 01 traced hidden case 7; it now
+traces `'Br Bw Ar Aw'`, which no case uses and which shows Exclusive becoming
+Modified without a message. The reveal follows the model's output, which the
+new test asserts: `IE`, `IM`, `SS`, `MI`.
+
+`pnpm lab computer-architecture-execution/multicore` fails all 9 cases; the
+reference passes them (18 tests in the lab folder). `pnpm subject:report`
+raises no new flag. No figure changed.
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 494 tests in 71 files,
+none skipped, including the native drift check; 42 pages; 154 browser tests.

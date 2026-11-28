@@ -303,16 +303,19 @@ Neither cost was measured here.
   command="pnpm lab computer-architecture-execution/multicore"
 >
   Implement `solve(accesses)` in `starter.ts`: given accesses such as `'Ar Bw'`,
-  return both cores' MESI states after each one. Before running the tests, trace
-  `'Aw Br Ar Ar'` and say which accesses send a message.
+  return both cores' MESI states after each one. Throw a `RangeError` for any
+  token other than `A` or `B` followed by `r` or `w`. Before running the tests,
+  trace `'Br Bw Ar Aw'` and say which accesses send a message.
 </LabCard>
 
 <details>
 <summary>Check after attempting</summary>
 
-A's write from Invalid sends a request for ownership: `MI`. B's read misses and
-announces it; A supplies the modified data and drops to Shared: `SS`. A's two
-reads then hit in Shared without any message: `SS`, `SS`.
+B's read misses and announces it; no other copy exists, so B takes Exclusive:
+`IE`. B's write needs no message, because Exclusive means no other cache holds
+the line: `IM`. A's read misses and announces it; B supplies the modified data
+and drops to Shared: `SS`. A's write from Shared sends a request for ownership,
+which invalidates B: `MI`. Three of the four accesses send a message.
 
 </details>
 
