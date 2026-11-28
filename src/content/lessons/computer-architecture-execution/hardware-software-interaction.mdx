@@ -139,6 +139,11 @@ execute: it saves 12. The model below prints all three.
 
 </details>
 
+The tests check this output exactly, that a fault or an interrupt saves the
+current instruction index without changing its input state, that instruction
+zero survives entry and return, and that nested entry, a return with no saved
+location, and invalid or unrepresentable instruction indexes are refused.
+
 The invariant is that kernel entry preserves a user resume location, and only a
 kernel state with that location can return. Inputs stay unchanged. Each
 transition performs a bounded number of checks and field copies: O(1) time and
@@ -171,7 +176,10 @@ Device-accessible memory may need a separate mapping, possibly through an IOMMU,
 which translates device requests and can restrict their access. An application's
 pointer does not establish that mapping or keep a buffer alive.
 
-The next lesson follows [I/O submission and completion](/learn/computer-architecture-execution/io-mechanisms/).
+The next lesson, [polling, interrupts and DMA](/learn/computer-architecture-execution/polling-interrupts-and-dma/),
+separates moving a request's bytes from noticing that it finished, and the
+[I/O mechanisms lesson](/learn/computer-architecture-execution/io-mechanisms/)
+then follows one request from submission to completion.
 The boundary matters even when an API hides every register: a call that returned
 success may only have copied data into an operating-system buffer.
 
@@ -189,14 +197,15 @@ covers them.
   Implement `solve(pc, event)` in `starter.ts`: return the user instruction
   index that runs after the kernel handles the event. Before running the tests,
   predict the result for each event at index 0, and say what should happen for a
-  system call at the largest safe integer.
+  fault at the largest safe integer.
 </LabCard>
 
 <details>
   <summary>Check after attempting</summary>
 
-A system call at 0 resumes at 1; a restartable fault and an interrupt resume at 0. A system call at `Number.MAX_SAFE_INTEGER` would need a resume index that is
-not a safe integer, so the model rejects it with a `RangeError` instead of
+A system call at 0 resumes at 1; a restartable fault and an interrupt resume at 0. A fault at `Number.MAX_SAFE_INTEGER` resumes there too: the index is a safe
+integer, and a fault does not advance it. Only an event that advances the index
+can leave the safe range, and then the model throws a `RangeError` instead of
 returning a wrong index. The handler's own index never becomes the resume point:
 it controls execution inside the kernel, while the saved context identifies
 where the user program continues.

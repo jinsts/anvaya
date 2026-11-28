@@ -1552,3 +1552,1239 @@ together: zero type errors, warnings or hints; formatting and lint passed; 421
 tests passed and 1 skipped in 65 files (the native drift check, which needs
 `ANVAYA_CC`); 39 pages; 142 browser tests. No figure changed, so no
 screenshots were taken.
+
+## Memory hierarchy: a hidden cache contract — 2026-11-25
+
+Fixes finding F5 of the 2026-11-17 architecture audit for this lesson with the
+enhance-lesson skill (standard P2, P5). The attempt lab's contract grows from
+two cases to seven: the two existing streams, a line boundary (addresses 15 and
+16, 31 and 32), an empty stream, a conflict in slot 0 while slot 1 keeps its
+line, and two refusals that expect a `RangeError` (a negative address after a
+valid one; a fractional address and 2⁵³). The practice card now states the
+contract, including the refusal, and names the kinds of hidden case without
+their inputs; the learner traces a new stream, 32, 36, 0, 48, 32, by hand. Its
+reveal is now a "Check after attempting" disclosure (the summary read "Check
+the reasoning after attempting", which the subject report did not count) and
+explains that trace and the 4×4 matrix addresses it already gave. Two new model
+tests assert the trace's blocks, slots and results, and the matrix addresses
+and line counts.
+
+Cross-check: a separate Python implementation of a cold two-slot, 16-byte
+direct-mapped cache, written from the definition, gives every contract value and
+the practice trace, refuses the three invalid addresses, and reproduces the
+lesson's displayed trace (miss hit hit hit miss miss); each value was also
+traced by hand. `pnpm vitest run
+labs/computer-architecture-execution/memory-hierarchy-and-caches/` passes 15
+tests in 3 files, and `pnpm lab
+computer-architecture-execution/memory-hierarchy-and-caches` fails all 7 cases
+against the starter (the refusal cases because the starter's `Error` is not a
+`RangeError`). `pnpm subject:report` now counts 7 cases and one check-after
+reveal and no longer raises P2 for the lesson. Its other flags belong to later
+findings (C4, L3, L9, L10), and its L6 flag is the audit's known false signal
+at "…to predict whole-program time".
+
+The gate's toolchain was rebuilt in this container, which runs Ubuntu 24.04,
+with the scripts from verify-change.md, unmodified. `APT_CONFIG` pointed
+`apt-get download` at private package lists: noble for
+`scripts/setup-browser-deps.sh`, and Ubuntu 26.04 (`resolute`), which has
+`gcc-15 15.2.0-16ubuntu1`, for both GCC setup scripts. Both compilers report
+`(Ubuntu 15.2.0-16ubuntu1) 15.2.0`. `toolchain.json` also records binutils 2.46,
+the system binutils where the artifacts were recorded, while this container's
+is 2.42, so the runner would have reported every x86-64 comparison as
+skipped. Binutils 2.46 from the same archive was therefore extracted into
+`/tmp/anvaya-binutils` and put first on `PATH`: GCC then assembles and links
+with it (`-print-prog-name`, `-Wl,-v`), and the runner's `objdump` and `nm`
+report 2.46. The native runner on its own found all 28 artifacts the same,
+checked 8 programs and validated 5 measurements, and the unchanged branch
+passed the full gate (422 tests in 65 files, none skipped; 39 pages; 142
+browser tests).
+
+`PLAYWRIGHT_PORT=4371`, `LD_LIBRARY_PATH`, `ANVAYA_CC`, `ANVAYA_CC_ARM64` and
+binutils 2.46 on `PATH`, then `pnpm verify`: zero type errors, warnings or
+hints; formatting and lint passed; 429 tests in 65 files, none skipped,
+including the native drift check; 39 pages; 142 browser tests. No figure
+changed, so no screenshots were taken.
+
+## Program execution: a hidden instruction-count contract — 2026-11-25
+
+Fixes finding F5 of the 2026-11-17 architecture audit for this lesson with the
+enhance-lesson skill (standard P2, P5). The attempt lab's contract grows from
+four cases to eight: the existing 3, 7, 19 and 0, both ends of the byte range
+(1, where the branch is never taken, and 255), and refusals that expect a
+`RangeError` for 256, −1 and 2.5. The practice card no longer names hidden
+inputs ("Try 7 and 19"): it states the contract, including the refusal, and
+asks for a hand count from 5. The reveal now explains that count (12
+instructions, four taken branches and one untaken), keeps the 2n + 2 rule and
+the wrap of zero to 255, and no longer prints a hidden case's expected count.
+A new model test asserts the count from 5 and the order of taken and untaken
+branches.
+
+Cross-check: a separate Python simulation of the four-instruction machine gives
+every contract value (8, 16, 40, 514, 4, 512), the practice count of 12 and the
+lesson's 6 instructions from 2, and refuses the three invalid values; the
+counts were also derived by hand from 2n + 2. `pnpm vitest run
+labs/computer-architecture-execution/how-computers-execute-programs/` passes 18
+tests, and `pnpm lab computer-architecture-execution/how-computers-execute-programs`
+fails all 8 cases against the starter. `pnpm subject:report` counts 8 cases and
+no longer raises P2 for the lesson; its remaining flags belong to later findings
+(L9, L10) or the audit's C4 and L6 judgments.
+
+Same command and environment as the previous entry: zero type errors, warnings
+or hints; formatting and lint passed; 434 tests in 65 files, none skipped,
+including the native drift check; 39 pages; 142 browser tests. No figure
+changed, so no screenshots were taken.
+
+## Binary representation: a hidden two's complement contract — 2026-11-25
+
+Fixes finding F5 of the 2026-11-17 architecture audit for this lesson with the
+enhance-lesson skill (standard P2, P5). The attempt lab's contract grows from
+four cases to seven: the existing 0, 128, 173 and 250, the top of the signed
+range (127), and refusals that expect a `RangeError` for 256, −1 and 1.5. The
+first practice card asked the learner to predict 173 and 250, two hidden cases,
+and its reveal named the other two. It now states the contract, including the
+refusal, names the kinds of hidden case, and asks for 156 and 100, which no
+hidden case uses; the reveal explains those two and why values outside 0–255
+are refused rather than wrapped. A new model test asserts both practice
+answers, and the existing test still checks every byte against the
+weighted-bit definition.
+
+Cross-check: Python's `struct` module, packing each value as an unsigned byte
+and unpacking it as a signed one, gives every contract value and both practice
+answers and refuses 256, −1 and 1.5; each was also computed by hand as raw −
+256 for patterns with the top bit set. `pnpm vitest run
+labs/computer-architecture-execution/binary-and-data-representation/` passes
+15 tests, and `pnpm lab computer-architecture-execution/binary-and-data-representation`
+fails all 7 cases against the starter. `pnpm subject:report` raises no flag for
+the lesson.
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 438 tests in 65 files,
+none skipped, including the native drift check; 39 pages; 142 browser tests.
+No figure changed, so no screenshots were taken.
+
+## Architecture and performance: Amdahl bars from the model — 2026-11-25
+
+Fixes finding F6 of the 2026-11-17 architecture audit for this lesson with the
+enhance-lesson skill (standard V2). `AmdahlBars` wrote 0.25, 0.75, 0.1875,
+0.4375 and 2.286 as literals, and its segment widths as fixed percentages. A new
+`amdahlTimes(serial, speedup)` in the performance lab returns the unchanged and
+improvable parts of a normalized baseline time, the improved part, the new
+total and `amdahl()`'s speedup. The figure keeps only the lesson's illustrative
+inputs (a quarter serial, four times faster) and computes every number, label,
+accessible name and segment width from it. The caption now reads "making 75% of
+baseline time 4× faster" instead of "improving 75% of baseline time fourfold";
+nothing else the learner sees changed. A new test asserts the five values for
+0.25 and 4, that the total is the reciprocal of `amdahl()` for four other
+inputs, and that invalid inputs are refused through `amdahl()`.
+
+Cross-check: by hand, 0.75 ÷ 4 = 0.1875, 0.25 + 0.1875 = 0.4375 and
+1 ÷ 0.4375 = 2.2857…, which the existing verified output already prints as
+2.286x. `pnpm vitest run labs/computer-architecture-execution/architecture-and-performance/`
+passes 29 tests, and `pnpm lab computer-architecture-execution/architecture-and-performance`
+still fails all 9 cases. `pnpm subject:report` no longer raises V2 for the
+lesson; its other flags are C4 (40 minutes, one mechanism) and L9, which F13
+addresses.
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 439 tests in 65 files,
+none skipped, including the native drift check; 39 pages; 142 browser tests.
+
+Visual review: `pnpm shots` with a selector for the figure, at 1280 and 390 px
+in light and dark themes, plus the page without JavaScript; report.json shows
+no overflow or console errors. The bars match the old widths (25% and 75%, then
+25% and 18.75%); at 390 px "0.1875" fits its segment as before.
+
+## CPU, registers and instructions: instruction fields from the decoder — 2026-11-25
+
+Fixes finding F6 of the 2026-11-17 architecture audit for this lesson with the
+enhance-lesson skill (standard V2). `InstructionFields` hard-coded the bits of
+0x2311, the field widths, the meaning of each field and the ranges. The CPU lab
+now exports the format's field layout, `FIELDS` (opcode 4 bits, register 4,
+immediate 8, most significant first), and its assigned opcodes, `OPCODES`
+(1 set, 2 add). The figure encodes the lesson's worked instruction with
+`encode`, decodes it with `decode` and computes the bit slices, labels, ranges,
+accessible name and column proportions from those exports. The learner sees the
+same figure; "(two assigned here)" now reads "(2 assigned here)". A new test
+checks, for all 8,192 valid words, that shifting and masking by `FIELDS`
+recovers exactly what `decode` returns, that the widths fill 16 bits, and that
+`decode` refuses every opcode `OPCODES` leaves unassigned.
+
+Cross-check: by hand, 0x2311 is 0010 0011 00010001, which is opcode 2, register
+3 and immediate 17, the values the existing verified output prints.
+`pnpm vitest run labs/computer-architecture-execution/cpu-registers-and-instructions/`
+passes 12 tests, and `pnpm lab computer-architecture-execution/cpu-registers-and-instructions`
+still fails all 6 cases. `pnpm subject:report` no longer raises V2 for the
+lesson; its other flags are C4 (35 minutes, one mechanism) and L9, which F13
+addresses.
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 440 tests in 65 files,
+none skipped, including the native drift check; 39 pages; 142 browser tests.
+
+Visual review: `pnpm shots` with a selector for the figure, at 1280 and 390 px
+in light and dark themes, plus the page without JavaScript; report.json shows
+no overflow or console errors. The figure matches the previous layout,
+including the 1 : 1 : 2 field columns and the wrapped field labels at 390 px.
+
+## Cache organization: placement figure from the cache model — 2026-11-25
+
+Fixes finding F6 of the 2026-11-17 architecture audit for this lesson with the
+enhance-lesson skill (standard V2). `CachePlacement` recomputed the block, tag,
+set and offset of address 64 inline. It now checks each of its three
+geometries with the cache lab's `checkGeometry`, takes the field widths from
+`fieldBits` and the tag, set, offset and block from `splitAddress`, and its
+caption and list label compute the address, its block and the address width
+instead of typing them. The learner sees the same figure. A new test asserts
+the widths and splits the figure draws for address 64 in the direct-mapped,
+2-way and fully associative arrangements of four 16-byte lines (tags 1, 2 and
+4; set 0; offset 0; block 4).
+
+Cross-check: by hand, 64 = 0100 0000, so with four offset bits the block is 4;
+4 mod 4, 4 mod 2 and 4 mod 1 put it in set 0 each time, and the remaining tag
+bits read 1, 2 and 4. `pnpm vitest run labs/computer-architecture-execution/cache-organization/`
+passes 21 tests, and `pnpm lab computer-architecture-execution/cache-organization`
+still fails all 5 cases. `pnpm subject:report` no longer raises V2 for the
+lesson; its other flags are C4 (40 minutes, one mechanism) and L10, which F8
+addresses.
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 441 tests in 65 files,
+none skipped, including the native drift check; 39 pages; 142 browser tests.
+
+Visual review: `pnpm shots` with a selector for the figure, at 1280 and 390 px
+in light and dark themes, plus the page without JavaScript; report.json shows
+no overflow or console errors, and the figure matches its previous rendering.
+
+For owner review: while reading this lesson, the audit's follow-up noticed that
+the first practice card asks for two streams that are hidden contract cases (3
+and 4), and that the replacement section works the first of them in the body.
+That is outside F6 and is recorded for the final audit of this branch.
+
+## Reading assembly: a verified interpreter output — 2026-11-25
+
+Fixes finding F7 of the 2026-11-17 architecture audit with the enhance-lesson
+skill (standard L9, E2). The x86-64 interpreter was the only tested model shown
+without an output. A new `x86Example()` takes the four committed listings as
+text, so the model still reads no files, runs them on {3, 5, 7, 9} and prints
+what the tests already asserted: `sum_to` with four values executes 58
+instructions at -O0 and 23 at -O2 and returns 24; with no values it returns 0
+at both levels; `scale_sum` with factor 2 returns 48 at both. A new test reads
+the listings and compares the output exactly. The lesson's model disclosure is
+now titled "Inspect the tested model and expected output" and shows the
+interpreter with that verified output; the -O0 listings and `main.c` moved to
+their own disclosure, "Inspect the -O0 listings and the native program's
+checks". The paragraph after them now begins "The tests check the output
+above exactly", so the lesson also meets F13. The example leaves out the
+`jne` count the stepper asks the learner to predict and practice 02's
+`scale_sum` result for factor 3.
+
+Cross-check: every printed value was already asserted by existing tests (58
+and 23 instructions, 24, 0, 48), and a separate script ran the same listings
+through the interpreter to confirm them before the test was written.
+`pnpm vitest run labs/computer-architecture-execution/reading-assembly/`
+passes 21 tests, and `pnpm lab computer-architecture-execution/reading-assembly`
+still fails all 9 cases. `pnpm subject:report` now counts one verified output
+asserted by a test and raises only C4 (35 minutes, one mechanism).
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 442 tests in 65 files,
+none skipped, including the native drift check, which also confirmed the four
+listings unchanged; 39 pages; 142 browser tests, including the per-lesson check
+that opens the model disclosure by keyboard. No figure changed, so no
+screenshots were taken.
+
+## Program execution: what the tests check — 2026-11-25
+
+Fixes finding F13 of the 2026-11-17 architecture audit for this lesson with the
+enhance-lesson skill (standard L9). The datapath model's disclosure is now
+followed by a paragraph that says what `datapath.test.ts` asserts: the output
+exactly, which state each instruction changes, the shared fetch and decode
+path, data memory used only by the load and the store in their own directions,
+32-bit wraparound, and the three refusals (an address holding no data, a fifth
+register, a negative address). The sentence avoids naming which instruction
+changes memory, since the stepper above asks the learner to predict that. The
+accumulator model's existing sentence about its tests now starts its own
+paragraph. `pnpm subject:report` no longer raises L9 for the lesson; its L6 flag
+is the "predict both the new accumulator…" prompt, which is followed by the
+program's instruction table, not by its trace (the trace is in the "Check after
+predicting" disclosure), so it is not a reveal.
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 442 tests in 65 files,
+none skipped, including the native drift check; 39 pages; 142 browser tests.
+No figure changed, so no screenshots were taken.
+
+## CPU, registers and instructions: what the tests check — 2026-11-25
+
+Fixes finding F13 of the 2026-11-17 architecture audit for this lesson with the
+enhance-lesson skill (standard L9). The paragraph after the decoder model began
+"The tests round-trip"; it now begins "The tests check the output above
+exactly", keeps the round trip of all 8,192 valid instructions, and adds the
+layout test from the F6 change (the figure's fields recover exactly what
+`decode` returns) beside the refusals of out-of-range fields and reserved
+opcodes. `pnpm subject:report` no longer raises L9 for the lesson; C4 remains
+(35 minutes, one mechanism).
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 442 tests in 65 files,
+none skipped, including the native drift check; 39 pages; 142 browser tests.
+No figure changed, so no screenshots were taken.
+
+## Compilation and execution: what the tests check — 2026-11-25
+
+Fixes finding F13 of the 2026-11-17 architecture audit for this lesson with the
+enhance-lesson skill (standard L9). After the teaching linker's disclosure, a
+paragraph now says what `example.test.ts` asserts: the output exactly, a
+backward reference, an empty image and a symbol at address 0, and the refusal
+of undefined and duplicate symbols, invalid offsets, words and load bases, and
+overlapping patches without changing the inputs. The relocation test of the
+real call was already described in the body. `pnpm subject:report` no longer
+raises L9 for the lesson; C4 remains (40 minutes, one mechanism).
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 442 tests in 65 files,
+none skipped, including the native drift check; 39 pages; 142 browser tests.
+No figure changed, so no screenshots were taken.
+
+## Stack and heap: what the tests check — 2026-11-25
+
+Fixes finding F13 of the 2026-11-17 architecture audit for this lesson with the
+enhance-lesson skill (standard L9). After the lifetime model's disclosure, a
+paragraph now says what `example.test.ts` asserts (the output exactly, reverse
+call order without releasing what a call allocated, the exact stack limit and
+an overflowing call that changes nothing, release in any order but not twice,
+and the refusal of invalid sizes and of totals beyond the safe integer range)
+and that `trace.test.ts` and `frames.test.ts` check the stepper's story and the
+figure's real -O0 frames. It names no number that practice 02 asks the learner
+to predict. `pnpm subject:report` no longer raises L9 for the lesson; C4, L3
+and L10 belong to F2, F9 and F8.
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 442 tests in 65 files,
+none skipped, including the native drift check; 39 pages; 142 browser tests.
+No figure changed, so no screenshots were taken.
+
+## Memory hierarchy: what the tests check — 2026-11-25
+
+Fixes finding F13 of the 2026-11-17 architecture audit for this lesson with the
+enhance-lesson skill (standard L9). After the cache model's disclosure, a
+paragraph now says what the lab's tests assert: the output exactly, the block,
+slot and result of every access in a trace that crosses a line boundary and
+conflicts in one slot, cold and empty traces, the average at the all-hit and
+all-miss extremes, the refusal of invalid geometry, addresses, times and miss
+rates, and, in `traversal.test.ts`, the lines the traversal figure marks.
+`pnpm subject:report` no longer raises L9 for the lesson; C4, L3 and L10 belong
+to F2, F9 and F8, and L6 is the audit's known false signal.
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 442 tests in 65 files,
+none skipped, including the native drift check; 39 pages; 142 browser tests.
+No figure changed, so no screenshots were taken.
+
+## Hardware-software interaction: what the tests check — 2026-11-26
+
+Fixes finding F13 of the 2026-11-17 architecture audit for this lesson with the
+enhance-lesson skill (standard L9). After the privilege model's disclosure, a
+paragraph now says what `example.test.ts` asserts: the output exactly, that a
+fault or an interrupt saves the current instruction index without changing its
+input state, that instruction zero survives entry and return, and that nested
+entry, a return with no saved location and invalid or unrepresentable indexes
+are refused. The model follows the predict prompt's "Check after predicting"
+disclosure, so naming the saved indexes reveals nothing new. `pnpm
+subject:report` no longer raises L9 for the lesson; C4 remains (40 minutes, one
+mechanism).
+
+The worker restarted between this entry and the previous one; the `/tmp`
+toolchains survived, and the gate ran with the same command and environment as
+the first entry of 2026-11-25: zero type errors, warnings or hints; formatting
+and lint passed; 442 tests in 65 files, none skipped, including the native
+drift check; 39 pages; 142 browser tests. No figure changed, so no screenshots
+were taken.
+
+## I/O mechanisms: what the tests check — 2026-11-26
+
+Fixes finding F13 of the 2026-11-17 architecture audit for this lesson with the
+enhance-lesson skill (standard L9). After the buffer model's disclosure, a
+paragraph now says what `example.test.ts` asserts: the output exactly, every
+allowed transition and a set of refused ones, completion sizes at and beyond
+the buffer's limits, malformed byte counts, and that no transition changes an
+earlier state, plus the separate tests of the polling timeline. It is worded so
+that it does not answer practice 01, which asks the learner to predict which
+completion sizes are accepted. `pnpm subject:report` no longer raises L9 for
+the lesson; C4 (55 minutes) is F2's split.
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 442 tests in 65 files,
+none skipped, including the native drift check; 39 pages; 142 browser tests.
+No figure changed, so no screenshots were taken.
+
+## Architecture and performance: what the tests check — 2026-11-26
+
+Fixes finding F13 of the 2026-11-17 architecture audit for this lesson with the
+enhance-lesson skill (standard L9). The paragraph after the model began "The
+lab tests these calculations and invalid inputs"; it now begins "The tests
+check this output exactly" and names what `example.test.ts` asserts: CPU time
+scaling with work and inversely with frequency, Amdahl's serial and parallel
+limits, the parts the Amdahl bars draw (added by the F6 change), and the
+refusal of invalid counts, CPIs, frequencies, fractions and overflowing
+estimates. "Both arithmetic helpers" became "Each arithmetic helper", since the
+F6 change added a third. The serial-limit values that practice 02 asks for are
+not named. `pnpm subject:report` no longer raises L9; C4 remains (40 minutes,
+one mechanism).
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 442 tests in 65 files,
+none skipped, including the native drift check; 39 pages; 142 browser tests.
+No figure changed, so no screenshots were taken. With this entry F13 is done
+for all nine lessons it named (reading assembly met it in the F7 change).
+
+## Program execution: a numbered Practice section — 2026-11-26
+
+Fixes finding F8 of the 2026-11-17 architecture audit for this lesson with the
+enhance-lesson skill (standard L10). The heading "Attempt the control-flow
+contract" is now "Practice", and the attempt card is titled "01 / Count executed
+instructions" instead of "Independent execution attempt"; its text and command
+are unchanged. `pnpm subject:report` no longer raises L10 for the lesson.
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 442 tests in 65 files,
+none skipped, including the native drift check; 39 pages; 142 browser tests.
+No figure changed, so no screenshots were taken.
+
+## Memory hierarchy: a numbered Practice section — 2026-11-26
+
+Fixes finding F8 of the 2026-11-17 architecture audit for this lesson with the
+enhance-lesson skill (standard L10). The heading "Predict unfamiliar accesses"
+is now "Practice", and the attempt card is titled "01 / Trace a direct-mapped
+cache" instead of "Independent cache attempt"; its text and command are
+unchanged. `pnpm subject:report` no longer raises L10 for the lesson.
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 442 tests in 65 files,
+none skipped, including the native drift check; 39 pages; 142 browser tests.
+No figure changed, so no screenshots were taken.
+
+## Cache organization: a numbered Practice section — 2026-11-26
+
+Fixes finding F8 of the 2026-11-17 architecture audit for this lesson with the
+enhance-lesson skill (standard L10). The three practice cards sat at the end of
+"Layout decides which sets you use", after its prose. They now follow a
+"Practice" heading, and the first card is titled "01 / Simulate an LRU cache"
+instead of "Independent cache attempt", so the cards run 01, 02, 03; their
+text and commands are unchanged. `pnpm subject:report` no longer raises L10
+for the lesson; C4 remains (40 minutes, one mechanism).
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 442 tests in 65 files,
+none skipped, including the native drift check; 39 pages; 142 browser tests.
+No figure changed, so no screenshots were taken.
+
+## Stack and heap: a Practice section — 2026-11-26
+
+Fixes finding F8 of the 2026-11-17 architecture audit for this lesson with the
+enhance-lesson skill (standard L10). The two numbered practice cards sat inside
+"Test lifetimes without inspecting the runtime", after the model disclosures.
+They now follow their own "Practice" heading; the model stays in its section,
+and the cards' titles, text and commands are unchanged. `pnpm subject:report`
+no longer raises L10 for the lesson; C4 and L3 belong to F2 and F9.
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 442 tests in 65 files,
+none skipped, including the native drift check; 39 pages; 142 browser tests.
+No figure changed, so no screenshots were taken.
+
+## Memory hierarchy: the analogy's limit in the standard form — 2026-11-26
+
+Fixes finding F9 of the 2026-11-17 architecture audit for this lesson with the
+enhance-lesson skill (standard L3). The hook's limit read "It stops being exact
+because hardware transfers fixed blocks…"; it now reads "The analogy stops at
+choice: hardware moves fixed-size lines rather than chosen items, places each
+line by fixed rules and can overlap requests, and a cache does not know which
+application values you consider useful". The claims are the ones the sentence
+already made. `pnpm subject:report` no longer raises L3 for the lesson.
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 442 tests in 65 files,
+none skipped, including the native drift check; 39 pages; 142 browser tests.
+No figure changed, so no screenshots were taken.
+
+## Stack and heap: the analogy's limit in the standard form — 2026-11-26
+
+Fixes finding F9 of the 2026-11-17 architecture audit for this lesson with the
+enhance-lesson skill (standard L3). The hook's limit read "These analogies
+explain lifetime order, but they do not specify…"; it now reads "The analogy
+stops at placement: it explains the order in which lifetimes end, not physical
+addresses, allocation algorithms or where a language places its objects". The
+claims are unchanged. `pnpm subject:report` no longer raises L3 for the lesson;
+C4 (50 minutes) is F2's split.
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 442 tests in 65 files,
+none skipped, including the native drift check; 39 pages; 142 browser tests.
+No figure changed, so no screenshots were taken.
+
+## Multicore coherence and atomics: the analogy in the hook — 2026-11-26
+
+Fixes finding F9 of the 2026-11-17 architecture audit for this lesson with the
+enhance-lesson skill (standard L3). The first section had no concrete scenario,
+and the document-editing analogy with its limit sat in the coherence section.
+The hook now opens with two threads that each increment only their own counter
+yet run at different speeds depending on how far apart the counters are, asks
+why, and follows with the analogy and "The analogy stops at granularity", moved
+unchanged from the coherence section. The hook names no ratio; the false-sharing
+section answers it from the recording, and `models.test.ts` asserts the
+recorded adjacent layout is more than three times slower than the padded one.
+`pnpm subject:report` no longer raises L3 for the lesson; C4 (35 minutes) and
+the documented P1 folder exception remain.
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 442 tests in 65 files,
+none skipped, including the native drift check; 39 pages; 142 browser tests.
+No figure changed, so no screenshots were taken.
+
+## DRAM, SSDs and disks: an analogy of its own — 2026-11-26
+
+Fixes finding F9 of the 2026-11-17 architecture audit for this lesson with the
+enhance-lesson skill (standard L3: analogies are not reused). The hook's book
+fetched from a desk, a shelf, a library basement or another city repeated the
+memory hierarchy lesson's desk, shelf and warehouse. It now answers a question
+at work: from what you know, your notes, a colleague on the phone or an archive.
+Each is a different mechanism rather than a longer walk, and follow-up questions
+are quick once the colleague is on the line, which mirrors the lesson's open DRAM
+row and sequential disk reads. The limit is unchanged: "The analogy stops at
+overlap". A search of the subject's lessons finds no other use of this
+analogy. `pnpm subject:report` raises only C4 (35 minutes, one mechanism).
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 442 tests in 65 files,
+none skipped, including the native drift check; 39 pages; 142 browser tests.
+No figure changed, so no screenshots were taken.
+
+## Program execution: the pipeline link points at its lesson — 2026-11-26
+
+Fixes finding F10 of the 2026-11-17 architecture audit for this lesson with the
+enhance-lesson skill (standard L13, W9). "The performance lesson works the
+latency, throughput and dependency timeline" was stale: that timeline moved to
+`pipelining-and-hazards` when the processor chapter was split. The sentence now
+links the pipelining lesson, whose "Five stages, overlapped" section defines
+throughput against per-instruction latency and whose hazard sections step the
+dependency timeline.
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 442 tests in 65 files,
+none skipped, including the native drift check; 39 pages, with every internal
+link validated; 142 browser tests. No figure changed, so no screenshots were
+taken.
+
+## Compilation and execution: what `bump` connects to — 2026-11-26
+
+Fixes finding F10 of the 2026-11-17 architecture audit for this lesson with the
+enhance-lesson skill (standard L13, W9). "The same `bump` function connects this
+build to the CPU and stack lessons" was stale: the stack lesson uses
+`scale_sum` and `sum_to`, not `bump`. The sentence now links the registers
+lesson, which imports `bump-O2.txt` and reads its listing, and says that
+`scale_sum` and `sum_to` connect the build to the assembly lesson, which reads
+their listings.
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 442 tests in 65 files,
+none skipped, including the native drift check; 39 pages, with every internal
+link validated; 142 browser tests. No figure changed, so no screenshots were
+taken.
+
+## Multicore coherence and atomics: links to what it builds on — 2026-11-26
+
+Fixes finding F10 of the 2026-11-17 architecture audit for this lesson with the
+enhance-lesson skill (standard L13). The lesson had no `/learn` links. The
+first section now links its prerequisite cache organization lesson ("followed
+lines through one core's cache"), the compiled listings link its other
+prerequisite, the assembly lesson, and the closing note on locks, condition
+variables and deadlock links the operating systems subject. Because that
+subject has no lessons yet, the note now says it "plans lessons on them"
+(its path section lists "Concurrency and synchronization" and "Race
+conditions, deadlocks, and resource contention") instead of "covers them".
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 442 tests in 65 files,
+none skipped, including the native drift check; 39 pages, with every internal
+link validated; 142 browser tests. No figure changed, so no screenshots were
+taken.
+
+## Measuring performance: the lab's README — 2026-11-26
+
+Fixes finding F11 of the 2026-11-17 architecture audit for this lab with the
+enhance-lesson skill (standard P1, P6). `labs/computer-architecture-execution/measuring-performance/`
+had no README. The new "Independent practice" README states the contract
+(median and nearest-rank p90 without changing the input, and a `RangeError`
+for an empty list or a non-finite value), one worked case that no hidden case
+uses (`[4, 2, 8]` gives median 4 and p90 8), the run command, and what to
+explain before opening the reference. It records the provenance of `timing.c`
+and `timing.json` (flags `-std=c17 -O2`, checked sums, the fields the native
+runner records, `--record-measurements`) and that `perf-counters.sh` is
+owner-run, with its tested exit status 2 when `perf` is missing. Each of these
+was checked against `verify-native.mjs`, `timing.json` and `stats.test.ts`.
+`pnpm subject:report` no longer raises P1 for the lesson; its V2 flag is the
+audit's known false signal (`MeasureWorkflow` is a concept figure with nothing
+to compute).
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 442 tests in 65 files,
+none skipped, including the native drift check; 39 pages; 142 browser tests.
+No figure changed, so no screenshots were taken.
+
+## Binary representation: the lab README states its contract — 2026-11-26
+
+Fixes finding F11 of the 2026-11-17 architecture audit for this lab with the
+enhance-lesson skill (standard P6). The README was generic. It now states the
+contract (read a pattern 0–255 as two's complement, refuse anything else with a
+`RangeError`), one worked case that is the lesson's own (255 reads as −1) and
+no hidden case, the run command, and what to explain before opening the
+reference.
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 442 tests in 65 files,
+none skipped, including the native drift check; 39 pages; 142 browser tests.
+No figure changed, so no screenshots were taken.
+
+## Program execution: the lab README states its contract — 2026-11-26
+
+Fixes finding F11 of the 2026-11-17 architecture audit for this lab with the
+enhance-lesson skill (standard P6). The README was generic. It now states the
+contract (count every executed instruction of set/add 255/branch/halt, refuse a
+value that is not an unsigned byte with a `RangeError`), one worked case that is
+the lesson's own trace (six instructions from 2), the run command, the state
+invariant to explain, and what `datapath.ts` is for.
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 442 tests in 65 files,
+none skipped, including the native drift check; 39 pages; 142 browser tests.
+No figure changed, so no screenshots were taken.
+
+## Memory hierarchy: the lab README states its contract — 2026-11-26
+
+Fixes finding F11 of the 2026-11-17 architecture audit for this lab with the
+enhance-lesson skill (standard P6). The README was generic. It now states the
+contract (one hit or miss per address through a cold direct-mapped cache of two
+16-byte lines, and a `RangeError` for an address that is not a nonnegative safe
+integer), how a block and its slot are found, one worked case that is the
+lesson's own trace (0, 4, 8, 12, 32, 0), the run command, what to explain, and
+what `traversal.ts` is for. It names no hidden input.
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 442 tests in 65 files,
+none skipped, including the native drift check; 39 pages; 142 browser tests.
+No figure changed, so no screenshots were taken.
+
+## Cache organization: the lab README states its contract — 2026-11-26
+
+Fixes finding F11 of the 2026-11-17 architecture audit for this lab with the
+enhance-lesson skill (standard P6). The README was generic. It now states the
+contract (one hit or miss per read through a cold cache of 16-byte lines with
+`sets` sets of `ways` lines and exact LRU), how a block's set is chosen and a
+victim picked, one worked case that no hidden case uses (0, 16, 0 in one set of
+two ways), the run command, what to explain, and what `lscpu-caches.txt` and
+`lscpu.test.ts` are for. With this entry F11 is done; the three lab folders
+whose names differ from their lessons' slugs stay as documented exceptions
+(owner decision S4).
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 442 tests in 65 files,
+none skipped, including the native drift check; 39 pages; 142 browser tests.
+No figure changed, so no screenshots were taken.
+
+## DRAM, SSDs and disks: the sweep's cache labels in a key at 390 px — 2026-11-26
+
+Fixes finding F12 of the 2026-11-17 architecture audit with the enhance-lesson
+skill (standard V3). At narrow widths `WorkingSetSweep` turned its cache-size
+labels vertical, and "L3 24 MiB" overlapped the measured points. Below 560 px
+the labels beside the dashed lines are now hidden and a key under the plot
+names the lines, left to right, as the roofline chart does: "L1d 48 KiB, L2 3
+MiB, L3 24 MiB", computed from the recorded `lscpu --caches` text with the same
+`parseCaches` and `formatBytes` as the labels, each entry kept on one line. At
+wider widths the figure is unchanged and the key is hidden.
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 442 tests in 65 files,
+none skipped, including the native drift check; 39 pages; 142 browser tests.
+
+Visual review: `pnpm shots` with a selector for the sweep at 1280 and 390 px in
+light and dark themes, plus the page without JavaScript; report.json shows no
+overflow or console errors. The first 390 px capture showed "24" and "MiB."
+breaking across lines in the key; non-breaking spaces fixed that, and the
+second capture shows no label touching a point. The 1280 px captures match the
+previous figure.
+
+## Plan three pages split from the oversized architecture lessons — 2026-11-26
+
+Planning change for finding F2 of the 2026-11-17 architecture audit, following
+add-subject-or-path.md and owner decision S1 (split pages above 45 minutes).
+Three planned pages join their chapters in
+`src/content/paths/engineering-fundamentals.yaml`, each with a YAML comment
+naming its intended position and the material it takes over, using the audit's
+candidate split points:
+
+- "Average access time and address translation", after
+  memory-hierarchy-and-caches (55 minutes), which keeps the layers, lines,
+  direct-mapped placement and locality.
+- "Call frames and the stack pointer", before stack-and-heap (50 minutes),
+  which keeps allocation lifetimes, failure modes, allocator costs and garbage
+  collection.
+- "Polling, interrupts and DMA", between hardware-software-interaction and
+  io-mechanisms (55 minutes), which keeps the request lifecycle.
+
+No lesson changed; existing lessons keep their URLs, and the chapter count is
+unchanged, so `tests/e2e/catalog.spec.ts` needs no update. The titles appear in
+no other path or proposal. `pnpm subject:report computer-architecture-execution`
+lists the three as planned in the right chapters and raises no duplicate-title
+flag. The owner asked for this split in the task that produced this branch; the
+pages are drafted in the following changes, one per commit.
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 442 tests in 65 files,
+none skipped, including the native drift check; 39 pages; 142 browser tests.
+
+## Access time and translation: a page split from the memory hierarchy — 2026-11-26
+
+Drafts the planned page "Average access time and address translation" with
+the draft-lesson skill (audit finding F2, owner decision S1), as
+`access-time-and-translation`, placed after `memory-hierarchy-and-caches` in
+the memory chapter, and moves that material out of the 55-minute memory
+lesson. The new page teaches the average access time with an additional miss
+penalty (and the total-penalty pitfall), nested levels with local and global
+miss rates, translation through a TLB with page walks and reach, and the
+difference between TLB misses, cache misses and page faults. It has a hook
+with a delayed-flight analogy and its limit, two figures, a predict prompt with
+a "Check after predicting" reveal, a verified model output, two practice cards,
+a concept check, a six-point recap, four interview questions (two moved from
+the memory lesson) and two sources.
+
+Lab `labs/computer-architecture-execution/access-time-and-translation/`:
+`accessTime.ts` models the nested average, its per-level parts, translation in
+front of a physically indexed access, a cold fully associative LRU TLB and its
+reach; `accessTime.test.ts` checks the additional and total penalties, the
+nesting, that the parts always sum to the nested formula, the extremes, LRU
+order, reach and every refusal, and the displayed output exactly. The contract
+has seven hidden cases (one level, three levels, no levels, a level that always
+hits, a level that always misses, and two refusals expecting a `RangeError`).
+Cross-check: a separate Python implementation in exact fractions, summing each
+level's time weighted by its reach rather than nesting, gives every contract
+value (5, 7.2, 80, 1 and 5 ns), the example's 6, 3.4 and 4.3 ns and the practice
+answer of 3.5 ns, and an `OrderedDict` LRU TLB reproduces both traces. Case 2 was
+changed from a first draft whose answer, 4.3 ns, matched an unrelated line of the
+example output. `pnpm vitest run` on the lab passes 16 tests, and `pnpm lab
+computer-architecture-execution/access-time-and-translation` fails all 7 cases.
+
+Figures: `AccessTimeParts` draws each level's share of the 3.4 ns average and
+`TlbPasses` the two TLB loops; both compute every value with the lab's model,
+and both captions say the parameters are illustrative. `TlbPasses` sits inside
+the "Check after predicting" disclosure, because it shows the answer.
+
+Material moved out of `memory-hierarchy-and-caches`: the sections on average
+access time and on translation, the AMAT and TLB interview questions, the
+OSTEP TLB source, two objectives and two recap points. A paragraph at the end of
+its locality section now links the new page. Its model loses
+`averageAccessTime`, now in the new lab, and its verified output now lists each
+access of the lesson's trace with its block and slot, asserted exactly. Removing
+the sections took away the lesson's only predict prompt (the report raised
+L5), so the traversal figure now follows a prediction (lines touched by the
+first eight reads in each order, which `traversal.test.ts` asserts: two and
+four) and sits in a "Check after predicting" disclosure with the sentence that
+answered it. The DRAM lesson's mention of TLB misses links the new page.
+
+Minutes: both pages are now 30. The memory lesson's 55-minute estimate was high
+for its length: before the split it ran about 1,750 words of body with one
+practice card, while the subject's other pages of 1,550–1,700 words with two
+practice tasks are estimated at 30 minutes. After the split it has about 1,600
+words and the new page about 1,700, so both are estimated at 30 by that
+calibration. This is a judgment, listed for owner review.
+
+Sources: the environment's network policy blocked the source hosts at first;
+`diveintosystems.org` and `computationstructures.org` were added to the
+environment's allowed hosts (the change was saved), and the pages were then
+downloaded and read: MIT Computation Structures L14, The Memory Hierarchy
+(average memory access time as hit time plus miss ratio times the additional
+miss penalty, applied recursively across levels), and OSTEP chapter 19 (TLB as
+a cache of translations, hardware-walked page tables on x86, the cost of the
+extra memory reference, coverage, LRU with one page more than entries,
+physically indexed caches translating first, larger pages for large randomly
+accessed data). No problem fits this page, so none is linked.
+
+`pnpm subject:report` raises no flag for either page; the memory lesson now
+counts 30 minutes, 3 objectives, 3 interview questions and one predict prompt.
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 457 tests in 67 files,
+none skipped, including the native drift check; 40 pages; 146 browser tests,
+including the per-lesson checks for the new page.
+
+Visual review: `pnpm shots` on the new page at 1280 and 390 px in both themes
+and the page without JavaScript (no overflow or console errors), plus a
+scratch Playwright script that opened the disclosures to capture `TlbPasses`
+in the same four combinations. Review changed `TlbPasses` twice: the two passes
+were first one run of cells told apart only by dashed and solid borders, and
+are now labelled rows; at 390 px the cells wrapped "page" above the number, so
+narrow screens now show the number alone. "16 KiB" no longer breaks in the
+caption.
+
+For owner review: the 30-minute estimates; the delayed-flight analogy; the
+illustrative parameters (1 ns, 10%, 4 ns, 25%, 80 ns; a 0.5 ns TLB lookup, 1%
+TLB misses and a 40 ns walk), which are chosen for arithmetic and are not
+measurements.
+
+## Call frames: a page split from stack and heap — 2026-11-28
+
+Drafts the planned page "Call frames and the stack pointer" with the
+draft-lesson skill (audit finding F2, owner decision S1), as `call-frames`,
+placed before `stack-and-heap`, and moves that material out of the 50-minute
+stack lesson. The page teaches what a frame holds, how `call`, `ret`, `push`,
+`pop`, `subq`/`addq`, `movq %rsp, %rbp` and `leave` move rsp, the System V
+rules (callee-saved registers, rsp 16-byte aligned at every call, the red zone)
+and stack overflow from depth × frame size. It has a hook (a backtrace) with a
+bookmarks analogy and its limit, two figures, a predict prompt with a reveal, a
+verified output, two practice cards, a concept check, a recap, four interview
+questions (two moved from the stack lesson) and two sources.
+
+Lab `labs/computer-architecture-execution/call-frames/`: `stackPointer.ts`
+tracks one function's depth below its entry rsp and refuses a misaligned call,
+rsp above its entry value, a `ret` with bytes still pushed, a `leave` without a
+frame, events after `ret` and malformed events; `stackSteps` reads the stack
+instructions of a GCC listing; `maxDepth` counts equal frames that fit.
+`frames.ts` and its test (the real -O0 frames) moved here from the stack lab
+with `RealFrames`. The contract has eight hidden cases. Cross-checks: the
+model's depth after every stack instruction of GCC's -O0 and -O2 `scale_sum`
+equals the reading-assembly interpreter's rsp (and `rspAtCall` at the call), an
+independent implementation of x86-64 stack arithmetic; and a separate Python
+tracker, which tests alignment as rsp's residue modulo 16 rather than depth − 8,
+gives every contract value and the practice answers. `pnpm vitest run` on the
+lab passes 16 tests, and `pnpm lab computer-architecture-execution/call-frames`
+fails all 8 cases.
+
+Figures: `RealFrames` (moved, unchanged) and `StackDepth`, new, which shows the
+depth after each stack instruction of both `scale_sum` listings from the model,
+inside the "Check after predicting" disclosure because it answers the
+prediction.
+
+Material moved out of `stack-and-heap`: the frames section and figure, the
+stack-overflow and recursion paragraphs (a one-sentence reminder links the new
+page), the stack-limit practice card, two interview questions, the frames
+objective, two recap points, and the Dive into Systems functions and psABI
+sources. Its prerequisite is now `call-frames` instead of `reading-assembly`,
+its hook links the new page, and its second card is now "Find the leak", a
+handle dropped on return, backed by a new test in `trace.test.ts`. The registers
+lesson's link for "the frames they build" now points at the new page, and the
+stack lab's README no longer lists `frames.ts`.
+
+First-run failure: the full gate failed four browser tests, the per-lesson
+checks for `stack-and-heap` on desktop and mobile, because moving `RealFrames`
+left the lesson without a visible figure (V1). The call-stack stepper is now
+wrapped in a `DiagramFrame`, as the execution lesson's datapath stepper is; its
+initial state renders without JavaScript.
+
+Minutes: `call-frames` 30 (about 1,630 words, two practice cards) and
+`stack-and-heap` 35 (about 1,700 words, two cards, a stepper and an extra
+alias exercise), by the calibration recorded for the access-time page. `pnpm
+subject:report` raises no flag for `call-frames` and only C4 (35 minutes, one
+mechanism) for `stack-and-heap`.
+
+Sources opened for this page: Dive into Systems section 7.5 (rsp and rbp,
+activation records, `call`/`ret`/`leave` equivalences, the stack growing toward
+lower addresses), and the System V AMD64 psABI 1.0 PDF of 12 March 2025,
+fetched from the repository's build artifact (sections 3.2.1 and 3.2.2:
+callee-saved rbx, rbp and r12–r15, 16-byte alignment immediately before a call
+with (%rsp + 8) a multiple of 16 at entry, and the 128-byte red zone leaf
+functions may use).
+
+`pnpm verify` with the same environment, after the fix: zero type errors,
+warnings or hints; formatting and lint passed; 472 tests in 69 files, none
+skipped, including the native drift check; 41 pages; 150 browser tests.
+
+Visual review: `pnpm shots` on `call-frames` (RealFrames) and on
+`stack-and-heap` (the framed stepper), and the scratch script for `StackDepth`
+inside its disclosure, at 1280 and 390 px in both themes; no overflow or console
+errors. Review rebuilt `StackDepth` once: its first version showed reconstructed
+instruction names without operands, squeezed its bars into a narrow middle
+column beside a second panel, and wrapped the alignment note; it now shows the
+listing's own instruction text, stacks the panels, and puts the note on its own
+line.
+
+For owner review: the bookmarks analogy, the 30- and 35-minute estimates, and
+the replacement of "Find the stack limit" with "Find the leak" in the stack
+lesson.
+
+## Polling, interrupts and DMA: a page split from I/O mechanisms — 2026-11-28
+
+Drafts the planned page "Polling, interrupts and DMA" with the draft-lesson
+skill (audit finding F2, owner decision S1), as `polling-interrupts-and-dma`,
+between `hardware-software-interaction` and `io-mechanisms`, and moves that
+material out of the 55-minute I/O lesson. The page separates who moves the
+bytes (programmed I/O, DMA) from how software notices (polling, interrupts),
+counts the checks, handler entries and delays of polling, per-completion
+interrupts and coalescing, and covers NAPI and busy polling. It has a hook with
+a kettle analogy and its limit, three figures, a predict prompt with a reveal,
+a verified output, two practice cards, a concept check, a recap, four interview
+questions (two moved from the I/O lesson) and two sources.
+
+Lab `labs/computer-architecture-execution/polling-interrupts-and-dma/`:
+`notification.ts` takes over `pollingDetection` and `interruptDetection` (with
+their tests) from the I/O lab and adds `pollCompletions`, `interruptEach`,
+`coalescedInterrupts` and `transferTimeline`; `notification.test.ts` checks
+every one, the refusals and the displayed output exactly. The contract has
+seven hidden cases. Cross-check: a separate Python simulation that steps poll by
+poll (the model rounds each ready time up to the next poll instead) gives every
+contract value and the practice answer (three checks, one empty, delays 1, 0,
+2, 1, 0 for completions at 5–9 polled every 3); the coalescing delays were
+traced by hand. `pnpm vitest run` on the lab passes, and `pnpm lab
+computer-architecture-execution/polling-interrupts-and-dma` fails all 7 cases.
+
+Figures: `TransferTimeline` (new; CPU and DMA engine per time unit for eight
+words), `PollingTimeline` (moved; now imports the new lab), and
+`CompletionBurst` (new; the burst under three policies, inside the "Check after
+predicting" disclosure because it answers the prediction). All compute from
+the model and say their units are illustrative.
+
+Material moved out of `io-mechanisms`: the movement and notification section
+with its table, the latency, throughput and CPU-cost section with the polling
+figure, two interview questions, two objectives, the paper card "Choose a
+notification policy" and a recap point. Its prerequisite is now the new page,
+which a sentence in its first section links. It gained an objective on unsafe
+reuse after a timeout, a recap point on the same, and an interview question on
+ordering descriptor writes, from the kernel DMA guide's coherent-memory note
+(the CPU may reorder stores even to coherent memory; a `wmb()` goes between
+filling a descriptor and marking it valid). Its practice card named three
+hidden cases (completions of 0, 8 and 9 bytes, and reclaiming after submit); it
+now states the contract and asks for a 16-byte buffer filled exactly and a
+completion after a failure, which no hidden case uses, backed by a new model
+test. Its stepper is now wrapped in a `DiagramFrame`, since the polling figure
+was its only visible figure. Minutes: 30 for each page by the calibration
+recorded earlier (about 1,560 and 1,400 words).
+
+Sources opened for this page: OSTEP chapter 36 (polling wastes CPU time,
+interrupts overlap computation and I/O, a fast device may be better polled, the
+two-phase hybrid, livelock, coalescing's latency cost, PIO copying word by
+word, and DMA programmed with where, how much and which device, interrupting
+when done), and the kernel's NAPI page (interrupt then poll with interrupts
+masked, a per-poll budget, unmasking when the work is done, device IRQ
+coalescing, busy polling trading CPU cycles for latency). The kernel DMA guide
+was reopened for the new I/O interview question.
+
+`pnpm subject:report` raises no flag for either page. The linked problem
+Design Circular Queue stays on `io-mechanisms`, whose submission and completion
+queues it models.
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 485 tests in 71 files,
+none skipped, including the native drift check; 42 pages; 154 browser tests.
+
+Visual review: `pnpm shots` on the new page (three figures) and on
+`io-mechanisms` (the framed stepper), and the scratch script for
+`CompletionBurst` inside its disclosure, at 1280 and 390 px in both themes; no
+overflow or console errors. Review changed `TransferTimeline`: its rows first
+had different column counts, so a PIO unit was wider than a DMA unit; every
+lane now shares one time scale.
+
+For owner review: the kettle analogy, the 30-minute estimates, the illustrative
+units, and the new interview question on descriptor ordering.
+
+## Hardware-software interaction: the next lesson is the polling page — 2026-11-28
+
+Standard W9 and L13, found while preparing the final audit: "The next lesson
+follows I/O submission and completion" still linked `io-mechanisms`, but since
+the split the next lesson is `polling-interrupts-and-dma`. The sentence now
+links the polling page for moving bytes and noticing completion, then the I/O
+mechanisms lesson for one request from submission to completion.
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 485 tests in 71 files,
+none skipped, including the native drift check; 42 pages, every internal link
+validated; 154 browser tests. No figure changed.
+
+## Computer Architecture & Execution: subject audit — 2026-11-28
+
+The audit-subject skill on the whole subject at `99faf4e`, written to
+`docs/reviews/computer-architecture-execution-audit-2026-11-28.md`: P0 0, P1 0,
+P2 2, P3 2. The P2s are seven contracts without an invalid-input case (A1) and
+thirteen first cards that predict a hidden case (A2). The 2026-11-17 audit
+gains a dated correction for both, which it missed (E10).
+
+`pnpm subject:report computer-architecture-execution` (Markdown and JSON): 22
+lessons in 6 chapters, 735 minutes, 62 imported figures and widgets (60 from
+`labs/`), 23 verified outputs, 5–9 hidden cases per lab, 14 problems, and 18
+flags, each read at its line and judged in the audit.
+
+`pnpm shots` on all 22 lessons after a fresh build: 282 captures, no page
+overflow, no offending elements and no console errors in any report.
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 485 tests in 71 files,
+none skipped, including the native drift check; 42 pages; 154 browser tests.
+
+For owner review: the audit's judgments, and standard feedback S5 on whether a
+predicted hidden case can count as P5's "one worked case".
+
+## Cache organization: refusal cases and a fresh prediction — 2026-11-28
+
+Audit 2026-11-28 A1 and A2 (standard P2 and P5). The contract gains three
+refusal cases: a set count that is not a power of two, zero ways and a negative
+address, each expecting a `RangeError` the model already throws. Card 01 and the
+README state the refusals. Card 01 predicted hidden cases 3 and 4; it now
+predicts 0, 64, 128, 64, 0 in one set of two ways and 0, 16, 64, 0, 16 in two
+sets of two ways, which no case uses, and its reveal explains both. Case 1
+repeated the lesson's static trace; its last read is now 64, a hit, instead of 0. The new predictions and refusals were run through the reference model before
+writing the reveal: miss, miss, miss, hit, miss; miss, miss, miss, hit, hit;
+three `RangeError`s.
+
+`pnpm lab computer-architecture-execution/cache-organization` fails all 8
+cases; the reference passes them (24 tests in the lab folder). `pnpm
+subject:report` raises no new flag. No figure changed.
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 488 tests in 71 files,
+none skipped, including the native drift check; 42 pages; 154 browser tests.
+
+## Floating point: refusal cases and a fresh prediction — 2026-11-28
+
+Audit 2026-11-28 A1 and A2 (standard P2 and P5). The contract gains three
+refusal cases, 2³², −1 and 0.5, each expecting the `RangeError` the reference
+`fromBits` already throws. Card 01 and the README state the refusal. Card 01
+predicted hidden cases 2 and 5; it now predicts `0xbe200000` and `0x00000001`,
+which no case uses, and its reveal no longer names case 7's pattern. Python's
+`struct` decoded both independently: −0.15625 and 1.401298464324817e-45, which
+is 2⁻¹⁴⁹.
+
+`pnpm lab computer-architecture-execution/floating-point-representation` fails
+all 12 cases; the reference passes them (22 tests in the lab folder). `pnpm
+subject:report` raises no new flag. No figure changed.
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 491 tests in 71 files,
+none skipped, including the native drift check; 42 pages; 154 browser tests.
+
+## Multicore: refusal cases and a fresh prediction — 2026-11-28
+
+Audit 2026-11-28 A1 and A2 (standard P2 and P5). The reference adapter read any
+first letter other than `A` as core B and any operation other than `w` as a
+read, so it could not refuse bad input. A new `parseAccesses` in `models.ts`
+accepts only `A` or `B` followed by `r` or `w` and throws a `RangeError`
+otherwise; `models.test.ts` tests it, and `practice.test.ts` now uses it. The
+contract gains two refusal cases, a third core and an unknown operation, and
+card 01 and the README state the rule. Card 01 traced hidden case 7; it now
+traces `'Br Bw Ar Aw'`, which no case uses and which shows Exclusive becoming
+Modified without a message. The reveal follows the model's output, which the
+new test asserts: `IE`, `IM`, `SS`, `MI`.
+
+`pnpm lab computer-architecture-execution/multicore` fails all 9 cases; the
+reference passes them (18 tests in the lab folder). `pnpm subject:report`
+raises no new flag. No figure changed.
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 494 tests in 71 files,
+none skipped, including the native drift check; 42 pages; 154 browser tests.
+
+## Branch prediction: refusal cases and a fresh prediction — 2026-11-28
+
+Audit 2026-11-28 A1 and A2 (standard P2 and P5). `predict` accepted any value
+as an outcome; it now throws a `RangeError` for one that is not a boolean, and
+`predictor.test.ts` tests it for both predictors. The contract gains two refusal
+cases, and card 01, the README and the "tests check" paragraph state the rule.
+Card 01 traced hidden case 6; it now traces not taken, taken, taken, not taken,
+taken, taken, which no case uses. The reference model gives states 1, 0, 1, 2,
+1, 2 and four mispredictions, which the reveal follows and which I traced by
+hand first.
+
+`pnpm lab computer-architecture-execution/branch-prediction` fails all 8 cases;
+the reference passes them (14 tests in the lab folder). `pnpm subject:report`
+raises no new flag. No figure changed.
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 496 tests in 71 files,
+none skipped, including the native drift check; 42 pages; 154 browser tests.
+
+## Pipelining: refusal case and a fresh prediction — 2026-11-28
+
+Audit 2026-11-28 A1 and A2 (standard P2 and P5). `schedule` accepted any
+instruction kind; it now throws a `RangeError` for one it does not know, and
+`pipeline.test.ts` tests it. The contract gains a refusal case, and card 01 and
+the README state the rule. Card 01 predicted cases 1 and 2, whose program the
+lesson's load-use figure also shows with one more instruction. Those cases now
+use an ALU result, a load whose address depends on it, and an ALU use of the
+load. Card 01 predicts two dependent loads feeding a store, which no case uses.
+By hand and from the reference: 2 bubbles with forwarding, 4 without; the new
+cases give 1 and 4.
+
+`pnpm lab computer-architecture-execution/pipelining-and-hazards` fails all 9
+cases; the reference passes them (15 tests in the lab folder). `pnpm
+subject:report` raises no new flag. No figure changed.
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 497 tests in 71 files,
+none skipped, including the native drift check; 42 pages; 154 browser tests.
+
+## Reading assembly: refusal cases and a fresh prediction — 2026-11-28
+
+Audit 2026-11-28 A1 and A2 (standard P2 and P5). `jumpTaken` threw a plain
+`Error` from the parser for an unknown jump and accepted operands outside 32
+bits; it now throws a `RangeError` for an unknown jump or an operand that is
+not an integer from −2³¹ to 2³¹ − 1, and `x86.test.ts` tests both, including
+the extreme operands that remain valid. The contract gains two refusal cases,
+and card 01, the README and the "tests check" paragraph state the rule. Card 01
+predicted hidden cases 1 and 3; it now predicts `jle` with 2³¹ − 1 and −2³¹ and
+`jb` with −1 and 1, which no case uses. Both were worked by hand from the flags
+before running them through the interpreter: neither jumps.
+
+`pnpm lab computer-architecture-execution/reading-assembly` fails all 11 cases;
+the reference passes them (23 tests in the lab folder). `pnpm subject:report`
+raises no new flag. No figure changed.
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 499 tests in 71 files,
+none skipped, including the native drift check; 42 pages; 154 browser tests.
+
+## SIMD: refusal cases and a fresh prediction — 2026-11-28
+
+Audit 2026-11-28 A1 and A2 (standard P2 and P5). `sumByLanes` converted a
+string such as `'2'` to a number and turned a finite value too large for
+binary32 into infinity; it now throws a `RangeError` for both, while infinity
+and NaN, which are binary32 values, still propagate. `lanes.test.ts` tests all
+four. The contract gains two refusal cases, and card 01, the README and the
+"tests check" paragraph state the rule. Card 01 predicted hidden case 5; it now
+predicts 1, 2²⁴ and six ones, which no case uses: 2²⁴ + 6 in lanes and 2²⁴ in
+source order, worked by hand and matched by the reference and a `Math.fround`
+loop in source order.
+
+The audit's A1 said `sumByLanes` returns `null` for `NaN`. That was wrong: the
+probe printed `NaN` through `JSON.stringify`. The audit now states the real
+gaps and says it was corrected.
+
+`pnpm lab computer-architecture-execution/simd` fails all 8 cases; the
+reference passes them (12 tests in the lab folder). `pnpm subject:report`
+raises no new flag. No figure changed.
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 501 tests in 71 files,
+none skipped, including the native drift check; 42 pages; 154 browser tests.
+
+## Architecture and performance: a prediction no hidden case uses — 2026-11-28
+
+Audit 2026-11-28 A2 (standard P5). Card 01 predicted hidden case 2 (1,000
+instructions at CPI 1 against 500 at CPI 3); it now predicts 2,000 at CPI 1
+against 800 at CPI 3, which no case uses. Worked by hand (2,000 cycles against
+2,400) and from the reference `cpuSeconds`: 0.8333333333333334, 5/6. The reveal
+follows. The contract is unchanged.
+
+`pnpm lab computer-architecture-execution/architecture-and-performance` still
+fails all 9 cases. `pnpm subject:report` raises no new flag. No figure changed.
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 501 tests in 71 files,
+none skipped, including the native drift check; 42 pages; 154 browser tests.
+
+## Compilation and execution: a prediction no hidden case uses — 2026-11-28
+
+Audit 2026-11-28 A2 (standard P5). Card 01 predicted hidden case 1 (a call to
+0x2100 with its displacement at 0x2001); it now predicts a call to 0x3080 with
+its displacement at 0x3001, which no case uses. By hand, 0x3080 − 4 − 0x3001 =
+0x7b, and the reference `pc32` returns the bytes 7b 00 00 00. The reveal
+follows. The contract is unchanged.
+
+`pnpm lab computer-architecture-execution/compilation-and-execution` still
+fails all 5 cases. `pnpm subject:report` raises no new flag. No figure changed.
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 501 tests in 71 files,
+none skipped, including the native drift check; 42 pages; 154 browser tests.
+
+## CPU registers and instructions: a prediction no hidden case uses — 2026-11-28
+
+Audit 2026-11-28 A2 (standard P5). Card 01 predicted hidden cases 3 and 4
+(`0x2a0b` and `0x3000`); it now asks for `0x1c42` and `0xf000`, which no case
+uses. The reference `decode` returns opcode 1, register 12 and immediate 66 for
+the first and throws a `RangeError` for the second, as worked by hand. The
+reveal follows. The contract is unchanged.
+
+`pnpm lab computer-architecture-execution/cpu-registers-and-instructions` still
+fails all 6 cases. `pnpm subject:report` raises no new flag. No figure changed.
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 501 tests in 71 files,
+none skipped, including the native drift check; 42 pages; 154 browser tests.
+
+## Hardware-software interaction: hidden cases the lesson does not show — 2026-11-28
+
+Audit 2026-11-28 A2 (standard P5). Hidden cases 1–3 were the three events at
+index 12, which the body predicts and the verified output prints, and card 01
+predicted cases 4, 5 and 8. Cases 1–5 now use indexes 41 and 7 and the largest
+safe resume points (a system call one below `Number.MAX_SAFE_INTEGER`, an
+interrupt at it). Card 01 keeps index 0 and now asks about a fault at the
+largest safe integer, which no case uses; case 8, the refused system call
+there, stays hidden. Every new expected value was run through the reference
+`enterKernel` and `returnToUser` before writing it.
+
+`pnpm lab computer-architecture-execution/hardware-software-interaction` fails
+all 8 cases; the reference passes them (18 tests in the lab folder). `pnpm
+subject:report` raises no new flag. No figure changed.
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 501 tests in 71 files,
+none skipped, including the native drift check; 42 pages; 154 browser tests.
+
+## Measuring performance: a prediction no hidden case uses — 2026-11-28
+
+Audit 2026-11-28 A2 (standard P5). Card 01 predicted hidden case 6
+(`[10, 1, 1, 1, 1]`); it now asks for `[4, 9, 2, 7]`, which no case uses and
+which needs the even-count median. By hand and from the reference `summarize`:
+median 5.5, p90 9. The reveal follows. The contract is unchanged.
+
+`pnpm lab computer-architecture-execution/measuring-performance` still fails
+all 9 cases. `pnpm subject:report` raises no new flag. No figure changed.
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 501 tests in 71 files,
+none skipped, including the native drift check; 42 pages; 154 browser tests.
+
+## Stack and heap: hidden cases the card does not trace — 2026-11-28
+
+Audit 2026-11-28 A2 (standard P5). Card 01 asks learners to trace a caller that
+keeps a handle while the callee frees the object through its copy, which was
+hidden cases 1 and 2 (before and after the return). Case 1 now also returns and
+then allocates into a second local, so a new object is live while the old
+handle dangles; case 2 passes the handle through a middle frame, so three
+locals dangle. The reference `lifetimeReport` gave the expected values:
+`{ live: [2], dangling: ['main.p'] }` and
+`{ live: [], dangling: ['main.p', 'mid.m', 'release.q'] }`. The card is
+unchanged.
+
+`pnpm lab computer-architecture-execution/stack-and-heap` fails all 5 cases;
+the reference passes them (20 tests in the lab folder). `pnpm subject:report`
+raises no new flag. No figure changed.
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 501 tests in 71 files,
+none skipped, including the native drift check; 42 pages; 154 browser tests.
+
+## Text encoding: a prediction no hidden case uses — 2026-11-28
+
+Audit 2026-11-28 A2 (standard P5). Card 01 predicted hidden cases 2 and 4
+(U+00A3 and U+0939); it now asks for U+00E9 and U+20AC, which no case uses. By
+hand from RFC 3629's templates and from Python's encoder: `C3 A9` and
+`E2 82 AC`, which the reference `utf8Bytes` also returns. The reveal follows.
+The contract is unchanged.
+
+`pnpm lab computer-architecture-execution/text-encoding-and-memory-layout`
+still fails all 8 cases. `pnpm subject:report` raises no new flag. No figure
+changed.
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 501 tests in 71 files,
+none skipped, including the native drift check; 42 pages; 154 browser tests.
+
+## Implementation record: ADR 0009 and the architecture audit fixes — 2026-11-28
+
+`IMPLEMENTATION.md` ticks the ADR 0009 proof items (the six outline audits,
+the create-subject dry run and the architecture audit) and its owner review,
+merged in PR #12, and adds an entry for this branch's audit fixes. Owner review
+and promotion stay open. The 2026-11-28 audit gains a resolution note: both of
+its P2 findings were fixed afterwards on this branch.
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 501 tests in 71 files,
+none skipped, including the native drift check; 42 pages; 154 browser tests.

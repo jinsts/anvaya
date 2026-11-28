@@ -7,11 +7,13 @@ import { expect, it } from 'vitest';
 export function contracts(
   solve: (pc: number, event: 'syscall' | 'fault' | 'interrupt') => number,
 ) {
-  it('unseen case 1', () => expect(solve(12, 'syscall')).toBe(13));
-  it('unseen case 2', () => expect(solve(12, 'fault')).toBe(12));
-  it('unseen case 3', () => expect(solve(12, 'interrupt')).toBe(12));
-  it('unseen case 4', () => expect(solve(0, 'syscall')).toBe(1));
-  it('unseen case 5', () => expect(solve(0, 'fault')).toBe(0));
+  const largest = Number.MAX_SAFE_INTEGER;
+  it('unseen case 1', () => expect(solve(41, 'syscall')).toBe(42));
+  it('unseen case 2', () => expect(solve(41, 'fault')).toBe(41));
+  it('unseen case 3', () => expect(solve(7, 'interrupt')).toBe(7));
+  it('unseen case 4', () =>
+    expect(solve(largest - 1, 'syscall')).toBe(largest));
+  it('unseen case 5', () => expect(solve(largest, 'interrupt')).toBe(largest));
   it('unseen case 6', () =>
     expect(() => solve(-1, 'interrupt')).toThrow(RangeError));
   it('unseen case 7', () =>

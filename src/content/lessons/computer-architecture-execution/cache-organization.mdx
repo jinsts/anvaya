@@ -294,23 +294,27 @@ misses are capacity misses, and padding would not remove them. No hardware
 counters were collected for that experiment, so this is a prediction, not a
 measured cause.
 
+## Practice
+
 <LabCard
-  title="Independent cache attempt"
+  title="01 / Simulate an LRU cache"
   command="pnpm lab computer-architecture-execution/cache-organization"
 >
   Implement `solve(addresses, sets, ways)` in `starter.ts`: return hit or miss
   for reads through a cold cache of 16-byte lines with exact LRU replacement.
-  Before running the tests, predict 0, 64, 0, 128, 0 in one set of two ways, and
-  0, 64, 128, 0, 64, 128 in the same cache.
+  Throw a `RangeError` for a set count that is not a power of two, fewer than
+  one way, or a negative address. Before running the tests, predict 0, 64, 128,
+  64, 0 in one set of two ways, and 0, 16, 64, 0, 16 in two sets of two ways.
 </LabCard>
 
 <details>
 <summary>Check after attempting</summary>
 
-The first stream gives miss, miss, hit, miss, hit: block 8 evicts block 4,
-because block 0 was used more recently. The second stream misses six times:
-three blocks cycle through two ways, and LRU always evicts the block needed
-next. Your attempt must choose an empty way before evicting, and must update a
+The first stream gives miss, miss, miss, hit, miss: block 8 evicts block 0,
+the line used longest ago, the hit on block 4 makes block 8 the oldest, and
+block 0 then evicts it. In the second cache blocks 0 and 4 share set 0 while
+block 1 has set 1 to itself, so the stream gives miss, miss, miss, hit, hit:
+nothing is evicted. Your attempt must choose an empty way before evicting, and must update a
 line's last use on hits as well as fills.
 
 </details>

@@ -255,19 +255,19 @@ when the site is built.
 >
   Implement `solve(bits)` in `starter.ts`: return the number a binary32 pattern
   stores, built from its sign, exponent and fraction fields with arithmetic and
-  without `DataView` or typed arrays. Before running the tests, predict the
-  values of `0xc0a80000` and `0x00400000`, and name the exponent rule each one
-  uses.
+  without `DataView` or typed arrays. Throw a `RangeError` for a value that is
+  not an integer from 0 to 2³² − 1. Before running the tests, predict the values
+  of `0xbe200000` and `0x00000001`, and name the exponent rule each one uses.
 </LabCard>
 
 <details>
 <summary>Check after attempting</summary>
 
-`0xc0a80000` has sign 1, exponent 129 and fraction `0x280000`, which is
-0.3125 × 2²³: −1.3125 × 2² = −5.25. `0x00400000` has exponent field 0 and a
-nonzero fraction, so it is subnormal: 0.5 × 2⁻¹²⁶ = 2⁻¹²⁷. Your decoder needs
-four branches: zero or subnormal, normal, infinity and NaN. Apply the sign to
-zero too, so `0x80000000` returns −0.
+`0xbe200000` has sign 1, exponent 124 and fraction `0x200000`, which is
+0.25 × 2²³: −1.25 × 2⁻³ = −0.15625. `0x00000001` has exponent field 0 and a
+nonzero fraction, so it is subnormal: 2⁻²³ × 2⁻¹²⁶ = 2⁻¹⁴⁹, the smallest
+positive binary32 value. Your decoder needs four branches: zero or subnormal,
+normal, infinity and NaN. Apply the sign to zero too.
 
 </details>
 

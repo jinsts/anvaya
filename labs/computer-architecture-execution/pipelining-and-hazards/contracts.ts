@@ -2,7 +2,8 @@ import { expect, it } from 'vitest';
 import type { Instruction } from './pipeline';
 // solve(instructions, forwarding) returns how many bubbles the teaching
 // pipeline inserts into straight-line code (no branches): the total number of
-// cycles instructions wait for operands. An empty program has none.
+// cycles instructions wait for operands. An empty program has none. An
+// unknown instruction kind, such as mul, is refused with a RangeError.
 const op = (
   kind: Instruction['kind'],
   dest: string | undefined,
@@ -17,9 +18,9 @@ export function contracts(
   solve: (instructions: Instruction[], forwarding: boolean) => number,
 ) {
   const loadChain = [
-    op('load', 'r1', 'r2'),
-    op('alu', 'r3', 'r1'),
-    op('alu', 'r5', 'r3'),
+    op('alu', 'r1', 'r9'),
+    op('load', 'r2', 'r1'),
+    op('alu', 'r3', 'r2'),
   ];
   const aluChain = [
     op('alu', 'r1', 'r9'),
@@ -40,4 +41,8 @@ export function contracts(
   it('unseen case 6', () => expect(solve(filled, false)).toBe(1));
   it('unseen case 7', () => expect(solve(store, true)).toBe(1));
   it('unseen case 8', () => expect(solve([], true)).toBe(0));
+  it('unseen case 9', () =>
+    expect(() =>
+      solve([op('mul' as Instruction['kind'], 'r1', 'r2')], true),
+    ).toThrow(RangeError));
 }

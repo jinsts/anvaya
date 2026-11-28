@@ -213,9 +213,9 @@ performance, which is why they are applied selectively.
 </details>
 
 The tests check every counter state on the loop stream for both predictors,
-saturation, the alternating pattern, the reorder buffer's start, completion and
-commit cycles in both modes, in-order commit, and that the recorded measurement
-and listings agree: only the branch build depends on order, and only its
+saturation, the alternating pattern, refusal of an outcome that is not a
+boolean, the reorder buffer's start, completion and commit cycles in both
+modes, in-order commit, and that the recorded measurement and listings agree: only the branch build depends on order, and only its
 listing contains the conditional jump. The predictor model has one counter for
 one branch; real predictors index tables of counters by address and history.
 
@@ -226,17 +226,19 @@ one branch; real predictors index tables of counters by address and history.
   command="pnpm lab computer-architecture-execution/branch-prediction"
 >
   Implement `solve(outcomes)` in `starter.ts`: return how many outcomes a
-  two-bit counter that starts in state 1 mispredicts. Before running the tests,
-  trace taken, taken, not taken, not taken, not taken, taken, taken.
+  two-bit counter that starts in state 1 mispredicts, and throw a `RangeError`
+  for an outcome that is not a boolean. Before running the tests, trace not
+  taken, taken, taken, not taken, taken, taken.
 </LabCard>
 
 <details>
 <summary>Check after attempting</summary>
 
-States before each branch: 1, 2, 3, 2, 1, 0, 1. The predictions are not taken,
-taken, taken, taken, not taken, not taken, not taken, so branches 1, 4, 5, 6 and 7
-mispredict: five of seven. A counter that has just switched direction needs two
-consecutive outcomes the other way to switch back.
+States before each branch: 1, 0, 1, 2, 1, 2. The predictions are not taken,
+not taken, not taken, taken, not taken, taken, so branches 2, 3, 4 and 5
+mispredict: four of six. The first not taken pushed the counter to 0, so two
+taken outcomes were needed before it predicted taken, and one surprise then
+cost a further misprediction.
 
 </details>
 

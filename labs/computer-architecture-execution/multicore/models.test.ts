@@ -7,6 +7,7 @@ import {
   lostUpdate,
   mesi,
   messagePassing,
+  parseAccesses,
   multicoreExample,
   storeBuffering,
   type MemoryOp,
@@ -171,4 +172,17 @@ it('prints the lesson output', () => {
       'counter: plain 8 or 9, atomic 9',
     ].join('\n'),
   );
+});
+
+it('parses access tokens and refuses any other', () => {
+  expect(parseAccesses(' Ar  Bw ')).toEqual([
+    { core: 0, op: 'read' },
+    { core: 1, op: 'write' },
+  ]);
+  expect(parseAccesses('')).toEqual([]);
+  for (const bad of ['Cr', 'Ax', 'ar', 'Arw', 'A'])
+    expect(() => parseAccesses(bad)).toThrow(RangeError);
+  expect(
+    mesi(parseAccesses('Br Bw Ar Aw')).map((s) => s.after.join('')),
+  ).toEqual(['IE', 'IM', 'SS', 'MI']);
 });

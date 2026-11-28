@@ -1,18 +1,17 @@
 ---
 title: 'Stack and heap: Separate calls from lifetimes'
 shortTitle: Stack and heap
-summary: Trace nested calls and independent allocations, explain calling-convention responsibilities, and diagnose lifetime errors without assuming a language's physical layout.
+summary: Trace a call's frames beside an independent allocation, tell a reference's lifetime from its target's, and diagnose dangling references, leaks and fragmentation without assuming a language's physical layout.
 subject: computer-architecture-execution
 path: engineering-fundamentals
 difficulty: foundation
-estimatedMinutes: 50
+estimatedMinutes: 35
 learningObjectives:
-  - Trace call frames, return locations and saved state through nested calls
   - Distinguish a reference's lifetime from the lifetime of the object it names
-  - Explain stack overflow, dangling references, leaks and fragmentation
+  - Explain dangling references, double frees, leaks and fragmentation
   - Test independent frame and allocation lifetimes in an explicit model
 prerequisites:
-  - computer-architecture-execution/reading-assembly
+  - computer-architecture-execution/call-frames
   - computer-architecture-execution/compilation-and-execution
   - computer-architecture-execution/text-encoding-and-memory-layout
 tags: [memory, stack, heap, lifetime]
@@ -20,14 +19,6 @@ skills: [debugging, implementation, trade-off-analysis]
 status: draft
 drafter: agent
 interviewQuestions:
-  - prompt: What must caller and callee agree on for a function call to work?
-    answer: >-
-      Their calling convention specifies how arguments and results are passed,
-      which registers each side must preserve, and how stack alignment is
-      maintained. The call must also retain a return location so execution can
-      resume after the call. Some architectures place it on the stack, while
-      others use a link register that may later be saved. Compilers can omit or
-      reshape frames when observable behavior and the interface rules permit it.
   - prompt: Does returning from a function destroy everything it created?
     answer: >-
       Returning ends the call's activation, but an independently allocated object
@@ -36,14 +27,6 @@ interviewQuestions:
       explicitly released by its owner; in a tracing collector it can remain
       while reachable. Returning a reference to expired automatic storage is
       unsafe, unlike returning a reference to a still-live allocation.
-  - prompt: Why can recursive code overflow the stack even when the machine has free RAM?
-    answer: >-
-      A thread normally has a finite stack budget, independent of the machine's
-      total available RAM. Without an applicable optimization, every outstanding
-      recursive call retains a frame, so depth multiplies per-frame demand.
-      Replacing recursion with an explicit work structure can move that storage
-      into independently managed memory but does not remove its size cost.
-      Bound the depth or change the traversal according to the input constraints.
   - prompt: Does garbage collection eliminate memory leaks and lifetime reasoning?
     answer: >-
       A tracing collector can reclaim objects that are no longer reachable from
@@ -61,10 +44,6 @@ interviewQuestions:
       reclamation can dominate either path. Choose from ownership and lifetime
       requirements, then measure the relevant workload.
 sources:
-  - label: Dive Into Systems — Functions in assembly and call-frame management
-    url: https://diveintosystems.org/book/C7-x86_64/functions.html
-  - label: 'System V AMD64 psABI, 3.2.2 — The stack frame and the red zone'
-    url: https://gitlab.com/x86-psABIs/x86-64-ABI
   - label: Dive Into Systems — Dynamic memory allocation and pointers
     url: https://diveintosystems.org/book/C2-C_depth/dynamic_memory.html
   - label: OSTEP, chapter 13 — The abstraction of an address space
@@ -75,7 +54,6 @@ sources:
     url: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Memory_management
 ---
 
-import RealFrames from '../../../components/diagrams/RealFrames.astro';
 import CallStackStepper from '../../../components/interactive/CallStackStepper';
 
 import source from '../../../../labs/computer-architecture-execution/stack-and-heap/example.ts?raw';
@@ -88,43 +66,17 @@ followed the lifetime of the call, that result would disappear too soon.
 
 A stack of trays gives a useful picture of nested calls: remove the top tray
 before reaching the one below. Heap allocations are more like separately checked
-out tools that can be returned in a different order. These analogies explain
-lifetime order, but they do not specify physical addresses, allocation algorithms
-or a programming language's object placement.
+out tools that can be returned in a different order. The analogy stops at
+placement: it explains the order in which lifetimes end, not physical
+addresses, allocation algorithms or where a language places its objects.
 
-The [compilation lesson](/learn/computer-architecture-execution/compilation-and-execution/)
-explains how code reaches execution. The
+The [call frames lesson](/learn/computer-architecture-execution/call-frames/)
+followed how each call's frame is pushed and popped, the
+[compilation lesson](/learn/computer-architecture-execution/compilation-and-execution/)
+how code reaches execution, and the
 [layout lesson](/learn/computer-architecture-execution/text-encoding-and-memory-layout/)
-explains how fields occupy bytes. Here we ask how long the storage holding those bytes stays
-valid.
-
-## Call frames preserve an unfinished computation
-
-A **call frame**, also called an activation record, holds state associated with
-one active function invocation. Depending on the target and compiler, that state
-can include a return location, saved registers, arguments that do not fit in
-argument registers, spilled values and space for local storage.
-
-A conventional thread's **call stack** manages these frames in last-in,
-first-out order. Suppose `main` calls `parse`, which calls `readField`. The calls
-remain unfinished in that order, while `readField` executes. Returning from
-`readField` resumes `parse`; returning from `parse` resumes `main`.
-
-The **stack pointer** marks the top of the stack, and a **frame pointer**, when
-the compiler keeps one, gives a fixed base for addressing a frame's slots. Here
-is what GCC's unoptimized code from the
-[assembly lesson](/learn/computer-architecture-execution/reading-assembly/)
-actually keeps on the stack while `scale_sum` waits for `sum_to`:
-
-<RealFrames />
-
-Each frame holds the return address its caller's `call` pushed, the caller's
-saved frame pointer, and slots for the function's arguments and locals. The
-calling convention decides which registers a callee must preserve and that rsp
-is 16-byte aligned at a call. At `-O2` the same functions keep everything in
-registers, and `sum_to` needs no frame at all: a source function does not imply
-a fixed physical frame. On ARM64 the return address arrives in the link register
-instead, and a function that calls another saves it in its frame.
+how fields occupy bytes. Here we ask how long the storage holding those bytes
+stays valid when it is not tied to a call.
 
 ## Independently allocated storage has another lifetime
 
@@ -137,7 +89,9 @@ area.
 Before stepping, predict what happens to an allocation when the frame that
 created it returns, and what a variable holds after the allocation is freed.
 
-<CallStackStepper client:visible />
+<DiagramFrame caption="The call stack and the heap side by side, stepped through the tested lifetime model: main calls makeBuffer, which allocates a buffer and returns its handle. Handles are model numbers, not addresses.">
+  <CallStackStepper client:visible />
+</DiagramFrame>
 
 <details>
 <summary>Check after stepping: the same trace without JavaScript</summary>
@@ -181,17 +135,9 @@ allocation, losing the only owning pointer can make release impossible. With
 automatic collection, keeping an obsolete object reachable from a long-lived
 cache or listener can prevent reclamation.
 
-**Stack overflow** means the thread's stack demand exceeds its allowed capacity.
-Deep recursion and large frames can trigger it even while other memory remains
-available. Conventional recursion with depth d and bounded frame size f needs
-O(d × f) frame storage. An optimization such as tail-call elimination changes
-that result only when the actual compiler and call permit it; do not assume it
-for every language or function.
-
-Rewriting recursion with an explicit array or linked work structure changes how
-the pending work is represented. It can avoid a small call-stack budget, but
-still needs space for the same unresolved work. Choose traversal order, input
-limits and ownership deliberately.
+A **stack overflow** is a different failure: the thread's frames outgrow its
+stack, which the [call frames lesson](/learn/computer-architecture-execution/call-frames/)
+estimates from depth and frame size.
 
 ## Allocation costs include more than reserving bytes
 
@@ -252,6 +198,13 @@ unknown allocations.
 
 </details>
 
+The tests check this output exactly, that frames return in reverse call order
+without releasing what the call allocated, that a frame exactly at the stack
+limit fits while an overflowing call changes nothing, that allocations can be
+freed in any order but not twice, and that invalid sizes and totals beyond the
+safe integer range are refused. Further tests check the story the stepper
+replays and a handle dropped on return.
+
 <details>
 <summary>Model contract and implementation costs</summary>
 
@@ -263,6 +216,8 @@ state is O(d + a). These software costs do not describe native stack-pointer
 updates or a production allocator.
 
 </details>
+
+## Practice
 
 <LabCard
   title="01 / Find the dangling handles"
@@ -286,20 +241,22 @@ frame and drops its locals, but never frees what they referred to.
 </details>
 
 <LabCard
-  title="02 / Find the stack limit"
+  title="02 / Find the leak"
   command="pnpm exec vitest run labs/computer-architecture-execution/stack-and-heap/"
 >
-  Give `LifetimeModel` a 64-byte stack limit and repeatedly enter eight-byte
-  recursive frames. Predict how many calls fit and test that the first failing
-  call leaves the stack unchanged.
+  With `traceLifetimes`, write a test in which `main` calls `scratch`, which
+  allocates 64 bytes into its local `tmp` and returns without passing the handle
+  back. Predict which objects are still allocated afterwards and which local
+  refers to them, then assert both.
 </LabCard>
 
 <details>
 <summary>Check after testing</summary>
 
-Eight equal frames fit when no other frame is present. The ninth must fail
-without adding a partial frame. Record the state before the failing call and
-compare it afterwards.
+Object 1 is still allocated, and no local refers to it. Returning popped
+`scratch`'s frame and its handle but freed nothing, so in a manual-allocation
+model nothing can release the object any more: a leak. Return the handle to the
+caller, or free the object before returning.
 
 </details>
 
@@ -348,13 +305,12 @@ Copying or moving a handle cannot copy or extend its target.
 
 ## Two-minute recap
 
-- A call frame preserves one unfinished invocation; nested calls normally return
-  in last-in, first-out order.
-- Calling conventions specify arguments, results, preserved state and alignment.
 - A reference and its target can have different lifetimes.
 - Heap allocation permits independent lifetimes but still needs an ownership and
   reclamation policy.
-- Stack overflow, dangling references and retained allocations are different
+- Dangling references, double frees, leaks and stack overflow are different
   failure mechanisms.
+- Allocation also costs initialization, allocator metadata and fragmentation,
+  not only reserving bytes.
 - Garbage collection handles reachability; physical placement and prompt resource
   release require separate reasoning.

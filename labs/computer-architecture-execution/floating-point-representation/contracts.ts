@@ -1,7 +1,8 @@
 import { expect, it } from 'vitest';
 // solve(bits) returns the number a binary32 pattern stores. Build it from the
 // sign, exponent and fraction fields with arithmetic, without DataView or
-// typed arrays.
+// typed arrays. A value that is not an integer from 0 to 2^32 - 1 is refused
+// with a RangeError.
 export function contracts(solve: (bits: number) => number) {
   const check = (bits: number, expected: number) =>
     expect(Object.is(solve(bits), expected)).toBe(true);
@@ -14,4 +15,7 @@ export function contracts(solve: (bits: number) => number) {
   it('unseen case 7', () => check(0x80000000, -0));
   it('unseen case 8', () => check(0xff800000, -Infinity));
   it('unseen case 9', () => check(0x7fc00001, NaN));
+  it('unseen case 10', () => expect(() => solve(2 ** 32)).toThrow(RangeError));
+  it('unseen case 11', () => expect(() => solve(-1)).toThrow(RangeError));
+  it('unseen case 12', () => expect(() => solve(0.5)).toThrow(RangeError));
 }

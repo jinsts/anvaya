@@ -4,7 +4,8 @@ import type { Jump } from './x86';
 // describe left − right in 32 bits. Return whether the conditional jump jumps.
 // left and right are 32-bit patterns written as signed integers. Compute ZF,
 // SF, CF and OF from the subtraction yourself; do not compare the numbers
-// directly.
+// directly. An unknown jump, or an operand that is not an integer from -2^31
+// to 2^31 - 1, is refused with a RangeError.
 export function contracts(
   solve: (jump: Jump, left: number, right: number) => boolean,
 ) {
@@ -18,4 +19,8 @@ export function contracts(
   it('unseen case 8', () => expect(solve('jg', -5, -6)).toBe(true));
   it('unseen case 9', () =>
     expect(solve('jge', -(2 ** 31), 2 ** 31 - 1)).toBe(false));
+  it('unseen case 10', () =>
+    expect(() => solve('jz' as Jump, 0, 0)).toThrow(RangeError));
+  it('unseen case 11', () =>
+    expect(() => solve('jl', 2 ** 31, 0)).toThrow(RangeError));
 }

@@ -230,14 +230,15 @@ script stops cleanly when `perf` is missing.
 >
   Implement `solve(values)` in `starter.ts`: return the median and the
   nearest-rank 90th percentile of a list of timings without changing it. Before
-  running the tests, compute both for `[10, 1, 1, 1, 1]`.
+  running the tests, compute both for `[4, 9, 2, 7]`.
 </LabCard>
 
 <details>
 <summary>Check after attempting</summary>
 
-Sorted, the list is 1, 1, 1, 1, 10. The median is the middle value, 1. The p90
-rank is ⌈0.9 × 5⌉ = 5, the slowest run: 10. With few runs, p90 is just the worst
+Sorted, the list is 2, 4, 7, 9. The count is even, so the median is the mean of
+the two middle values, 5.5. The p90 rank is ⌈0.9 × 4⌉ = ⌈3.6⌉ = 4, the slowest
+run: 9. With few runs, p90 is just the worst
 one, which is a reason to collect more runs before reading tail percentiles.
 
 </details>

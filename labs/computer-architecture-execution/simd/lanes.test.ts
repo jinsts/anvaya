@@ -43,6 +43,10 @@ it('gives a different binary32 sum when lanes reassociate the additions', () => 
   const small = Array.from({ length: 10 }, (_, i) => i);
   expect(sumInOrder(small)).toBe(45);
   expect(sumByLanes(small)).toBe(45);
+  expect(() => sumByLanes([1, 1e39])).toThrow(RangeError);
+  expect(() => sumByLanes(['2' as never])).toThrow(RangeError);
+  expect(sumByLanes([1, Infinity, 1, 1])).toBe(Infinity);
+  expect(sumByLanes([NaN])).toBeNaN();
 });
 
 it('matches the recorded listings and GCC vectorization reports', () => {

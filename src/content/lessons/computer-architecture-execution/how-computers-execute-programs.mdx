@@ -136,6 +136,12 @@ between would still see 7.
 
 </details>
 
+The tests check this output exactly and which state each instruction changes.
+They also check that every step is fetched and decoded along the same path,
+that data memory is used only by loads and stores, each in its own direction,
+that register addition wraps at 32 bits, and that a load from an address
+holding no data, a fifth register and a negative address are refused.
+
 ## Trace a deliberately small machine
 
 Our illustrative machine has one eight-bit **accumulator**, a register that
@@ -183,8 +189,10 @@ program.
 </details>
 
 Each output line shows PC and accumulator after a state transition, with the
-initial state first. The tests check the full sequence, unsigned wraparound,
-taken and untaken branches, invalid operands, and the step limit.
+initial state first.
+
+The tests check the full sequence, unsigned wraparound, taken and untaken
+branches, invalid operands, and the step limit.
 
 <details>
 <summary>Model contract and simulator costs</summary>
@@ -205,7 +213,7 @@ The trace completes six instructions: one set, two additions, two branches and
 one halt. It contains no clock model. Six instructions do not imply six cycles,
 six nanoseconds, or any particular hardware speed.
 
-A pipeline overlaps instruction stages. The [performance lesson](/learn/computer-architecture-execution/architecture-and-performance/) works the latency, throughput and dependency timeline.
+A pipeline overlaps instruction stages. The [pipelining lesson](/learn/computer-architecture-execution/pipelining-and-hazards/) works the latency, throughput and dependency timeline.
 
 ## The operating system supplies an execution context
 
@@ -221,20 +229,28 @@ application normally exits through its runtime and operating system. Keep the
 layers separate when diagnosing a failure: the PC explains control flow, while
 the process and runtime explain which memory and services that flow can use.
 
-## Attempt the control-flow contract
+## Practice
 
-<LabCard title="Independent execution attempt" command="pnpm lab computer-architecture-execution/how-computers-execute-programs">
-Implement `solve(initial)` in `starter.ts`: count executed instructions for the
-set/add-255/conditional-branch/halt program. Count the untaken branch and halt.
-Try 7 and 19, then explain the special case where the initial byte is zero.
+<LabCard
+  title="01 / Count executed instructions"
+  command="pnpm lab computer-architecture-execution/how-computers-execute-programs"
+>
+  Implement `solve(initial)` in `starter.ts`: count executed instructions for
+  the set/add-255/conditional-branch/halt program, counting the untaken branch
+  and the halt, and throw a `RangeError` when `initial` is not an unsigned byte.
+  The hidden cases include both ends of the byte range and refused values.
+  Before running them, count by hand for an initial value of 5, then explain the
+  special case where the initial byte is zero.
 </LabCard>
+
 <details>
 <summary>Check after deriving the count</summary>
 
-For a positive byte n, there are n additions, n branches, one set and one halt:
-2n + 2 instructions. Zero first wraps to 255, so the loop runs 256 times and the
-count is 514. The reference uses a sufficient step budget and the same contracts
-as the learner's attempt.
+From 5 there are one set, five additions, five branches (four taken, the last
+untaken) and one halt: 12 instructions. For a positive byte n the count is
+2n + 2. Zero first wraps to 255, so the loop body runs 256 times before the
+accumulator returns to zero. The reference uses a sufficient step budget and
+the same contracts as the learner's attempt.
 
 </details>
 

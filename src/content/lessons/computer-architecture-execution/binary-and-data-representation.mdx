@@ -188,15 +188,18 @@ Every operation is O(1) for a fixed width.
   command="pnpm lab computer-architecture-execution/binary-and-data-representation"
 >
   Implement `solve(raw)` in `starter.ts` to read an unsigned byte as two's
-  complement. Predict the results for 173 and 250 before running the tests.
+  complement, and throw a `RangeError` when `raw` is not a whole number from 0
+  through 255. The hidden cases include both ends of the signed range and values
+  that are not byte patterns. Predict the results for 156 and 100 before running
+  the tests.
 </LabCard>
 
 <details>
 <summary>Check after attempting</summary>
 
-173 is `10101101`: 173 − 256 = −83. 250 is `11111010`: 250 − 256 = −6. Any
-byte below 128 keeps its value. The tests also check 0 and 128, the two ends of
-the asymmetric range.
+156 is `10011100`: its top bit is set, so 156 − 256 = −100. 100 is `01100100`,
+and any byte below 128 keeps its value. A value outside 0–255 is not a byte
+pattern at all, so it must be refused rather than wrapped into one.
 
 </details>
 

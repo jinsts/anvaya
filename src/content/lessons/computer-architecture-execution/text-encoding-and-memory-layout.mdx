@@ -223,14 +223,14 @@ and layout models with the recorded native output. The native lab recompiles
   Implement `solve(codePoint)` in `starter.ts`: return the UTF-8 bytes of one
   code point using shifts and masks, without `TextEncoder`, and throw a
   `RangeError` for surrogates and values above U+10FFFF. Before running the
-  tests, encode U+00A3 and U+0939 on paper.
+  tests, encode U+00E9 and U+20AC on paper.
 </LabCard>
 
 <details>
 <summary>Check after attempting</summary>
 
-U+00A3 is in the two-byte range: its 11 payload bits `00010 100011` give
-`C2 A3`. U+0939 needs three bytes: `0000 100100 111001` gives `E0 A4 B9`. Choose
+U+00E9 is in the two-byte range: its 11 payload bits `00011 101001` give
+`C3 A9`. U+20AC needs three bytes: `0010 000010 101100` gives `E2 82 AC`. Choose
 the row by comparing with 0x7F, 0x7FF and 0xFFFF, then take six bits at a time
 from the low end for the continuation bytes.
 

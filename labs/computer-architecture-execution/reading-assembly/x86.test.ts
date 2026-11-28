@@ -7,10 +7,12 @@ import {
   codeAddress,
   STACK_TOP,
   int32Bytes,
+  jumpTaken,
   parseListing,
   parseOperand,
   run,
   toSigned,
+  x86Example,
 } from './x86';
 
 const lab = 'labs/computer-architecture-execution';
@@ -119,6 +121,24 @@ it('counts executed instructions: -O2 runs fewer for the same input', () => {
   ]);
 });
 
+it('checks the exact output displayed by the lesson', () => {
+  const text = (file: string) =>
+    readFileSync(`${lab}/reading-assembly/${file}`, 'utf8');
+  expect(
+    x86Example({
+      sumO0: text('sum-O0.txt'),
+      sumO2: text('sum-O2.txt'),
+      scaleO0: text('scale-O0.txt'),
+      scaleO2: text('scale-O2.txt'),
+    }),
+  ).toBe(
+    'sum_to({3, 5, 7, 9}, 4) at -O0: 58 instructions, returns 24\n' +
+      'sum_to({3, 5, 7, 9}, 4) at -O2: 23 instructions, returns 24\n' +
+      'sum_to({3, 5, 7, 9}, 0): returns 0 at -O0 and 0 at -O2\n' +
+      'scale_sum({3, 5, 7, 9}, 4, 2): returns 48 at -O0 and 48 at -O2',
+  );
+});
+
 it('backs the lesson’s loop trace table', () => {
   const { steps } = run([sumO2], 'sum_to', {
     args: [ARRAY, 4n],
@@ -204,6 +224,10 @@ it('marks flags undefined after imul and rejects unsupported code', () => {
   expect(() => run([unknown], 'f')).toThrow(/Unsupported instruction/);
   const loop = parseListing('f:\n.L1:\n\tjmp\t.L1\n');
   expect(() => run([loop], 'f', { maxSteps: 10 })).toThrow(RangeError);
+  expect(() => jumpTaken('jz' as never, 0, 0)).toThrow(RangeError);
+  for (const n of [2 ** 31, -(2 ** 31) - 1, 0.5, NaN])
+    expect(() => jumpTaken('jl', n, 0)).toThrow(RangeError);
+  expect(jumpTaken('jl', -(2 ** 31), 2 ** 31 - 1)).toBe(true);
 });
 
 it('splits listings into basic blocks with a backward edge for the loop', () => {

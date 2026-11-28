@@ -39,6 +39,22 @@ export function amdahl(
   return speedup;
 }
 
+/** The normalized times behind amdahl() for a baseline time of 1: the part
+ * that stays serial, the improvable part before and after its speedup, and the
+ * new total. */
+export function amdahlTimes(serialFraction: number, parallelSpeedup: number) {
+  const speedup = amdahl(serialFraction, parallelSpeedup);
+  const improvable = 1 - serialFraction;
+  const improved = improvable / parallelSpeedup;
+  return {
+    serial: serialFraction,
+    improvable,
+    improved,
+    total: serialFraction + improved,
+    speedup,
+  };
+}
+
 export function performanceExample(): string {
   const baseline = cpuSeconds(2_000_000_000, 1.5, 3_000_000_000);
   const candidate = cpuSeconds(1_500_000_000, 1.8, 3_000_000_000);

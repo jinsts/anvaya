@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { amdahl, cpuSeconds, performanceExample } from './example';
+import { amdahl, amdahlTimes, cpuSeconds, performanceExample } from './example';
 
 describe('fixed-work performance estimates', () => {
   it('checks the displayed output exactly', () => {
@@ -25,6 +25,30 @@ describe('fixed-work performance estimates', () => {
     expect(amdahl(0.3, 1)).toBe(1);
     expect(amdahl(0.5, 0.5)).toBeCloseTo(2 / 3);
     expect(amdahl(0.25, 1000)).toBeLessThan(4);
+  });
+
+  it('splits normalized time into the parts the Amdahl bars draw', () => {
+    expect(amdahlTimes(0.25, 4)).toEqual({
+      serial: 0.25,
+      improvable: 0.75,
+      improved: 0.1875,
+      total: 0.4375,
+      speedup: amdahl(0.25, 4),
+    });
+    expect(amdahlTimes(0.25, 4).speedup.toFixed(3)).toBe('2.286');
+    for (const [serial, speedup] of [
+      [0, 8],
+      [0.5, 2],
+      [1, 3],
+      [0.3, 0.5],
+    ] as const) {
+      const times = amdahlTimes(serial, speedup);
+      // The new total is the time whose reciprocal amdahl() reports.
+      expect(times.total * times.speedup).toBeCloseTo(1, 12);
+      expect(times.serial + times.improvable).toBeCloseTo(1, 12);
+    }
+    expect(() => amdahlTimes(1.5, 2)).toThrow(RangeError);
+    expect(() => amdahlTimes(0.5, 0)).toThrow(RangeError);
   });
 
   it.each([-1, 0.5, Number.NaN, Infinity, Number.MAX_SAFE_INTEGER + 1])(

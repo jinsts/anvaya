@@ -90,9 +90,19 @@ import model from '../../../../labs/computer-architecture-execution/multicore/mo
 
 ## Several cores, one memory
 
-Each core has at least its own L1 cache, so two cores can hold copies of the
-same cache line. Three separate questions follow, and mixing them up causes most
-multicore bugs:
+Two threads each add one to their own counter, over and over, and neither ever
+reads the other's. Yet moving the two counters further apart in memory changes
+how fast both threads run. They share no data, so why should the distance
+between two variables matter?
+
+Think of a document that many people may read but only one may edit, after
+collecting everyone else's copy. The analogy stops at granularity: a cache does
+this for every 64-byte line separately, whatever the line holds.
+
+The [cache organization lesson](/learn/computer-architecture-execution/cache-organization/)
+followed lines through one core's cache. Each core has at least its own L1
+cache, so two cores can hold copies of the same cache line. Three separate
+questions follow, and mixing them up causes most multicore bugs:
 
 - **Coherence:** do the copies of one location agree?
 - **Ordering:** in what order can other cores see writes to _different_
@@ -112,10 +122,6 @@ announces itself, and any other copy drops to Shared. A write needs the only
 valid copy, so a cache holding the line Shared or not at all sends a **request
 for ownership** that invalidates every other copy. A line held Exclusive becomes
 Modified silently, since there is no one to tell.
-
-Think of a document that many people may read but only one may edit, after
-collecting everyone else's copy. The analogy stops at granularity: a cache does this
-for every 64-byte line separately, whatever the line holds.
 
 Before each access below, predict both cores' states afterwards.
 
@@ -198,7 +204,9 @@ by architecture.
 
 `atomics.c` writes the pattern with GCC's `__atomic` builtins; C11's
 `<stdatomic.h>` spells the same store `atomic_store_explicit(&ready, 1,
-memory_order_release)`. GCC 15.2 at `-O2` compiled it for x86-64 and AArch64:
+memory_order_release)`. GCC 15.2 at `-O2` compiled it for x86-64 and AArch64;
+the listings read as in the
+[assembly lesson](/learn/computer-architecture-execution/reading-assembly/):
 
 <CodeExample title="publish, x86-64 -O2" code={publish} language="text" />
 <CodeExample title="consume, x86-64 -O2" code={consume} language="text" />
@@ -283,7 +291,8 @@ if a listing drifts.
 - **NUMA** machines attach memory to each processor socket, and reaching another
   socket's memory takes longer.
 - Locks, condition variables and deadlock are built on these atomic operations;
-  the operating-systems subject covers them.
+  the [operating systems subject](/subjects/operating-systems-runtime-internals/)
+  plans lessons on them.
 
 Neither cost was measured here.
 
@@ -294,16 +303,19 @@ Neither cost was measured here.
   command="pnpm lab computer-architecture-execution/multicore"
 >
   Implement `solve(accesses)` in `starter.ts`: given accesses such as `'Ar Bw'`,
-  return both cores' MESI states after each one. Before running the tests, trace
-  `'Aw Br Ar Ar'` and say which accesses send a message.
+  return both cores' MESI states after each one. Throw a `RangeError` for any
+  token other than `A` or `B` followed by `r` or `w`. Before running the tests,
+  trace `'Br Bw Ar Aw'` and say which accesses send a message.
 </LabCard>
 
 <details>
 <summary>Check after attempting</summary>
 
-A's write from Invalid sends a request for ownership: `MI`. B's read misses and
-announces it; A supplies the modified data and drops to Shared: `SS`. A's two
-reads then hit in Shared without any message: `SS`, `SS`.
+B's read misses and announces it; no other copy exists, so B takes Exclusive:
+`IE`. B's write needs no message, because Exclusive means no other cache holds
+the line: `IM`. A's read misses and announces it; B supplies the modified data
+and drops to Shared: `SS`. A's write from Shared sends a request for ownership,
+which invalidates B: `MI`. Three of the four accesses send a message.
 
 </details>
 

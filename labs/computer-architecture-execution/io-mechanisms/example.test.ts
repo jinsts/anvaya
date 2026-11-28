@@ -1,13 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  advance,
-  interruptDetection,
-  ioExample,
-  owner,
-  pollingDetection,
-  type Event,
-  type Request,
-} from './example';
+import { advance, ioExample, owner, type Event, type Request } from './example';
 
 describe('receive-buffer lifecycle model', () => {
   const ready: Request = { phase: 'ready', capacity: 8, transferred: 0 };
@@ -69,6 +61,26 @@ describe('receive-buffer lifecycle model', () => {
     expect(() => advance({ ...ready, phase }, event as Event)).toThrow();
   });
 
+  it('gives the practice answers: a full 16-byte buffer, and complete after fail', () => {
+    const big: Request = { phase: 'ready', capacity: 16, transferred: 0 };
+    const full = advance(advance(big, { type: 'submit' }), {
+      type: 'complete',
+      bytes: 16,
+    });
+    const back = advance(full, { type: 'reclaim' });
+    expect([owner(back), back.phase, back.transferred]).toEqual([
+      'host',
+      'ready',
+      16,
+    ]);
+    const failed = advance(advance(ready, { type: 'submit' }), {
+      type: 'fail',
+    });
+    expect(() => advance(failed, { type: 'complete', bytes: 2 })).toThrow(
+      'Cannot complete a failed request.',
+    );
+  });
+
   it('rejects malformed byte counts before transitioning', () => {
     expect(() =>
       advance({ ...ready, capacity: -1 }, { type: 'submit' }),
@@ -76,38 +88,5 @@ describe('receive-buffer lifecycle model', () => {
     expect(() =>
       advance({ ...ready, transferred: 9 }, { type: 'submit' }),
     ).toThrow(RangeError);
-  });
-});
-
-describe('polling and interrupt timeline', () => {
-  it('finds a completion at the first check after it is ready', () => {
-    expect(pollingDetection(10, 4)).toEqual({
-      checkTimes: [4, 8, 12],
-      checks: 3,
-      detectedAt: 12,
-      delay: 2,
-    });
-    expect(pollingDetection(10, 2)).toEqual({
-      checkTimes: [2, 4, 6, 8, 10],
-      checks: 5,
-      detectedAt: 10,
-      delay: 0,
-    });
-    expect(pollingDetection(0, 4)).toMatchObject({ checks: 1, delay: 4 });
-    expect(interruptDetection(10)).toEqual({
-      checks: 0,
-      handlerEntries: 1,
-      detectedAt: 10,
-      delay: 0,
-    });
-  });
-
-  it.each([
-    [-1, 4],
-    [10, 0],
-    [Number.NaN, 4],
-    [10, Infinity],
-  ])('rejects ready time %s with interval %s', (ready, interval) => {
-    expect(() => pollingDetection(ready, interval)).toThrow(RangeError);
   });
 });

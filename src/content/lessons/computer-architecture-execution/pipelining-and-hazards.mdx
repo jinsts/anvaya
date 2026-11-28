@@ -172,9 +172,9 @@ issue several instructions per cycle and handle hazards in more ways.
   Implement `solve(instructions, forwarding)` in `starter.ts`: for straight-line
   code, with no branches, return the number of bubbles the teaching pipeline
   inserts. Each instruction has a kind, an optional destination and its source
-  registers. Before running the tests, count the bubbles for a load followed by
-  two instructions that each use the previous result, with and without
-  forwarding.
+  registers; throw a `RangeError` for an unknown kind. Before running the tests,
+  count the bubbles, with and without forwarding, for a load, a second load
+  whose address is the first one's result, and a store of the second result.
 </LabCard>
 
 <details>
@@ -184,7 +184,9 @@ Track the cycle each instruction executes. With forwarding a consumer can
 execute one cycle after an ALU producer and two cycles after a load; without it,
 three cycles after any producer. Each instruction also executes at least one
 cycle after the one before it. The bubbles are how far each execute cycle had to
-move. For the load chain: 4 without forwarding, 1 with it.
+move. For the two loads and the store: 4 without forwarding, 2 with it, because
+each consumer waits for a load, whose result is ready a cycle later than an ALU
+result.
 
 </details>
 

@@ -30,3 +30,12 @@ it('touches each line once per row walk and once per element in a column walk', 
   expect(columns.filter((v) => v.firstTouch)).toHaveLength(8);
   expect(() => traversal(0, 8, 4, 16, 'rows')).toThrow(RangeError);
 });
+
+it('gives the practice answer for the first row and column of a 4×4 matrix', () => {
+  const rows = traversal(4, 4, 4, 16, 'rows');
+  const columns = traversal(4, 4, 4, 16, 'columns');
+  expect(rows.slice(0, 4).map((v) => v.address)).toEqual([0, 4, 8, 12]);
+  expect(columns.slice(0, 4).map((v) => v.address)).toEqual([0, 16, 32, 48]);
+  expect(linesTouched(rows, 4)).toBe(1);
+  expect(linesTouched(columns, 4)).toBe(4);
+});

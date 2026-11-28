@@ -1,29 +1,47 @@
 ---
 import DiagramFrame from '../learning/DiagramFrame.astro';
+import { amdahlTimes } from '../../../labs/computer-architecture-execution/architecture-and-performance/example';
+// The lesson's illustrative inputs: a quarter of baseline time stays serial and
+// the rest becomes four times faster. Every other number comes from the tested
+// model, so the bars, the caption and the lesson's example cannot disagree.
+const SERIAL = 0.25;
+const SPEEDUP = 4;
+const times = amdahlTimes(SERIAL, SPEEDUP);
+const percent = (fraction: number) => `${fraction * 100}%`;
 ---
 
-<DiagramFrame caption="For fixed work with no added overhead, improving 75% of baseline time fourfold gives 1 / 0.4375 ≈ 2.286× overall speedup.">
+<DiagramFrame
+  caption={`For fixed work with no added overhead, making ${percent(times.improvable)} of baseline time ${SPEEDUP}× faster gives 1 / ${times.total} ≈ ${times.speedup.toFixed(3)}× overall speedup.`}
+>
   <p>
     <strong>Baseline time: 1</strong>
   </p>
   <div
     class="bar"
     role="img"
-    aria-label="Baseline: serial 0.25 followed by improvable 0.75"
+    aria-label={`Baseline: serial ${times.serial} followed by improvable ${times.improvable}`}
   >
-    <span class="serial">0.25</span>
-    <span class="work">0.75</span>
+    <span class="serial" style={`width: ${percent(times.serial)}`}>
+      {times.serial}
+    </span>
+    <span class="work" style={`width: ${percent(times.improvable)}`}>
+      {times.improvable}
+    </span>
   </div>
   <p>
-    <strong>Improved time: 0.4375</strong>
+    <strong>Improved time: {times.total}</strong>
   </p>
   <div
     class="bar"
     role="img"
-    aria-label="Improved: serial 0.25 followed by improved 0.1875; the rest of baseline time is saved"
+    aria-label={`Improved: serial ${times.serial} followed by improved ${times.improved}; the rest of baseline time is saved`}
   >
-    <span class="serial">0.25</span>
-    <span class="reduced">0.1875</span>
+    <span class="serial" style={`width: ${percent(times.serial)}`}>
+      {times.serial}
+    </span>
+    <span class="work" style={`width: ${percent(times.improved)}`}>
+      {times.improved}
+    </span>
   </div>
   <p>
     First segment: unchanged serial work. Second segment: work eligible for
@@ -47,16 +65,10 @@ import DiagramFrame from '../learning/DiagramFrame.astro';
     color: var(--text);
   }
   .serial {
-    width: 25%;
     background: var(--accent-soft);
     border-right: 2px solid var(--border-strong);
   }
   .work {
-    width: 75%;
-    border: 1px dashed var(--border-strong);
-  }
-  .reduced {
-    width: 18.75%;
     border: 1px dashed var(--border-strong);
   }
   p {

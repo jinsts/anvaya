@@ -52,18 +52,29 @@ sections:
       - computer-architecture-execution/cpu-registers-and-instructions
       - computer-architecture-execution/reading-assembly
       - computer-architecture-execution/compilation-and-execution
+      - computer-architecture-execution/call-frames
       - computer-architecture-execution/stack-and-heap
+    # On 2026-11-26 (audit F2; owner decision S1: split above 45 minutes)
+    # call-frames took call frames, the stack pointer, the calling
+    # convention's stack rules (alignment, the red zone) and stack overflow
+    # from stack-and-heap, which keeps independent allocation lifetimes,
+    # failure modes, allocator costs and garbage collection.
   - id: architecture-memory-hierarchy
     title: The memory hierarchy
     subject: computer-architecture-execution
     lessons:
       - computer-architecture-execution/memory-hierarchy-and-caches
+      - computer-architecture-execution/access-time-and-translation
       - computer-architecture-execution/cache-organization
       - computer-architecture-execution/dram-ssd-and-disks
     # cache-organization took associativity and write policies from
-    # memory-hierarchy-and-caches, which keeps the hierarchy, locality and
-    # access costs. The storage page completes the approved topic "Memory
-    # hierarchy, caches, RAM, and storage".
+    # memory-hierarchy-and-caches. On 2026-11-26 (audit F2; owner decision S1:
+    # split above 45 minutes) access-time-and-translation took average access
+    # time (additional against total penalty, local and global miss rates) and
+    # the TLB, page walks and page faults from it; memory-hierarchy-and-caches
+    # keeps the layers, lines, direct-mapped placement and locality. The
+    # storage page completes the approved topic "Memory hierarchy, caches,
+    # RAM, and storage".
   - id: architecture-processor
     title: Inside the processor
     subject: computer-architecture-execution
@@ -84,7 +95,13 @@ sections:
     subject: computer-architecture-execution
     lessons:
       - computer-architecture-execution/hardware-software-interaction
+      - computer-architecture-execution/polling-interrupts-and-dma
       - computer-architecture-execution/io-mechanisms
+    # On 2026-11-28 (audit F2; owner decision S1: split above 45 minutes)
+    # polling-interrupts-and-dma took programmed I/O against DMA, polling
+    # against interrupts, coalescing and the latency, throughput and CPU costs
+    # from io-mechanisms, which keeps the request lifecycle: buffer ownership,
+    # completion, cancellation and durability.
   - id: architecture-performance
     title: Performance on real hardware
     subject: computer-architecture-execution

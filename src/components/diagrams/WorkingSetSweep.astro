@@ -94,6 +94,13 @@ const date = data.date.slice(0, 10);
         working set
       </div>
     </div>
+    <p class="cache-key">
+      Dashed lines, left to right:{' '}
+      {caches
+        .map((c) => `${c.name} ${formatBytes(c.bytes)}`.replace(/ /g, '\u00a0'))
+        .join(', ')}
+      .
+    </p>
     <div
       class="table-scroll"
       tabindex="0"
@@ -270,6 +277,13 @@ const date = data.date.slice(0, 10);
     font-variant-numeric: tabular-nums;
     font-weight: 400;
   }
+  .cache-key {
+    display: none;
+    margin: 0;
+    color: var(--muted);
+    font-size: var(--text-xs);
+    text-align: center;
+  }
   .all summary {
     cursor: pointer;
     font-size: var(--text-sm);
@@ -285,8 +299,13 @@ const date = data.date.slice(0, 10);
     .xtick.minor {
       display: none;
     }
+    /* Labels beside the dashed lines collide with the points at this width;
+       the key below the plot names them instead, as in the roofline. */
     .cache span {
-      writing-mode: vertical-rl;
+      display: none;
+    }
+    .cache-key {
+      display: block;
     }
   }
 </style>

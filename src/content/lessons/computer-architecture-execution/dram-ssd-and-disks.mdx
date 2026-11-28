@@ -94,11 +94,12 @@ lets you estimate before you measure: whether a design that touches DRAM a
 million times is fast enough, or whether one random disk read per request is
 already too many.
 
-Think of fetching a book: from your desk, from the shelf, from the library
-basement, from another city. Each trip is far longer than the one before, so
-you plan which books stay close. The analogy stops at overlap: a processor can
-have several requests in flight at once, and storage devices queue them, so
-throughput can be much better than one trip at a time suggests.
+Think of answering a question at work: you may already know the answer, look it
+up in your notes, phone a colleague or request a report from an archive. Each is
+a different mechanism, not just a longer walk, and once the colleague is on the
+line, follow-up questions are quick. The analogy stops at overlap: a processor
+can have several requests in flight at once, and storage devices queue them, so
+throughput can be much better than one question at a time suggests.
 
 ## Each level is a different technology
 
@@ -142,7 +143,9 @@ then a plateau that is DRAM. Two details need care:
 - **The last step starts early.** Times climb from around 12 MiB, well before
   the nominal 24 MiB L3 is full. The L3 is shared with other cores and the
   operating system, and with 4 KiB pages a random walk over many megabytes also
-  misses the TLB and walks page tables. The sweep cannot separate these causes;
+  misses the
+  [TLB](/learn/computer-architecture-execution/access-time-and-translation/)
+  and walks page tables. The sweep cannot separate these causes;
   hardware counters could.
 - **Runs vary.** This machine runs Linux under WSL2, a virtual machine on a host
   that schedules it. The program interleaves repetitions, visiting every size

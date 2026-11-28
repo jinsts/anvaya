@@ -16,22 +16,7 @@ export function contracts(solve: (events: LifetimeEvent[]) => Report) {
   it('unseen case 1', () =>
     expect(
       solve([
-        main(['p']),
-        { kind: 'allocate', bytes: 32, into: 'p' },
-        {
-          kind: 'call',
-          frame: 'release',
-          bytes: 16,
-          locals: ['q'],
-          pass: { q: 'p' },
-        },
-        { kind: 'free', local: 'q' },
-      ]),
-    ).toEqual({ live: [], dangling: ['main.p', 'release.q'] }));
-  it('unseen case 2', () =>
-    expect(
-      solve([
-        main(['p']),
+        main(['p', 'r']),
         { kind: 'allocate', bytes: 32, into: 'p' },
         {
           kind: 'call',
@@ -42,8 +27,31 @@ export function contracts(solve: (events: LifetimeEvent[]) => Report) {
         },
         { kind: 'free', local: 'q' },
         { kind: 'return' },
+        { kind: 'allocate', bytes: 8, into: 'r' },
       ]),
-    ).toEqual({ live: [], dangling: ['main.p'] }));
+    ).toEqual({ live: [2], dangling: ['main.p'] }));
+  it('unseen case 2', () =>
+    expect(
+      solve([
+        main(['p']),
+        { kind: 'allocate', bytes: 32, into: 'p' },
+        {
+          kind: 'call',
+          frame: 'mid',
+          bytes: 16,
+          locals: ['m'],
+          pass: { m: 'p' },
+        },
+        {
+          kind: 'call',
+          frame: 'release',
+          bytes: 16,
+          locals: ['q'],
+          pass: { q: 'm' },
+        },
+        { kind: 'free', local: 'q' },
+      ]),
+    ).toEqual({ live: [], dangling: ['main.p', 'mid.m', 'release.q'] }));
   it('unseen case 3', () =>
     expect(
       solve([

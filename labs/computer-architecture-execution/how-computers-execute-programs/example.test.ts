@@ -42,6 +42,19 @@ describe('illustrative instruction execution', () => {
     }
   });
 
+  it('gives the practice count: 12 instructions from 5, the last branch untaken', () => {
+    const trace = execute([
+      { op: 'set', value: 5 },
+      { op: 'add', value: 255 },
+      { op: 'jnz', target: 1 },
+      { op: 'halt' },
+    ]);
+    expect(trace.length - 1).toBe(12);
+    // The snapshot after each branch: back to 1 when taken, on to 3 when not.
+    const afterBranches = trace.slice(1).filter((_, i) => trace[i]!.pc === 2);
+    expect(afterBranches.map((s) => s.pc)).toEqual([1, 1, 1, 1, 3]);
+  });
+
   it('bounds infinite execution and diagnoses a missing halt', () => {
     expect(() =>
       execute(

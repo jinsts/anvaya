@@ -3,7 +3,8 @@ import { expect, it } from 'vitest';
 // loop computes: lane k accumulates elements k, k + 4, k + 8 …, the lanes
 // combine as (lane 0 + lane 2) + (lane 1 + lane 3), and elements past the
 // last multiple of four are added afterwards in order. Round every addition
-// to binary32 (Math.fround).
+// to binary32 (Math.fround). A value that is not a number, or a finite number
+// too large for binary32, is refused with a RangeError.
 export function contracts(solve: (values: number[]) => number) {
   it('unseen case 1', () => expect(solve([])).toBe(0));
   it('unseen case 2', () => expect(solve([1, 2, 3])).toBe(6));
@@ -20,4 +21,7 @@ export function contracts(solve: (values: number[]) => number) {
           Math.fround(Math.fround(0.2) + Math.fround(0.4)),
       ),
     ));
+  it('unseen case 7', () => expect(() => solve([1, 1e39])).toThrow(RangeError));
+  it('unseen case 8', () =>
+    expect(() => solve([1, '2' as unknown as number])).toThrow(RangeError));
 }

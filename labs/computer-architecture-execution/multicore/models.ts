@@ -65,6 +65,24 @@ export function mesi(ops: readonly CoherenceOp[]): CoherenceStep[] {
   });
 }
 
+/**
+ * Parses accesses written as `'Ar Bw'`: core A or B, then r (read) or w
+ * (write), separated by spaces. Any other token is refused.
+ */
+export function parseAccesses(text: string): CoherenceOp[] {
+  return text
+    .split(' ')
+    .filter(Boolean)
+    .map((token) => {
+      const match = /^([AB])([rw])$/.exec(token);
+      if (!match) throw new RangeError(`Unknown access ${token}.`);
+      return {
+        core: match[1] === 'A' ? 0 : 1,
+        op: match[2] === 'w' ? 'write' : 'read',
+      };
+    });
+}
+
 /** The access script the lesson's stepper and transition table follow. */
 export const MESI_SCRIPT: readonly CoherenceOp[] = [
   { core: 0, op: 'read' },

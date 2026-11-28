@@ -2,7 +2,7 @@
 
 Implement `solve` in `starter.ts` before opening `predictor.ts`: count how many
 of a branch's outcomes a two-bit saturating counter mispredicts, starting in
-state 1.
+state 1. Throw a `RangeError` for an outcome that is not `true` or `false`.
 
 Run `pnpm lab computer-architecture-execution/branch-prediction`. The attempt
 throws until you implement it; the ordinary quality gate checks the reference

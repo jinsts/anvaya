@@ -147,10 +147,12 @@ encoding matters: register index 16 would require a fifth bit and could overlap
 the opcode field. Silently masking it down to zero would change the requested
 operation instead of reporting the invalid input.
 
-The tests round-trip all 8192 valid instructions: two opcodes, 16 registers, and
-256 immediates. They also check invalid field ranges and reserved opcodes.
-Round-tripping protects the invariant that decoding an encoded valid operation
-recovers exactly its three fields.
+The tests check the output above exactly and round-trip all 8,192 valid
+instructions: two opcodes, 16 registers and 256 immediates. They also check
+that the figure's field layout recovers exactly what `decode` returns, and that
+out-of-range fields and reserved opcodes are refused. Round-tripping protects
+the invariant that decoding an encoded valid operation recovers exactly its
+three fields.
 
 ## Registers are scarce names for active values
 
@@ -181,8 +183,8 @@ registers a call may overwrite, and how the stack is kept. It is part of the
 platform's **application binary interface**, or ABI, which also fixes data
 layout and object-file formats. The [assembly lesson](/learn/computer-architecture-execution/reading-assembly/)
 follows real calls through the x86-64 convention, and the
-[stack lesson](/learn/computer-architecture-execution/stack-and-heap/) shows the
-frames they build.
+[call frames lesson](/learn/computer-architecture-execution/call-frames/) shows
+the frames they build.
 
 <details>
 <summary>Model contract and decoder costs</summary>
@@ -247,14 +249,14 @@ changes only the register. A test runs this case in the interpreter.
   Implement `solve(word)` in `starter.ts`: split a 16-bit teaching instruction
   into opcode, register and immediate with shifts and masks, and throw a
   `RangeError` for reserved opcodes and values outside 16 bits. Before running
-  the tests, decode `0x2a0b` and say why `0x3000` must be rejected.
+  the tests, decode `0x1c42` and say why `0xf000` must be rejected.
 </LabCard>
 
 <details>
 <summary>Check after attempting</summary>
 
-`0x2a0b` is opcode 2, register 10 (hexadecimal a) and immediate 11 (hexadecimal
-0b). `0x3000` has opcode 3, which this format does not define; decoding it
+`0x1c42` is opcode 1, register 12 (hexadecimal c) and immediate 66 (hexadecimal
+42). `0xf000` has opcode 15, which this format does not define; decoding it
 anyway would invent an operation. Shift right by 12 for the opcode, then mask
 with `0xf` and `0xff` for the other fields.
 

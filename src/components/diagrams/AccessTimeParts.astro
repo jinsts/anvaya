@@ -1,0 +1,104 @@
+---
+import DiagramFrame from '../learning/DiagramFrame.astro';
+import {
+  LESSON_LEVELS,
+  LESSON_MEMORY_NS,
+  accessTimeParts,
+  averageAccessTime,
+  shown,
+} from '../../../labs/computer-architecture-execution/access-time-and-translation/accessTime';
+// The lesson's illustrative two-level hierarchy. Every number is computed by
+// the tested model: each level adds its time weighted by the share of all
+// loads that reach it, and the parts sum to the nested average.
+const parts = accessTimeParts(LESSON_LEVELS, LESSON_MEMORY_NS);
+const total = shown(averageAccessTime(LESSON_LEVELS, LESSON_MEMORY_NS));
+const times = [...LESSON_LEVELS.map((l) => l.hitNs), LESSON_MEMORY_NS];
+const largest = Math.max(...parts.map((p) => p.ns));
+const percent = (fraction: number) => `${shown(fraction * 100)}%`;
+const rows = parts.map((part, i) => ({
+  ...part,
+  time: times[i]!,
+  width: (part.ns / largest) * 100,
+}));
+---
+
+<DiagramFrame
+  caption={`Illustrative parameters: L1 ${times[0]} ns with a ${percent(LESSON_LEVELS[0]!.missRate)} local miss rate, L2 ${times[1]} ns with ${percent(LESSON_LEVELS[1]!.missRate)}, memory ${LESSON_MEMORY_NS} ns. Each bar is one level's share of the ${total} ns average: its time weighted by the fraction of all loads that reach it. Computed by the lesson's tested model, not measured.`}
+>
+  <div class="parts">
+    {rows.map((row) => (
+      <div
+        class="row"
+        role="group"
+        aria-label={`${row.name}: ${percent(row.reach)} of loads × ${row.time} ns adds ${shown(row.ns)} ns`}
+      >
+        <p class="label">
+          <strong>{row.name}</strong>
+          <span>
+            {percent(row.reach)} of loads × {row.time} ns
+          </span>
+        </p>
+        <div class="track" aria-hidden="true">
+          <span class="bar" style={`width: ${row.width}%`} />
+        </div>
+        <p class="value">{shown(row.ns)} ns</p>
+      </div>
+    ))}
+    <p class="total">
+      Average: <strong>{total} ns</strong> per load
+    </p>
+  </div>
+</DiagramFrame>
+<style>
+  .parts {
+    display: grid;
+    gap: var(--space-3);
+  }
+  .row {
+    display: grid;
+    grid-template-columns: minmax(0, 11rem) minmax(0, 1fr) 4.5rem;
+    align-items: center;
+    gap: var(--space-2) var(--space-3);
+  }
+  .label {
+    display: grid;
+    margin: 0;
+    font-size: var(--text-sm);
+  }
+  .label span {
+    color: var(--muted);
+    font-size: var(--text-xs);
+  }
+  .track {
+    height: var(--space-6);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--subtle);
+  }
+  .bar {
+    display: block;
+    height: 100%;
+    border-radius: var(--radius-sm);
+    background: var(--chart-1);
+  }
+  .value {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+  }
+  .total {
+    margin: 0;
+    font-size: var(--text-sm);
+    text-align: right;
+  }
+  @media (max-width: 560px) {
+    .row {
+      grid-template-columns: minmax(0, 1fr) 4rem;
+    }
+    .label {
+      grid-column: 1 / -1;
+    }
+  }
+</style>

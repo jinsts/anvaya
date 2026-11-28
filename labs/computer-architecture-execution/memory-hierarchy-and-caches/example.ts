@@ -33,31 +33,11 @@ export function traceCache(
   });
 }
 
-export function averageAccessTime(
-  hitTime: number,
-  missRate: number,
-  additionalMissPenalty: number,
-): number {
-  if (
-    !Number.isFinite(hitTime) ||
-    hitTime < 0 ||
-    !Number.isFinite(additionalMissPenalty) ||
-    additionalMissPenalty < 0 ||
-    !Number.isFinite(missRate) ||
-    missRate < 0 ||
-    missRate > 1
-  ) {
-    throw new RangeError(
-      'Expected nonnegative times and a miss rate in [0, 1].',
-    );
-  }
-  return hitTime + missRate * additionalMissPenalty;
-}
-
 export function cacheExample(): string {
-  const trace = traceCache([0, 4, 8, 12, 32, 0], 16, 2);
-  return [
-    trace.map((access) => access.result).join(' '),
-    `average model time: ${averageAccessTime(1, 0.1, 50)} ns`,
-  ].join('\n');
+  return traceCache([0, 4, 8, 12, 32, 0], 16, 2)
+    .map(
+      ({ address, block, slot, result }) =>
+        `read ${address}: block ${block}, slot ${slot}, ${result}`,
+    )
+    .join('\n');
 }

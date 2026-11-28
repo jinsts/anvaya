@@ -1,16 +1,18 @@
 import { expect, it } from 'vitest';
-// Reads only, 16-byte lines, a cold cache and exact LRU replacement.
+// Reads only, 16-byte lines, a cold cache and exact LRU replacement. A set
+// count that is not a power of two, fewer than one way, or an address that is
+// not a nonnegative integer is refused with a RangeError.
 export function contracts(
   solve: (addresses: readonly number[], sets: number, ways: number) => string[],
 ) {
   it('unseen case 1', () =>
-    expect(solve([0, 64, 0, 64, 128, 0], 2, 2)).toEqual([
+    expect(solve([0, 64, 0, 64, 128, 64], 2, 2)).toEqual([
       'miss',
       'miss',
       'hit',
       'hit',
       'miss',
-      'miss',
+      'hit',
     ]));
   it('unseen case 2', () =>
     expect(solve([0, 16, 32, 48, 0, 16], 4, 1)).toEqual([
@@ -34,4 +36,8 @@ export function contracts(
       Array<string>(6).fill('miss'),
     ));
   it('unseen case 5', () => expect(solve([], 2, 2)).toEqual([]));
+  it('unseen case 6', () => expect(() => solve([0], 3, 1)).toThrow(RangeError));
+  it('unseen case 7', () => expect(() => solve([0], 2, 0)).toThrow(RangeError));
+  it('unseen case 8', () =>
+    expect(() => solve([0, -16], 2, 2)).toThrow(RangeError));
 }

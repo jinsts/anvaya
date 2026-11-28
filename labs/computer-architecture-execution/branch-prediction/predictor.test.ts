@@ -32,6 +32,8 @@ it('saturates, and an alternating pattern defeats both predictors', () => {
   expect(accuracy(predict(stream('alternating'), 'two-bit'))).toBe(0);
   expect(accuracy(predict(stream('alternating'), 'one-bit'))).toBe(0);
   expect(() => predict([true], 'one-bit', 2)).toThrow(RangeError);
+  expect(() => predict([true, 1 as never], 'two-bit')).toThrow(RangeError);
+  expect(() => predict(['T' as never], 'one-bit')).toThrow(RangeError);
   expect(accuracy([])).toBe(1);
 });
 
