@@ -95,15 +95,13 @@ sections:
     subject: computer-architecture-execution
     lessons:
       - computer-architecture-execution/hardware-software-interaction
+      - computer-architecture-execution/polling-interrupts-and-dma
       - computer-architecture-execution/io-mechanisms
-    # Split on 2026-11-25 (audit F2; owner decision S1: split above 45
-    # minutes). "Polling, interrupts and DMA" goes between
-    # hardware-software-interaction and io-mechanisms and takes programmed
-    # I/O against DMA, polling against interrupts, coalescing and the latency,
-    # throughput and CPU costs. io-mechanisms keeps the request lifecycle:
-    # buffer ownership, completion, cancellation and durability.
-    planned:
-      - Polling, interrupts and DMA
+    # On 2026-11-28 (audit F2; owner decision S1: split above 45 minutes)
+    # polling-interrupts-and-dma took programmed I/O against DMA, polling
+    # against interrupts, coalescing and the latency, throughput and CPU costs
+    # from io-mechanisms, which keeps the request lifecycle: buffer ownership,
+    # completion, cancellation and durability.
   - id: architecture-performance
     title: Performance on real hardware
     subject: computer-architecture-execution

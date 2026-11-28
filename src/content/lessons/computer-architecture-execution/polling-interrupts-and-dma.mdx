@@ -1,0 +1,278 @@
+---
+title: 'Polling, interrupts and DMA: Separate moving the bytes from noticing them'
+shortTitle: Polling, interrupts and DMA
+summary: Tell who moves an I/O transfer's bytes, programmed I/O or DMA, from how software learns it finished, by polling, interrupts or coalesced interrupts, and compare their CPU cost and latency under a stated arrival pattern.
+subject: computer-architecture-execution
+path: engineering-fundamentals
+difficulty: intermediate
+estimatedMinutes: 30
+learningObjectives:
+  - Separate programmed I/O and DMA, which move the payload, from polling and interrupts, which report progress
+  - Count the checks, handler entries and delays that polling, per-completion interrupts and coalescing cost for a given arrival pattern
+  - Compare latency, throughput and CPU cost under stated workload assumptions, and say when polling wins
+prerequisites:
+  - computer-architecture-execution/hardware-software-interaction
+tags: [hardware, io, performance]
+skills: [trade-off-analysis, debugging, technical-communication]
+status: draft
+drafter: agent
+interviewQuestions:
+  - prompt: Are DMA and interrupts competing ways to perform I/O?
+    answer: >-
+      They answer different questions. DMA moves data between a device and memory
+      without having the CPU copy each transferred word. An interrupt tells the
+      CPU about an event such as completion, while polling discovers status by
+      checking it. A DMA device can use either notification strategy, and drivers
+      can combine them according to load.
+  - prompt: Why can polling sometimes be useful even though it consumes CPU time?
+    answer: >-
+      A waiting CPU can check a completion queue without paying an interrupt and
+      scheduling transition for every event. That may suit a busy queue or a
+      strict latency target when dedicating CPU capacity is acceptable. For sparse
+      or slow events, repeated checks can waste substantial CPU time and energy.
+      Compare the arrival pattern, batching policy, and opportunity cost before
+      choosing a strategy.
+  - prompt: What does interrupt coalescing trade?
+    answer: >-
+      The device waits before raising an interrupt, so completions that arrive
+      meanwhile are delivered together and the CPU enters its handler fewer
+      times. The price is latency: the first completion of a batch waits for the
+      others or for a timeout. A batch limit and a timeout bound that wait, and
+      both are tuned to the arrival rate. Under heavy load it also helps avoid
+      spending all the CPU's time entering handlers.
+    followUps:
+      - How would you pick the timeout for a latency-sensitive service?
+  - prompt: How does Linux's NAPI combine interrupts and polling?
+    answer: >-
+      In basic operation the device raises an interrupt, and the driver schedules
+      a NAPI instance and keeps the device's interrupts masked while it polls.
+      Each poll processes at most a budget of packets, and while work remains the
+      instance is polled again without new interrupts. When the queue drains the
+      driver completes NAPI and unmasks interrupts. So a busy device is polled,
+      and an idle one wakes the CPU only when something arrives.
+sources:
+  - label: 'OSTEP, chapter 36 — Polling, interrupts, coalescing, programmed I/O and DMA'
+    url: https://pages.cs.wisc.edu/~remzi/OSTEP/file-devices.pdf
+  - label: 'Linux kernel documentation — NAPI: interrupts, polling, budgets and busy polling'
+    url: https://docs.kernel.org/networking/napi.html
+---
+
+import CompletionBurst from '../../../components/diagrams/CompletionBurst.astro';
+import PollingTimeline from '../../../components/diagrams/PollingTimeline.astro';
+import TransferTimeline from '../../../components/diagrams/TransferTimeline.astro';
+
+import model from '../../../../labs/computer-architecture-execution/polling-interrupts-and-dma/notification.ts?raw';
+
+## Two questions about every transfer
+
+A disk driver sends a 4 KiB block and then spins, reading a status register
+until the disk says it is done, while another process waits for the CPU. Two
+separate costs are mixed up in that loop: the CPU copying the data, and the CPU
+checking whether the device has finished. Each has its own fix.
+
+Think of waiting for a kettle: you can stand and watch it, or go and do
+something else until it whistles. The analogy stops at batching: a kettle
+whistles once for one kettle, while a device can hold back its signal so that
+one interrupt reports several finished requests, and one check of a queue can
+find many.
+
+The [hardware boundary lesson](/learn/computer-architecture-execution/hardware-software-interaction/)
+showed how an interrupt enters the kernel. This page asks who moves an I/O
+request's bytes and how software learns that the device finished; the
+[I/O mechanisms lesson](/learn/computer-architecture-execution/io-mechanisms/)
+then follows one request's buffer from submission to reuse.
+
+## Who moves the bytes
+
+In **programmed I/O** (PIO), the CPU performs the accesses that transfer the
+payload through a device interface, one word at a time. In **direct memory
+access** (DMA), a device or DMA engine transfers the payload between the device
+and memory. The CPU still sets up the operation, telling the engine where the
+data is, how much to move and which device takes it, and handles completion
+and errors.
+
+<TransferTimeline />
+
+OSTEP's devices chapter draws the same contrast: with PIO the CPU is busy for
+the whole copy, while with DMA it can run another process until the engine
+raises an interrupt to say the transfer is done. DMA has costs of its own:
+setup, memory the device may access, and rules about who owns a buffer while it
+is in flight, which the I/O mechanisms lesson covers.
+
+## How software notices
+
+**Polling** reads device status or a completion queue repeatedly. An
+**interrupt** signals an event so the CPU can enter a handler. Polling and
+interrupts do not determine whether the payload was moved with PIO or DMA.
+
+<div className="table-scroll" tabIndex={0} role="region" aria-label="Data movement and notification choices">
+
+| Choice         | What it controls                       | Main trade-off                                                            |
+| -------------- | -------------------------------------- | ------------------------------------------------------------------------- |
+| Programmed I/O | CPU participates in payload transfer   | Simple for small interfaces; consumes CPU work per transfer               |
+| DMA            | Device or engine transfers the payload | Requires setup, valid memory mappings, and ownership discipline           |
+| Polling        | Software checks status                 | Can reduce notification overhead at high load; spends CPU time checking   |
+| Interrupts     | Hardware announces events              | Avoids constant checks for sparse events; handling and wakeups have costs |
+
+</div>
+
+Here one device becomes ready at time 10:
+
+<PollingTimeline />
+
+Polling every 4 units finds the completion at 12, two units late, after two
+empty checks. Polling every 2 units finds it at once but checks five times. An
+interrupt costs no checks but enters a handler for every event it announces.
+The figure uses illustrative units from the tested model, not measurements of a
+device.
+
+Interrupts are not always better. OSTEP notes that for a fast device the first
+poll usually finds the work done, so switching away and taking an interrupt
+only adds cost; that a flood of interrupts can leave a system handling nothing
+else; and that a hybrid can poll briefly before waiting for an interrupt.
+
+## Batching changes the count
+
+When completions arrive close together, one poll can find several, and a
+device can **coalesce** interrupts: wait a little before raising one, so that
+completions arriving meanwhile share it. Waiting saves handler entries and adds
+latency.
+
+Predict before opening the trace: five completions arrive at times 9 through 13. Compare polling every 4 units, an interrupt per completion, and a device
+that raises one interrupt when three completions are waiting or four units
+after the oldest. Which costs the most handler entries, and which delays some
+completion the longest?
+
+<details>
+<summary>Check after predicting: the burst</summary>
+
+<CompletionBurst />
+
+An interrupt per completion costs five handler entries and no delay. Coalescing
+costs two entries: the first fires at 11, when three are waiting, and the second
+at 16, the timeout after the completion at 12, which waits 4 units, the longest
+delay here. Polling every 4 finds four completions with one check at 12 and the
+last at 16, after two empty checks. Which is best depends on what a delay costs
+the program and what an entry costs the CPU.
+
+</details>
+
+Linux's network stack combines the two. In basic operation the device raises an
+interrupt, and the driver keeps that device's interrupts masked while a NAPI
+instance polls it, processing at most a budget of packets per poll and polling
+again while work remains; only when the queue drains are interrupts unmasked.
+**Busy polling** goes further and checks for packets before any interrupt,
+trading CPU cycles for lower latency, as the kernel's NAPI documentation puts
+it.
+
+Three measures can move in different directions. **Latency** is the time until
+a particular request reaches the specified finish line. **Throughput** is
+completed work per unit of time. **CPU cost** is processor effort spent on
+submission, transfer, checking and handling. Batching can raise throughput by
+spreading notification overhead across requests while a request waiting for
+the batch sees higher latency.
+
+<details>
+<summary>Inspect the tested model and expected output</summary>
+
+<CodeExample
+  title="Polling, interrupts, coalescing and who moves the bytes"
+  code={model}
+  verified
+  output={
+    'ready at 10, poll every 4: found at 12 after 3 checks\nburst, poll every 4: 4 checks (2 empty), delays 3 2 1 0 3\nburst, interrupt each: 5 handler entries, delays 0 0 0 0 0\nburst, coalesce 3 or 4 units: 2 handler entries, delays 2 1 0 4 3\n8 words: CPU busy 9 units with PIO, 2 with DMA'
+  }
+/>
+
+</details>
+
+The tests check this output exactly, the single-completion timeline the
+figure draws, polls that find several completions or none, delays in input
+order, coalescing by batch and by timeout, the PIO and DMA timelines, and that
+invalid times, intervals and batch sizes are refused. The model makes polls and
+handler entries instantaneous and moves one word per unit, so it counts events;
+it does not time a device.
+
+## Practice
+
+<LabCard
+  title="01 / Count the checks"
+  command="pnpm lab computer-architecture-execution/polling-interrupts-and-dma"
+>
+  Implement `solve(readyTimes, interval)` in `starter.ts`: poll every `interval`
+  units from time `interval` until every completion is found, and return the
+  checks made, the checks that found nothing new, and each completion's delay in
+  input order. Throw a `RangeError` for an interval that is not positive or a
+  ready time that is negative or not finite. The hidden cases include one poll
+  finding several completions, a completion ready at time 0, no completions, and
+  refused inputs. Before running them, work out completions at 5, 6, 7, 8 and 9
+  polled every 3 units.
+</LabCard>
+
+<details>
+<summary>Check after attempting</summary>
+
+Polls at 3, 6 and 9 suffice. The one at 3 finds nothing, the one at 6 finds the
+completions at 5 and 6, and the one at 9 finds 7, 8 and 9: three checks, one
+empty, delays 1, 0, 2, 1 and 0. Taking the completions in input order and
+rounding each up to the next poll gives the same answer without simulating
+every poll.
+
+</details>
+
+<LabCard title="02 / Choose a notification policy">
+  Design a paper experiment comparing polling and interrupts for sparse and busy
+  queues. State the finish line, the work held constant, and which CPU, latency,
+  and throughput observations you would collect. Explain how batching could
+  change the result without changing the data-movement mechanism.
+</LabCard>
+
+<details>
+<summary>Hint after an attempt</summary>
+
+Hold payload size and offered load constant within a comparison. Count checks
+and handled notifications alongside latency distributions, completion rate,
+and CPU use. Specify batch size and wakeup policy; otherwise the comparison
+changes several mechanisms at once. The lab's counts check your arithmetic,
+not the performance of either policy on real hardware.
+
+</details>
+
+## Check your reasoning
+
+<ConceptCheck
+  id="polling-interrupts-dma-independent"
+  question="Under heavy load, a network driver stops taking an interrupt per packet and polls its receive queue instead. What happens to how the packets' bytes reach memory?"
+  options={[
+    {
+      label:
+        'Nothing: the device can still move them by DMA; only how software notices them changed.',
+      correct: true,
+      explanation:
+        'Data movement and notification are separate choices. Polling replaces interrupts as the way to discover completions, whoever copied the bytes.',
+    },
+    {
+      label:
+        'The CPU must now copy every byte, because polling is programmed I/O.',
+      explanation:
+        'Polling is about checking status, not about who moves the payload. A DMA device can be polled.',
+    },
+    {
+      label:
+        'The bytes stop arriving until an interrupt re-enables the device.',
+      explanation:
+        'The device keeps receiving and posting completions; the driver simply discovers them by checking instead of being interrupted.',
+    },
+  ]}
+/>
+
+## Two-minute recap
+
+- Programmed I/O and DMA decide who moves the payload; polling and interrupts
+  decide how software learns of progress.
+- DMA frees the CPU during the copy, at the cost of setup and buffer-ownership
+  rules.
+- Polling spends checks, and an interrupt spends a handler entry per
+  announcement; which costs more depends on the arrival pattern.
+- Coalescing and batched polls trade latency for fewer notifications.
+- Compare latency, throughput and CPU cost at a stated finish line.

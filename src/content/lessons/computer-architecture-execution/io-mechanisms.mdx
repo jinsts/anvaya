@@ -1,38 +1,22 @@
 ---
 title: 'I/O mechanisms: Follow a request to completion'
 shortTitle: I/O mechanisms
-summary: Follow device submission, data movement, notification, and buffer reclamation while separating completion from persistence.
+summary: Follow a DMA receive buffer from submission through completion to reclamation, diagnose an unsafe cancellation, and separate completion from durability.
 subject: computer-architecture-execution
 path: engineering-fundamentals
 difficulty: intermediate
-estimatedMinutes: 55
+estimatedMinutes: 30
 learningObjectives:
-  - Separate programmed I/O and DMA from polling and interrupt notification
   - Trace ownership of a receive buffer through submission, completion, and reclamation
-  - Compare latency, throughput, and CPU cost under stated workload assumptions
+  - Diagnose why reusing a buffer after a timeout is unsafe, and what must happen first
   - Explain why a completed write may require additional steps for durability
 prerequisites:
-  - computer-architecture-execution/hardware-software-interaction
+  - computer-architecture-execution/polling-interrupts-and-dma
 tags: [memory, hardware, io, performance]
 skills: [debugging, trade-off-analysis, technical-communication]
 status: draft
 drafter: agent
 interviewQuestions:
-  - prompt: Are DMA and interrupts competing ways to perform I/O?
-    answer: >-
-      They answer different questions. DMA moves data between a device and memory
-      without having the CPU copy each transferred word. An interrupt tells the
-      CPU about an event such as completion, while polling discovers status by
-      checking it. A DMA device can use either notification strategy, and drivers
-      can combine them according to load.
-  - prompt: Why can polling sometimes be useful even though it consumes CPU time?
-    answer: >-
-      A waiting CPU can check a completion queue without paying an interrupt and
-      scheduling transition for every event. That may suit a busy queue or a
-      strict latency target when dedicating CPU capacity is acceptable. For sparse
-      or slow events, repeated checks can waste substantial CPU time and energy.
-      Compare the arrival pattern, batching policy, and opportunity cost before
-      choosing a strategy.
   - prompt: What must hold before software reuses a DMA receive buffer?
     answer: >-
       The device must have stopped using that buffer under the device's completion
@@ -41,6 +25,15 @@ interviewQuestions:
       software. Keeping a mapping alive is also a lifetime requirement during the
       transfer. A request timing out alone does not prove that the device has
       stopped writing.
+  - prompt: Why must a driver order its writes to a DMA descriptor?
+    answer: >-
+      The device reads the descriptor from memory on its own schedule, and the CPU
+      may reorder stores even to coherent DMA memory. If the store that marks a
+      descriptor valid becomes visible before the store of its buffer address,
+      the device can start a transfer with a stale address. The kernel's DMA guide
+      therefore puts a write barrier between filling the descriptor and setting
+      its valid bit, and the device is told to look only after both. Coherence
+      makes stores visible; it does not order them.
   - prompt: Does a successful write mean the bytes will survive a power failure?
     answer: >-
       A successful buffered write can mean the operating system accepted the bytes
@@ -54,11 +47,10 @@ sources:
     url: https://pages.cs.wisc.edu/~remzi/OSTEP/file-devices.pdf
   - label: 'OSTEP, chapter 39 — Buffered writes and fsync'
     url: https://pages.cs.wisc.edu/~remzi/OSTEP/file-intro.pdf
-  - label: 'Linux kernel DMA mapping guide — Addresses, ownership, and synchronization'
+  - label: 'Linux kernel DMA mapping guide — Addresses, ownership, synchronization and descriptor ordering'
     url: https://docs.kernel.org/core-api/dma-api-howto.html
 ---
 
-import PollingTimeline from '../../../components/diagrams/PollingTimeline.astro';
 import DmaStepper from '../../../components/interactive/DmaStepper';
 
 import example from '../../../../labs/computer-architecture-execution/io-mechanisms/example.ts?raw';
@@ -86,38 +78,19 @@ four separate questions:
 
 These questions stay useful across different buses and APIs. A syscall need not
 reach a device: a file read can be satisfied from the operating system's cache.
-An asynchronous API also does not guarantee DMA or eliminate copies.
-
-## Data movement and notification are independent
-
-In **programmed I/O**, the CPU performs the accesses that transfer payload data
-through a device interface. In **direct memory access**, or DMA, a device or DMA
-engine transfers the payload between the device and accessible memory. The CPU
-still sets up the operation and handles completion and errors.
-
-**Polling** reads device status or a completion queue repeatedly. An
-**interrupt** signals an event so the CPU can enter a handler. Polling and
-interrupts do not determine whether the payload was moved with programmed I/O or
-DMA.
-
-| Choice         | What it controls                       | Main trade-off                                                            |
-| -------------- | -------------------------------------- | ------------------------------------------------------------------------- |
-| Programmed I/O | CPU participates in payload transfer   | Simple for small interfaces; consumes CPU work per transfer               |
-| DMA            | Device or engine transfers the payload | Requires setup, valid memory mappings, and ownership discipline           |
-| Polling        | Software checks status                 | Can reduce notification overhead at high load; spends CPU time checking   |
-| Interrupts     | Hardware announces events              | Avoids constant checks for sparse events; handling and wakeups have costs |
-
-Drivers can batch completions or switch strategies under load. An interrupt
-need not correspond to one packet or one request. Conversely, a poll that finds
-nothing has still consumed time. No strategy is always faster: arrival rate,
-queue depth, batching, CPU availability, and latency targets all matter.
+An asynchronous API also does not guarantee DMA or eliminate copies. The
+[polling, interrupts and DMA lesson](/learn/computer-architecture-execution/polling-interrupts-and-dma/)
+answered movement and notification; this page follows the submission and
+reclamation of one request.
 
 ## Trace a DMA receive request
 
 Choose the events yourself. Before each one, predict who owns the buffer
 afterwards, or whether the protocol refuses the event.
 
-<DmaStepper client:visible />
+<DiagramFrame caption="One receive buffer stepped through the tested ownership model: choose each event and see who owns the buffer afterwards, or which event the protocol refuses.">
+  <DmaStepper client:visible />
+</DiagramFrame>
 
 <details>
 <summary>Check after stepping: the same trace without JavaScript</summary>
@@ -182,8 +155,7 @@ does not claim that the device is still writing after completion.
 
 The tests check this output exactly, every allowed transition and a set of
 refused ones, completion sizes at and beyond the buffer's limits, malformed
-byte counts, and that no transition changes an earlier state. Separate tests
-check the polling and interrupt timeline drawn below.
+byte counts, and that no transition changes an earlier state.
 
 An eight-byte buffer can complete with four received bytes. Reclamation does not
 invent the missing four bytes. Zero-byte completion is also allowed by this
@@ -201,34 +173,6 @@ not bounds on a real device's transfer time. The model accesses no hardware,
 creates no real mapping, and supplies no cache or persistence guarantees.
 
 </details>
-
-## Distinguish latency, throughput, and CPU work
-
-**Latency** measures time until a particular request reaches the specified finish
-line. **Throughput** measures completed work per unit of time. **CPU cost**
-measures processor effort spent on submission, transfer, checking, and handling.
-They can move in different directions.
-
-Polling and interrupts trade these against each other. Here one device becomes
-ready at time 10:
-
-<PollingTimeline />
-
-Polling every 4 units finds the completion at 12, two units late, after two
-empty checks. Polling every 2 units finds it at once but checks five times. An
-interrupt costs no checks but enters a handler for every event it announces.
-When completions arrive often, each poll finds work and few come back empty.
-OSTEP's devices chapter adds that a flood of interrupts can leave a system
-handling nothing else, that a hybrid can poll briefly before waiting for an
-interrupt, and that a device can coalesce several completions into one
-interrupt at the cost of latency. The figure uses illustrative units from the
-tested model, not measurements of a device.
-
-Batching several completions can increase throughput by spreading notification
-overhead across requests, while a request waiting for the batch can see higher
-latency. Keeping more work in flight can hide individual request latency until
-the device, memory bandwidth, or software queue becomes the bottleneck. More
-queued work can then increase waiting time rather than completion rate.
 
 ## Completion does not establish durability
 
@@ -263,39 +207,24 @@ This diagnosis is independent of whether DMA or programmed I/O moved the data.
   title="01 / Run the buffer protocol"
   command="pnpm lab computer-architecture-execution/io-mechanisms"
 >
-  Implement `solve(capacity, events)` in `starter.ts`: run an eight-byte buffer
-  through events such as `'submit'`, `'complete 4'`, `'fail'` and `'reclaim'`,
-  and report the owner, phase and byte count. Before running the tests, predict
-  the results of completing with 0, 8 and 9 bytes, and of reclaiming straight
-  after submitting.
+  Implement `solve(capacity, events)` in `starter.ts`: run a buffer of
+  `capacity` bytes through events such as `'submit'`, `'complete 4'`, `'fail'`
+  and `'reclaim'`, and report `'<owner> <phase> <bytes>'`. Throw an `Error`
+  naming the event and phase for a transition the protocol refuses, and a
+  `RangeError` for a completion larger than the buffer. The hidden cases cover
+  every phase, both refusals and reuse after reclamation. Before running them,
+  predict a 16-byte buffer through submit, complete 16, reclaim, and a buffer
+  that completes after it failed.
 </LabCard>
 
 <details>
   <summary>Check after attempting</summary>
 
-Completing with 0 or 8 bytes is allowed and leaves the device as owner until
-reclamation; the buffer then returns to the host with 0 or 8 usable bytes.
-Nine bytes would overrun the buffer, so the model throws a `RangeError` and the
-input is unchanged. Reclaiming an in-flight request throws: nothing has shown
-that the device stopped writing.
-
-</details>
-
-<LabCard title="02 / Choose a notification policy">
-  Design a paper experiment comparing polling and interrupts for sparse and busy
-  queues. State the finish line, the work held constant, and which CPU, latency,
-  and throughput observations you would collect. Explain how batching could
-  change the result without changing the data-movement mechanism.
-</LabCard>
-
-<details>
-  <summary>Hint after an attempt</summary>
-
-Hold payload size and offered load constant within a comparison. Count checks
-and handled notifications alongside latency distributions, completion rate,
-and CPU use. Specify batch size and wakeup policy; otherwise the comparison
-changes several mechanisms at once. Running the lab verifies lifecycle rules,
-not the performance of either notification policy.
+Submit hands the buffer to the device, a 16-byte completion fills it exactly,
+and reclaim returns it: `host ready 16`. Completing after a failure is refused,
+because a failed request is already terminal and only reclamation may follow;
+the error names the event and the `failed` phase. Neither the full buffer nor
+the failure lets the host touch the bytes before reclamation.
 
 </details>
 
@@ -329,8 +258,8 @@ not the performance of either notification policy.
 ## Two-minute recap
 
 - Submission, payload movement, notification, and reclamation are separate stages.
-- DMA and programmed I/O describe movement; polling and interrupts describe discovery.
 - Keep buffers mapped and alive until the device protocol permits reclamation.
 - Coherent CPU caches do not remove all DMA synchronization and ordering requirements.
-- Compare latency, throughput, and CPU work at a clearly defined finish line.
+- A timeout ends a wait, not the device's access; reclaim only after completion
+  or a confirmed cancellation.
 - Completion, durability, and atomicity need separate interface guarantees.

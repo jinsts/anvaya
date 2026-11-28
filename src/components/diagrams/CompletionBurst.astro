@@ -1,0 +1,176 @@
+---
+import DiagramFrame from '../learning/DiagramFrame.astro';
+import {
+  BURST,
+  coalescedInterrupts,
+  interruptEach,
+  pollCompletions,
+} from '../../../labs/computer-architecture-execution/polling-interrupts-and-dma/notification';
+// Five completions one unit apart, noticed three ways. The times at which the
+// CPU looks come from the tested model's results: every poll up to the last
+// one, and each distinct time at which a handler took completions.
+const INTERVAL = 4;
+const BATCH = 3;
+const TIMEOUT = 4;
+const poll = pollCompletions(BURST, INTERVAL);
+const each = interruptEach(BURST);
+const coalesced = coalescedInterrupts(BURST, BATCH, TIMEOUT);
+const found = (delays: number[]) => BURST.map((t, i) => t + delays[i]!);
+const handled = (delays: number[]) => [...new Set(found(delays))];
+const worst = (delays: number[]) => Math.max(...delays);
+const rows = [
+  {
+    name: `Poll every ${INTERVAL}`,
+    marks: Array.from({ length: poll.checks }, (_, k) => (k + 1) * INTERVAL),
+    found: new Set(found(poll.delays)),
+    kind: 'poll',
+    summary: `${poll.checks} checks, ${poll.emptyChecks} empty; worst delay ${worst(poll.delays)}`,
+  },
+  {
+    name: 'Interrupt per completion',
+    marks: handled(each.delays),
+    found: new Set(found(each.delays)),
+    kind: 'irq',
+    summary: `${each.handlerEntries} handler entries; worst delay ${worst(each.delays)}`,
+  },
+  {
+    name: `Coalesce ${BATCH} or ${TIMEOUT} units`,
+    marks: handled(coalesced.delays),
+    found: new Set(found(coalesced.delays)),
+    kind: 'irq',
+    summary: `${coalesced.handlerEntries} handler entries; worst delay ${worst(coalesced.delays)}`,
+  },
+];
+const end = 18;
+const x = (t: number) => `${(t / end) * 100}%`;
+const ticks = Array.from({ length: end / 2 + 1 }, (_, i) => i * 2);
+---
+
+<DiagramFrame
+  caption={`Completions ready at ${BURST.join(', ')} (dashed lines), noticed by polling every ${INTERVAL} units, by one interrupt per completion, and by a device that coalesces up to ${BATCH} completions or waits at most ${TIMEOUT} units after the oldest. Illustrative time units from the lesson's tested model, not a measurement.`}
+>
+  <div class="burst">
+    <div class="legend" aria-hidden="true">
+      <span>
+        <i class="dot empty"></i> check finds nothing new
+      </span>
+      <span>
+        <i class="dot found"></i> check finds completions
+      </span>
+      <span>
+        <i class="dot irq"></i> handler entry
+      </span>
+    </div>
+    {rows.map((row) => (
+      <div class="row" role="group" aria-label={`${row.name}: ${row.summary}`}>
+        <p class="name">
+          <strong>{row.name}</strong> <span>{row.summary}</span>
+        </p>
+        <div class="track" aria-hidden="true">
+          {BURST.map((t) => (
+            <span class="ready" style={`left: ${x(t)}`} />
+          ))}
+          {row.marks.map((t) => (
+            <span
+              class:list={[
+                'dot',
+                row.kind === 'irq'
+                  ? 'irq'
+                  : row.found.has(t)
+                    ? 'found'
+                    : 'empty',
+              ]}
+              style={`left: ${x(t)}`}
+            />
+          ))}
+        </div>
+      </div>
+    ))}
+    <div class="axis" aria-hidden="true">
+      {ticks.map((t) => (
+        <span style={`left: ${x(t)}`}>{t}</span>
+      ))}
+    </div>
+  </div>
+</DiagramFrame>
+<style>
+  .burst {
+    display: grid;
+    gap: var(--space-3);
+    padding: 0 var(--space-2);
+  }
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1) var(--space-4);
+    color: var(--muted);
+    font-size: var(--text-xs);
+  }
+  .legend span {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+  }
+  .legend .dot {
+    position: static;
+    transform: none;
+  }
+  .name {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 var(--space-2);
+    margin: 0 0 var(--space-1);
+    font-size: var(--text-sm);
+  }
+  .name span {
+    color: var(--muted);
+    font-size: var(--text-xs);
+  }
+  .track {
+    position: relative;
+    height: 1.25rem;
+    border-bottom: 1px solid var(--border-strong);
+  }
+  .ready {
+    position: absolute;
+    top: -2px;
+    bottom: -2px;
+    width: 0;
+    border-left: 2px dashed var(--chart-2);
+  }
+  .dot {
+    position: absolute;
+    top: 50%;
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border: 2px solid var(--chart-1);
+    border-radius: 50%;
+    background: var(--surface);
+    transform: translate(-50%, -50%);
+  }
+  .dot.found {
+    background: var(--chart-1);
+    box-shadow: 0 0 0 2px var(--surface);
+  }
+  .dot.irq {
+    border-radius: 2px;
+    background: var(--chart-1);
+    transform: translate(-50%, -50%) rotate(45deg);
+  }
+  .legend .dot.irq {
+    transform: rotate(45deg);
+  }
+  .axis {
+    position: relative;
+    height: 1rem;
+    margin-top: calc(-1 * var(--space-2));
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+  }
+  .axis span {
+    position: absolute;
+    transform: translateX(-50%);
+  }
+</style>

@@ -2410,3 +2410,77 @@ line.
 For owner review: the bookmarks analogy, the 30- and 35-minute estimates, and
 the replacement of "Find the stack limit" with "Find the leak" in the stack
 lesson.
+
+## Polling, interrupts and DMA: a page split from I/O mechanisms — 2026-11-28
+
+Drafts the planned page "Polling, interrupts and DMA" with the draft-lesson
+skill (audit finding F2, owner decision S1), as `polling-interrupts-and-dma`,
+between `hardware-software-interaction` and `io-mechanisms`, and moves that
+material out of the 55-minute I/O lesson. The page separates who moves the
+bytes (programmed I/O, DMA) from how software notices (polling, interrupts),
+counts the checks, handler entries and delays of polling, per-completion
+interrupts and coalescing, and covers NAPI and busy polling. It has a hook with
+a kettle analogy and its limit, three figures, a predict prompt with a reveal,
+a verified output, two practice cards, a concept check, a recap, four interview
+questions (two moved from the I/O lesson) and two sources.
+
+Lab `labs/computer-architecture-execution/polling-interrupts-and-dma/`:
+`notification.ts` takes over `pollingDetection` and `interruptDetection` (with
+their tests) from the I/O lab and adds `pollCompletions`, `interruptEach`,
+`coalescedInterrupts` and `transferTimeline`; `notification.test.ts` checks
+every one, the refusals and the displayed output exactly. The contract has
+seven hidden cases. Cross-check: a separate Python simulation that steps poll by
+poll (the model rounds each ready time up to the next poll instead) gives every
+contract value and the practice answer (three checks, one empty, delays 1, 0,
+2, 1, 0 for completions at 5–9 polled every 3); the coalescing delays were
+traced by hand. `pnpm vitest run` on the lab passes, and `pnpm lab
+computer-architecture-execution/polling-interrupts-and-dma` fails all 7 cases.
+
+Figures: `TransferTimeline` (new; CPU and DMA engine per time unit for eight
+words), `PollingTimeline` (moved; now imports the new lab), and
+`CompletionBurst` (new; the burst under three policies, inside the "Check after
+predicting" disclosure because it answers the prediction). All compute from
+the model and say their units are illustrative.
+
+Material moved out of `io-mechanisms`: the movement and notification section
+with its table, the latency, throughput and CPU-cost section with the polling
+figure, two interview questions, two objectives, the paper card "Choose a
+notification policy" and a recap point. Its prerequisite is now the new page,
+which a sentence in its first section links. It gained an objective on unsafe
+reuse after a timeout, a recap point on the same, and an interview question on
+ordering descriptor writes, from the kernel DMA guide's coherent-memory note
+(the CPU may reorder stores even to coherent memory; a `wmb()` goes between
+filling a descriptor and marking it valid). Its practice card named three
+hidden cases (completions of 0, 8 and 9 bytes, and reclaiming after submit); it
+now states the contract and asks for a 16-byte buffer filled exactly and a
+completion after a failure, which no hidden case uses, backed by a new model
+test. Its stepper is now wrapped in a `DiagramFrame`, since the polling figure
+was its only visible figure. Minutes: 30 for each page by the calibration
+recorded earlier (about 1,560 and 1,400 words).
+
+Sources opened for this page: OSTEP chapter 36 (polling wastes CPU time,
+interrupts overlap computation and I/O, a fast device may be better polled, the
+two-phase hybrid, livelock, coalescing's latency cost, PIO copying word by
+word, and DMA programmed with where, how much and which device, interrupting
+when done), and the kernel's NAPI page (interrupt then poll with interrupts
+masked, a per-poll budget, unmasking when the work is done, device IRQ
+coalescing, busy polling trading CPU cycles for latency). The kernel DMA guide
+was reopened for the new I/O interview question.
+
+`pnpm subject:report` raises no flag for either page. The linked problem
+Design Circular Queue stays on `io-mechanisms`, whose submission and completion
+queues it models.
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 485 tests in 71 files,
+none skipped, including the native drift check; 42 pages; 154 browser tests.
+
+Visual review: `pnpm shots` on the new page (three figures) and on
+`io-mechanisms` (the framed stepper), and the scratch script for
+`CompletionBurst` inside its disclosure, at 1280 and 390 px in both themes; no
+overflow or console errors. Review changed `TransferTimeline`: its rows first
+had different column counts, so a PIO unit was wider than a DMA unit; every
+lane now shares one time scale.
+
+For owner review: the kettle analogy, the 30-minute estimates, the illustrative
+units, and the new interview question on descriptor ordering.
