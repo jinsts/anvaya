@@ -2707,3 +2707,22 @@ fails all 6 cases. `pnpm subject:report` raises no new flag. No figure changed.
 Same command and environment as the first entry of 2026-11-25: zero type
 errors, warnings or hints; formatting and lint passed; 501 tests in 71 files,
 none skipped, including the native drift check; 42 pages; 154 browser tests.
+
+## Hardware-software interaction: hidden cases the lesson does not show — 2026-11-28
+
+Audit 2026-11-28 A2 (standard P5). Hidden cases 1–3 were the three events at
+index 12, which the body predicts and the verified output prints, and card 01
+predicted cases 4, 5 and 8. Cases 1–5 now use indexes 41 and 7 and the largest
+safe resume points (a system call one below `Number.MAX_SAFE_INTEGER`, an
+interrupt at it). Card 01 keeps index 0 and now asks about a fault at the
+largest safe integer, which no case uses; case 8, the refused system call
+there, stays hidden. Every new expected value was run through the reference
+`enterKernel` and `returnToUser` before writing it.
+
+`pnpm lab computer-architecture-execution/hardware-software-interaction` fails
+all 8 cases; the reference passes them (18 tests in the lab folder). `pnpm
+subject:report` raises no new flag. No figure changed.
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 501 tests in 71 files,
+none skipped, including the native drift check; 42 pages; 154 browser tests.

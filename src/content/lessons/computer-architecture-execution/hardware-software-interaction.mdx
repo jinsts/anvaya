@@ -197,14 +197,15 @@ covers them.
   Implement `solve(pc, event)` in `starter.ts`: return the user instruction
   index that runs after the kernel handles the event. Before running the tests,
   predict the result for each event at index 0, and say what should happen for a
-  system call at the largest safe integer.
+  fault at the largest safe integer.
 </LabCard>
 
 <details>
   <summary>Check after attempting</summary>
 
-A system call at 0 resumes at 1; a restartable fault and an interrupt resume at 0. A system call at `Number.MAX_SAFE_INTEGER` would need a resume index that is
-not a safe integer, so the model rejects it with a `RangeError` instead of
+A system call at 0 resumes at 1; a restartable fault and an interrupt resume at 0. A fault at `Number.MAX_SAFE_INTEGER` resumes there too: the index is a safe
+integer, and a fault does not advance it. Only an event that advances the index
+can leave the safe range, and then the model throws a `RangeError` instead of
 returning a wrong index. The handler's own index never becomes the resume point:
 it controls execution inside the kernel, while the saved context identifies
 where the user program continues.
