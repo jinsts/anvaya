@@ -1,0 +1,270 @@
+---
+title: 'Call frames: Follow the stack pointer through a call'
+shortTitle: Call frames
+summary: Follow rsp through a real function's prologue, call and epilogue, check the System V rule that rsp is 16-byte aligned at every call, and estimate how deep a recursion can go before its stack runs out.
+subject: computer-architecture-execution
+path: engineering-fundamentals
+difficulty: intermediate
+estimatedMinutes: 30
+learningObjectives:
+  - Trace the stack pointer through a function's prologue, calls and epilogue, and say what each pushed slot holds
+  - Explain the stack rules of the System V x86-64 calling convention, such as the return address, callee-saved registers, 16-byte alignment at a call and the red zone
+  - Estimate how deep a recursion can go from its frame size and the stack's size, and say what changes that bound
+prerequisites:
+  - computer-architecture-execution/reading-assembly
+tags: [stack, memory, instructions]
+skills: [debugging, implementation]
+status: draft
+drafter: agent
+interviewQuestions:
+  - prompt: What must caller and callee agree on for a function call to work?
+    answer: >-
+      Their calling convention specifies how arguments and results are passed,
+      which registers each side must preserve, and how stack alignment is
+      maintained. The call must also retain a return location so execution can
+      resume after the call. Some architectures place it on the stack, while
+      others use a link register that may later be saved. Compilers can omit or
+      reshape frames when observable behavior and the interface rules permit it.
+  - prompt: Why can recursive code overflow the stack even when the machine has free RAM?
+    answer: >-
+      A thread normally has a finite stack budget, independent of the machine's
+      total available RAM. Without an applicable optimization, every outstanding
+      recursive call retains a frame, so depth multiplies per-frame demand.
+      Replacing recursion with an explicit work structure can move that storage
+      into independently managed memory but does not remove its size cost.
+      Bound the depth or change the traversal according to the input constraints.
+  - prompt: Why does x86-64 code sometimes move rsp by 8 bytes that it never uses?
+    answer: >-
+      The System V ABI requires rsp to be a multiple of 16 immediately before a
+      call, so the callee can rely on that alignment. At entry rsp is 8 bytes past
+      a multiple of 16, because the caller's call pushed an 8-byte return
+      address. A function that pushes an even number of 8-byte values, or none,
+      before calling must move rsp by another 8; one that pushes an odd number is
+      already aligned. The padding holds nothing and exists only for the call.
+    followUps:
+      - Why does a leaf function never need that padding?
+  - prompt: What is the red zone, and which functions may use it?
+    answer: >-
+      The System V x86-64 ABI reserves the 128 bytes below rsp, which signal and
+      interrupt handlers must not modify. A function may keep temporary data there
+      that it does not need across a call, and a leaf function, which calls
+      nothing, may use it for its whole frame without moving rsp. GCC's
+      unoptimized `sum_to` does exactly that with its locals. A function that
+      calls another cannot rely on it, because the call and the callee's frame
+      would use that space.
+sources:
+  - label: 'Dive into Systems, section 7.5 — Functions in assembly: frames, call, ret and leave'
+    url: https://diveintosystems.org/book/C7-x86_64/functions.html
+  - label: 'System V AMD64 psABI 1.0, sections 3.2.1 and 3.2.2 — Callee-saved registers, alignment at a call and the red zone'
+    url: https://gitlab.com/x86-psABIs/x86-64-ABI/-/jobs/artifacts/master/raw/x86-64-ABI/abi.pdf?job=build
+---
+
+import RealFrames from '../../../components/diagrams/RealFrames.astro';
+import StackDepth from '../../../components/diagrams/StackDepth.astro';
+
+import model from '../../../../labs/computer-architecture-execution/call-frames/stackPointer.ts?raw';
+
+## A crash report is a list of frames
+
+A program crashes deep inside a parser, and the debugger prints a backtrace:
+`readField`, called from `parse`, called from `main`. Nothing in the source
+lists those three calls together. The debugger found them on the stack, where
+each unfinished call left the address to return to. The same stack can run out
+when a recursion goes too deep, even on a machine with gigabytes of free memory.
+
+Think of reading with bookmarks: you follow a footnote into an appendix, and
+from there a reference into another chapter, leaving a bookmark at each place
+you left. You come back through them newest first. The analogy stops at
+contents: a frame holds more than a place to resume, such as saved registers,
+arguments and locals, and the compiler decides how big it is, or whether it
+exists at all.
+
+The [assembly lesson](/learn/computer-architecture-execution/reading-assembly/)
+stepped `scale_sum` calling `sum_to`. This page follows what that call does to
+the stack.
+
+## Frames keep unfinished calls
+
+A **call frame**, also called an activation record, holds state associated with
+one active function invocation. Depending on the target and compiler, that state
+can include a return location, saved registers, arguments that do not fit in
+argument registers, spilled values and space for local storage.
+
+A conventional thread's **call stack** manages these frames in last-in,
+first-out order. Suppose `main` calls `parse`, which calls `readField`. The calls
+remain unfinished in that order while `readField` executes. Returning from
+`readField` resumes `parse`; returning from `parse` resumes `main`.
+
+The stack grows toward lower addresses. The **stack pointer**, rsp, marks its
+top, and a **frame pointer**, rbp, when the compiler keeps one, gives a fixed
+base for addressing a frame's slots. Here is what GCC's unoptimized code
+actually keeps on the stack while `scale_sum` waits for `sum_to`:
+
+<RealFrames />
+
+Each frame holds the return address its caller's `call` pushed, the caller's
+saved frame pointer, and slots for the function's arguments and locals. At
+`-O2` the same functions keep everything in registers, and `sum_to` needs no
+frame at all: a source function does not imply a fixed physical frame. On ARM64
+the return address arrives in the link register instead, and a function that
+calls another saves it in its frame.
+
+## Follow the stack pointer
+
+Six kinds of instruction move rsp. `call` pushes the 8-byte return address and
+jumps; `ret` pops it back into the instruction pointer. `pushq` and `popq` move
+8 bytes. `subq $N, %rsp` reserves N bytes for locals and `addq` releases them.
+`movq %rsp, %rbp` starts a frame pointer, and `leave` undoes it: it copies rbp
+back into rsp, then pops the caller's saved rbp. Measure everything as the
+**depth**: bytes below rsp's value when the function was entered.
+
+The System V x86-64 calling convention adds two rules. The callee must preserve
+rbx, rbp and r12–r15 for its caller, which is why `scale_sum` at `-O2` pushes rbx
+before using it. And rsp must be a multiple of 16 immediately before every
+`call`. When the function was entered, its caller's call had just pushed 8
+bytes onto an aligned stack, so rsp was 8 bytes past a multiple of 16. A call at
+depth d is therefore aligned when d − 8 is a multiple of 16.
+
+Predict before opening the trace: before its call, `scale_sum` at `-O0` runs
+`pushq %rbp`, `movq %rsp, %rbp` and `subq $16, %rsp`, and at `-O2` only
+`pushq %rbx`. What is the depth at each call, and is each call aligned?
+
+<details>
+<summary>Check after predicting: the depth at every stack instruction</summary>
+
+<StackDepth />
+
+At `-O0` the push leaves depth 8 and the subtraction 24, and 24 − 8 = 16 is a
+multiple of 16, so the call is aligned. The 16 reserved bytes hold copies of
+the three arguments: values at −8(%rbp), count at −12 and factor at −16. `leave`
+returns to depth 0 in one instruction. At `-O2` one push leaves depth 8, and
+8 − 8 = 0: aligned with nothing reserved, because pushing rbx also did the
+padding.
+
+</details>
+
+A function that calls nothing, a **leaf**, needs no alignment and may not move
+rsp at all. The convention reserves the 128 bytes below rsp, the **red zone**,
+which signal and interrupt handlers must not touch, so a leaf may keep its
+whole frame there. In the frame figure above, `sum_to` at `-O0` sets its frame
+pointer and stores its locals below rsp without a `subq`.
+
+## Depth costs stack space
+
+**Stack overflow** means the thread's stack demand exceeds its allowed capacity.
+Deep recursion and large frames can trigger it even while other memory remains
+available. Conventional recursion with depth d and bounded frame size f needs
+d × f bytes of frames: a 1 MiB stack holds 16,384 frames of 64 bytes. An
+optimization such as tail-call elimination changes that result only when the
+actual compiler and call permit it; do not assume it for every language or
+function.
+
+Rewriting recursion with an explicit array or linked work structure changes how
+the pending work is represented. It can avoid a small call-stack budget, but
+still needs space for the same unresolved work. Choose traversal order, input
+limits and ownership deliberately.
+
+<details>
+<summary>Inspect the tested model and expected output</summary>
+
+<CodeExample
+  title="One function's stack pointer, checked against the calling convention"
+  code={model}
+  verified
+  output={
+    'scale_sum -O0: push → 8, frame → 8, sub 16 → 24, call → 24, leave → 0, ret → 0\nscale_sum -O2: push → 8, call → 8, pop → 0, ret → 0\nsum_to -O0: push → 8, frame → 8, pop → 0, ret → 0'
+  }
+/>
+
+</details>
+
+The tests check this output exactly, and run GCC's `scale_sum` listings in the
+assembly lesson's interpreter to check the model's depth against the
+interpreter's rsp at every stack instruction. They also check a leaf that skips
+alignment, every refusal (a misaligned call, rsp above its entry value, a `ret`
+with bytes still pushed, a `leave` without a frame, an event after `ret`,
+malformed events), how many equal frames fit in a stack, and the frames the
+figure reads. The model tracks only rsp's rules, not the values in the slots,
+and treats each call as a callee that returns with the stack as it found it.
+
+## Practice
+
+<LabCard
+  title="01 / Track the stack pointer"
+  command="pnpm lab computer-architecture-execution/call-frames"
+>
+  Implement `solve(events)` in `starter.ts`: return the depth after each of
+  `push`, `pop`, `sub N`, `add N`, `frame`, `leave`, `call` and `ret`, and throw
+  a `RangeError` when the function breaks a rule: a misaligned call, rsp above
+  its entry value, a `ret` with bytes still pushed, a `leave` without a frame,
+  an event after `ret`, or an unknown event. The hidden cases include a leaf, a
+  frame with `leave` and each refusal. Before running them, trace push, push,
+  sub 8, call, add 8, pop, pop, ret by hand and say why the `sub 8` is there.
+</LabCard>
+
+<details>
+<summary>Check after attempting</summary>
+
+The depths are 8, 16, 24, 24, 16, 8, 0 and 0. Two pushes leave depth 16, and
+16 − 8 = 8 is not a multiple of 16, so a call there would be misaligned. The
+`sub 8` brings the depth to 24, where the call is aligned; its 8 bytes hold
+nothing.
+
+</details>
+
+<LabCard
+  title="02 / How deep can it recurse?"
+  command="pnpm exec vitest run labs/computer-architecture-execution/call-frames/"
+>
+  A thread's stack holds 8 MiB. Each call of a recursive function needs a
+  48-byte frame: its return address, a saved rbp and 32 bytes of locals. Predict
+  how many nested calls fit, then add an assertion with `maxDepth`.
+</LabCard>
+
+<details>
+<summary>Check after testing</summary>
+
+8 × 1,048,576 ÷ 48 = 174,762.67, so 174,762 frames fit and the next call
+overflows. Real programs reach the limit sooner, because the frames below the
+recursion already use part of the stack. Halving the frame size doubles the
+depth; an explicit work stack moves the same storage to the heap instead.
+
+</details>
+
+## Check your reasoning
+
+<ConceptCheck
+  id="call-frames-alignment"
+  question="A function pushes rbx, r12 and r13, then calls another function. Must it move rsp before the call?"
+  options={[
+    {
+      label:
+        'No: three pushes leave depth 24, and 24 − 8 = 16 is a multiple of 16, so the call is aligned.',
+      correct: true,
+      explanation:
+        'At entry rsp was 8 bytes past a multiple of 16, because of the return address. An odd number of 8-byte pushes cancels that offset.',
+    },
+    {
+      label: 'Yes: 24 bytes is not a multiple of 16.',
+      explanation:
+        'That would hold only if rsp had been aligned at entry. The caller aligned it before its call, and the call then pushed 8 bytes, so the depth must be 8 more than a multiple of 16.',
+    },
+    {
+      label:
+        'Yes: it must first subtract the size of its locals, whatever it pushed.',
+      explanation:
+        'A function reserves space only for locals it needs. This one keeps its values in the three saved registers, so it needs no other adjustment for the call.',
+    },
+  ]}
+/>
+
+## Two-minute recap
+
+- A call frame holds one unfinished call: its return address, saved registers,
+  arguments and locals. Frames return newest first.
+- `call` pushes the return address and `ret` pops it; rsp marks the top of the
+  stack, and rbp, when kept, a fixed base.
+- System V x86-64 needs rsp 16-byte aligned at each call. Entry is 8 bytes off,
+  so a function pads when its pushes leave the call misaligned.
+- A leaf may keep its frame in the 128-byte red zone below rsp.
+- Recursion needs depth × frame size bytes of stack, however much RAM is free.

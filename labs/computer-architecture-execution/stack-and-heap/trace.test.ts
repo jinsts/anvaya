@@ -2,6 +2,7 @@ import { expect, it } from 'vitest';
 import {
   STORY,
   STORY_STACK_LIMIT,
+  lifetimeReport,
   traceLifetimes,
   type LifetimeEvent,
 } from './trace';
@@ -44,6 +45,21 @@ it('answers each story question from the model', () => {
         after.frames[0]!.locals[0]!.ref !== null ? 0 : 1,
       );
   }
+});
+
+it('gives the practice answer: a handle dropped on return leaks its object', () => {
+  const events: LifetimeEvent[] = [
+    { kind: 'call', frame: 'main', bytes: 16, locals: ['data'] },
+    { kind: 'call', frame: 'scratch', bytes: 16, locals: ['tmp'] },
+    { kind: 'allocate', bytes: 64, into: 'tmp' },
+    { kind: 'return' },
+  ];
+  const last = traceLifetimes(events, 1024).at(-1)!;
+  expect(last.heap).toEqual([{ id: 1, bytes: 64, live: true }]);
+  expect(last.frames.flatMap((f) => f.locals.map((l) => l.ref))).toEqual([
+    null,
+  ]);
+  expect(lifetimeReport(events)).toEqual({ live: [1], dangling: [] });
 });
 
 it('rejects double free, unknown locals, overflow and empty returns', () => {

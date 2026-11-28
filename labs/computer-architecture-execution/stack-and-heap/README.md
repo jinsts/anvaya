@@ -9,6 +9,6 @@ throws until you implement it; the ordinary quality gate checks the reference
 against the same contracts. For each case, say which event ended each object's
 lifetime and which frames still named it.
 
-`example.ts` is the byte-accounting model, `trace.ts` adds named locals and
-handles for the stepper, and `frames.ts` reads GCC's real `-O0` frames from the
-reading-assembly interpreter.
+`example.ts` is the byte-accounting model, and `trace.ts` adds named locals and
+handles for the stepper. The real `-O0` frames moved to the call-frames lab with
+their lesson.

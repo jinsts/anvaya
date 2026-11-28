@@ -52,15 +52,13 @@ sections:
       - computer-architecture-execution/cpu-registers-and-instructions
       - computer-architecture-execution/reading-assembly
       - computer-architecture-execution/compilation-and-execution
+      - computer-architecture-execution/call-frames
       - computer-architecture-execution/stack-and-heap
-    # Split on 2026-11-25 (audit F2; owner decision S1: split above 45
-    # minutes). "Call frames and the stack pointer" goes before stack-and-heap
-    # and takes call frames, the stack pointer, the calling convention's stack
-    # rules (alignment, the red zone) and stack overflow. stack-and-heap keeps
-    # independent allocation lifetimes, failure modes, allocator costs and
-    # garbage collection.
-    planned:
-      - Call frames and the stack pointer
+    # On 2026-11-26 (audit F2; owner decision S1: split above 45 minutes)
+    # call-frames took call frames, the stack pointer, the calling
+    # convention's stack rules (alignment, the red zone) and stack overflow
+    # from stack-and-heap, which keeps independent allocation lifetimes,
+    # failure modes, allocator costs and garbage collection.
   - id: architecture-memory-hierarchy
     title: The memory hierarchy
     subject: computer-architecture-execution

@@ -2330,3 +2330,83 @@ For owner review: the 30-minute estimates; the delayed-flight analogy; the
 illustrative parameters (1 ns, 10%, 4 ns, 25%, 80 ns; a 0.5 ns TLB lookup, 1%
 TLB misses and a 40 ns walk), which are chosen for arithmetic and are not
 measurements.
+
+## Call frames: a page split from stack and heap — 2026-11-28
+
+Drafts the planned page "Call frames and the stack pointer" with the
+draft-lesson skill (audit finding F2, owner decision S1), as `call-frames`,
+placed before `stack-and-heap`, and moves that material out of the 50-minute
+stack lesson. The page teaches what a frame holds, how `call`, `ret`, `push`,
+`pop`, `subq`/`addq`, `movq %rsp, %rbp` and `leave` move rsp, the System V
+rules (callee-saved registers, rsp 16-byte aligned at every call, the red zone)
+and stack overflow from depth × frame size. It has a hook (a backtrace) with a
+bookmarks analogy and its limit, two figures, a predict prompt with a reveal, a
+verified output, two practice cards, a concept check, a recap, four interview
+questions (two moved from the stack lesson) and two sources.
+
+Lab `labs/computer-architecture-execution/call-frames/`: `stackPointer.ts`
+tracks one function's depth below its entry rsp and refuses a misaligned call,
+rsp above its entry value, a `ret` with bytes still pushed, a `leave` without a
+frame, events after `ret` and malformed events; `stackSteps` reads the stack
+instructions of a GCC listing; `maxDepth` counts equal frames that fit.
+`frames.ts` and its test (the real -O0 frames) moved here from the stack lab
+with `RealFrames`. The contract has eight hidden cases. Cross-checks: the
+model's depth after every stack instruction of GCC's -O0 and -O2 `scale_sum`
+equals the reading-assembly interpreter's rsp (and `rspAtCall` at the call), an
+independent implementation of x86-64 stack arithmetic; and a separate Python
+tracker, which tests alignment as rsp's residue modulo 16 rather than depth − 8,
+gives every contract value and the practice answers. `pnpm vitest run` on the
+lab passes 16 tests, and `pnpm lab computer-architecture-execution/call-frames`
+fails all 8 cases.
+
+Figures: `RealFrames` (moved, unchanged) and `StackDepth`, new, which shows the
+depth after each stack instruction of both `scale_sum` listings from the model,
+inside the "Check after predicting" disclosure because it answers the
+prediction.
+
+Material moved out of `stack-and-heap`: the frames section and figure, the
+stack-overflow and recursion paragraphs (a one-sentence reminder links the new
+page), the stack-limit practice card, two interview questions, the frames
+objective, two recap points, and the Dive into Systems functions and psABI
+sources. Its prerequisite is now `call-frames` instead of `reading-assembly`,
+its hook links the new page, and its second card is now "Find the leak", a
+handle dropped on return, backed by a new test in `trace.test.ts`. The registers
+lesson's link for "the frames they build" now points at the new page, and the
+stack lab's README no longer lists `frames.ts`.
+
+First-run failure: the full gate failed four browser tests, the per-lesson
+checks for `stack-and-heap` on desktop and mobile, because moving `RealFrames`
+left the lesson without a visible figure (V1). The call-stack stepper is now
+wrapped in a `DiagramFrame`, as the execution lesson's datapath stepper is; its
+initial state renders without JavaScript.
+
+Minutes: `call-frames` 30 (about 1,630 words, two practice cards) and
+`stack-and-heap` 35 (about 1,700 words, two cards, a stepper and an extra
+alias exercise), by the calibration recorded for the access-time page. `pnpm
+subject:report` raises no flag for `call-frames` and only C4 (35 minutes, one
+mechanism) for `stack-and-heap`.
+
+Sources opened for this page: Dive into Systems section 7.5 (rsp and rbp,
+activation records, `call`/`ret`/`leave` equivalences, the stack growing toward
+lower addresses), and the System V AMD64 psABI 1.0 PDF of 12 March 2025,
+fetched from the repository's build artifact (sections 3.2.1 and 3.2.2:
+callee-saved rbx, rbp and r12–r15, 16-byte alignment immediately before a call
+with (%rsp + 8) a multiple of 16 at entry, and the 128-byte red zone leaf
+functions may use).
+
+`pnpm verify` with the same environment, after the fix: zero type errors,
+warnings or hints; formatting and lint passed; 472 tests in 69 files, none
+skipped, including the native drift check; 41 pages; 150 browser tests.
+
+Visual review: `pnpm shots` on `call-frames` (RealFrames) and on
+`stack-and-heap` (the framed stepper), and the scratch script for `StackDepth`
+inside its disclosure, at 1280 and 390 px in both themes; no overflow or console
+errors. Review rebuilt `StackDepth` once: its first version showed reconstructed
+instruction names without operands, squeezed its bars into a narrow middle
+column beside a second panel, and wrapped the alignment note; it now shows the
+listing's own instruction text, stacks the panels, and puts the note on its own
+line.
+
+For owner review: the bookmarks analogy, the 30- and 35-minute estimates, and
+the replacement of "Find the stack limit" with "Find the leak" in the stack
+lesson.
