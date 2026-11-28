@@ -176,7 +176,10 @@ Device-accessible memory may need a separate mapping, possibly through an IOMMU,
 which translates device requests and can restrict their access. An application's
 pointer does not establish that mapping or keep a buffer alive.
 
-The next lesson follows [I/O submission and completion](/learn/computer-architecture-execution/io-mechanisms/).
+The next lesson, [polling, interrupts and DMA](/learn/computer-architecture-execution/polling-interrupts-and-dma/),
+separates moving a request's bytes from noticing that it finished, and the
+[I/O mechanisms lesson](/learn/computer-architecture-execution/io-mechanisms/)
+then follows one request from submission to completion.
 The boundary matters even when an API hides every register: a call that returned
 success may only have copied data into an operating-system buffer.
 

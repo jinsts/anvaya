@@ -2484,3 +2484,16 @@ lane now shares one time scale.
 
 For owner review: the kettle analogy, the 30-minute estimates, the illustrative
 units, and the new interview question on descriptor ordering.
+
+## Hardware-software interaction: the next lesson is the polling page — 2026-11-28
+
+Standard W9 and L13, found while preparing the final audit: "The next lesson
+follows I/O submission and completion" still linked `io-mechanisms`, but since
+the split the next lesson is `polling-interrupts-and-dma`. The sentence now
+links the polling page for moving bytes and noticing completion, then the I/O
+mechanisms lesson for one request from submission to completion.
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 485 tests in 71 files,
+none skipped, including the native drift check; 42 pages, every internal link
+validated; 154 browser tests. No figure changed.
