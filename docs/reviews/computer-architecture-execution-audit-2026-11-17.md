@@ -376,3 +376,11 @@ On 2026-11-17 at `1142064`:
 
 Not done: re-reading every cited source page; opening all 251 captures; a
 screen-reader or real-device check.
+
+## Correction — 2026-11-28
+
+The [2026-11-28 audit](computer-architecture-execution-audit-2026-11-28.md)
+found two gaps this audit missed. P2 was scored on case counts alone; seven
+contracts test no invalid input (its A1). P5 was scored partial for the memory
+card alone; thirteen other first cards also predict a hidden case and reveal its
+answer (its A2). Both were present when this audit was written.

@@ -2497,3 +2497,26 @@ Same command and environment as the first entry of 2026-11-25: zero type
 errors, warnings or hints; formatting and lint passed; 485 tests in 71 files,
 none skipped, including the native drift check; 42 pages, every internal link
 validated; 154 browser tests. No figure changed.
+
+## Computer Architecture & Execution: subject audit — 2026-11-28
+
+The audit-subject skill on the whole subject at `99faf4e`, written to
+`docs/reviews/computer-architecture-execution-audit-2026-11-28.md`: P0 0, P1 0,
+P2 2, P3 2. The P2s are seven contracts without an invalid-input case (A1) and
+thirteen first cards that predict a hidden case (A2). The 2026-11-17 audit
+gains a dated correction for both, which it missed (E10).
+
+`pnpm subject:report computer-architecture-execution` (Markdown and JSON): 22
+lessons in 6 chapters, 735 minutes, 62 imported figures and widgets (60 from
+`labs/`), 23 verified outputs, 5–9 hidden cases per lab, 14 problems, and 18
+flags, each read at its line and judged in the audit.
+
+`pnpm shots` on all 22 lessons after a fresh build: 282 captures, no page
+overflow, no offending elements and no console errors in any report.
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 485 tests in 71 files,
+none skipped, including the native drift check; 42 pages; 154 browser tests.
+
+For owner review: the audit's judgments, and standard feedback S5 on whether a
+predicted hidden case can count as P5's "one worked case".
