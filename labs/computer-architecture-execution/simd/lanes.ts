@@ -45,6 +45,9 @@ export function sumInOrder(values: readonly number[]): number {
  * (l0 + l2) + (l1 + l3), and any remainder is added in order after that.
  */
 export function sumByLanes(values: readonly number[]): number {
+  for (const v of values)
+    if (typeof v !== 'number' || (Number.isFinite(v) && !Number.isFinite(f(v))))
+      throw new RangeError(`${String(v)} is not a binary32 value.`);
   const n = values.length - (values.length % 4);
   const lane = [0, 0, 0, 0];
   for (let i = 0; i < n; i++) lane[i % 4] = f(lane[i % 4]! + f(values[i]!));

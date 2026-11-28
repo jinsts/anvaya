@@ -125,7 +125,10 @@ a specific error. These contracts have none:
   models accept what they should refuse. Probed directly: `predict` accepts an
   outcome other than taken or not taken, `schedule` accepts an unknown
   instruction kind, `jumpTaken` accepts operands outside 32 bits and throws a
-  plain `Error` for an unknown jump, and `sumByLanes` returns `null` for `NaN`.
+  plain `Error` for an unknown jump, and `sumByLanes` converts a string such as `'2'` to a number and silently
+  turns a finite value too large for binary32 into infinity. (Corrected the
+  same day: an earlier wording said it returns `null` for `NaN`; that was a
+  probe printing `NaN` through `JSON.stringify`.)
 
 A learner can pass these labs without handling bad input, which the other
 fifteen labs require. **Fix:** for each lab, refuse invalid input with a

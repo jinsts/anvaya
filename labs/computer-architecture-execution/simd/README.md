@@ -2,7 +2,8 @@
 
 Implement `solve` in `starter.ts` before opening `lanes.ts`: compute a binary32
 sum in the order GCC's reassociated four-lane loop uses, rounding every addition
-with `Math.fround`.
+with `Math.fround`. Throw a `RangeError` for a value that is not a number or a
+finite number too large for binary32.
 
 Run `pnpm lab computer-architecture-execution/simd`. The attempt throws until
 you implement it; the ordinary quality gate checks the reference against the

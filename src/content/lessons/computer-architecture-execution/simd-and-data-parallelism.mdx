@@ -187,11 +187,12 @@ vectorizes without such flags.
 </details>
 
 The tests check vector plans at and below the vector width, lane-wise addition
-against the native program's expected results, both summation orders, and that
-the recorded listings and reports show what the lesson says: `paddd` in the
-vectorized add, no vector registers in the scalar build, only `addss` in the
-`-O3` sum and `addps` once reassociation is allowed. The native lab runs the
-program's checks at `-O2` and `-O3` and fails if a listing or report drifts.
+against the native program's expected results, both summation orders, refusal of
+non-numbers and binary32 overflow, and that the recorded listings and reports
+show what the lesson says: `paddd` in the vectorized add, no vector registers in
+the scalar build, only `addss` in the `-O3` sum and `addps` once reassociation
+is allowed. The native lab runs the program's checks at `-O2` and `-O3` and
+fails if a listing or report drifts.
 
 ## When vectors do not help
 
@@ -211,17 +212,19 @@ program's checks at `-O2` and `-O3` and fails if a listing or report drifts.
   command="pnpm lab computer-architecture-execution/simd"
 >
   Implement `solve(values)` in `starter.ts`: compute the binary32 sum in the
-  order GCC's reassociated four-lane loop uses. Before running the tests,
-  compute 2²⁴ followed by eight ones both in lanes and in source order.
+  order GCC's reassociated four-lane loop uses, and throw a `RangeError` for a
+  value that is not a number or a finite number too large for binary32. Before
+  running the tests, compute 1, 2²⁴ and then six ones both in lanes and in
+  source order.
 </LabCard>
 
 <details>
 <summary>Check after attempting</summary>
 
-Lane 0 gets 2²⁴ + 1, which rounds back to 2²⁴; lanes 1–3 each reach 2. The pairs
-are 2²⁴ + 2 and 4, so the first eight sum to 2²⁴ + 6. The ninth value, 1, is a
-remainder: 2²⁴ + 7 is halfway between neighbors, and ties to even gives
-2²⁴ + 8. In source order every 1 is lost: 2²⁴.
+Lane 1 gets 2²⁴ + 1, which rounds back to 2²⁴; lanes 0, 2 and 3 each reach 2.
+The pairs are lane 0 + lane 2 = 4 and lane 1 + lane 3 = 2²⁴ + 2, so the sum is
+2²⁴ + 6. In source order 1 + 2²⁴ is halfway between neighbors and ties to even
+give 2²⁴, and every later 1 is lost the same way: 2²⁴.
 
 </details>
 
