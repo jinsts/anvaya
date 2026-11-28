@@ -2540,3 +2540,21 @@ subject:report` raises no new flag. No figure changed.
 Same command and environment as the first entry of 2026-11-25: zero type
 errors, warnings or hints; formatting and lint passed; 488 tests in 71 files,
 none skipped, including the native drift check; 42 pages; 154 browser tests.
+
+## Floating point: refusal cases and a fresh prediction — 2026-11-28
+
+Audit 2026-11-28 A1 and A2 (standard P2 and P5). The contract gains three
+refusal cases, 2³², −1 and 0.5, each expecting the `RangeError` the reference
+`fromBits` already throws. Card 01 and the README state the refusal. Card 01
+predicted hidden cases 2 and 5; it now predicts `0xbe200000` and `0x00000001`,
+which no case uses, and its reveal no longer names case 7's pattern. Python's
+`struct` decoded both independently: −0.15625 and 1.401298464324817e-45, which
+is 2⁻¹⁴⁹.
+
+`pnpm lab computer-architecture-execution/floating-point-representation` fails
+all 12 cases; the reference passes them (22 tests in the lab folder). `pnpm
+subject:report` raises no new flag. No figure changed.
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 491 tests in 71 files,
+none skipped, including the native drift check; 42 pages; 154 browser tests.
