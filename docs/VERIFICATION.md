@@ -2677,3 +2677,18 @@ fails all 9 cases. `pnpm subject:report` raises no new flag. No figure changed.
 Same command and environment as the first entry of 2026-11-25: zero type
 errors, warnings or hints; formatting and lint passed; 501 tests in 71 files,
 none skipped, including the native drift check; 42 pages; 154 browser tests.
+
+## Compilation and execution: a prediction no hidden case uses — 2026-11-28
+
+Audit 2026-11-28 A2 (standard P5). Card 01 predicted hidden case 1 (a call to
+0x2100 with its displacement at 0x2001); it now predicts a call to 0x3080 with
+its displacement at 0x3001, which no case uses. By hand, 0x3080 − 4 − 0x3001 =
+0x7b, and the reference `pc32` returns the bytes 7b 00 00 00. The reveal
+follows. The contract is unchanged.
+
+`pnpm lab computer-architecture-execution/compilation-and-execution` still
+fails all 5 cases. `pnpm subject:report` raises no new flag. No figure changed.
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 501 tests in 71 files,
+none skipped, including the native drift check; 42 pages; 154 browser tests.

@@ -287,15 +287,15 @@ reads both styles in detail.
   Implement `solve(symbol, addend, place)` in `starter.ts`: return the four
   little-endian bytes of S + A − P as a signed 32-bit value, and throw a
   `RangeError` when it does not fit. Before running the tests, compute the bytes
-  for a call at 0x2000 whose four displacement bytes start at 0x2001, to a
-  function at 0x2100, with addend −4.
+  for a call at 0x3000 whose four displacement bytes start at 0x3001, to a
+  function at 0x3080, with addend −4.
 </LabCard>
 
 <details>
 <summary>Check after attempting</summary>
 
-S + A − P = 0x2100 − 4 − 0x2001 = 0xfb, so the bytes are `fb 00 00 00`. Check:
-the next instruction starts at 0x2005, and 0x2005 + 0xfb = 0x2100. A backward
+S + A − P = 0x3080 − 4 − 0x3001 = 0x7b, so the bytes are `7b 00 00 00`. Check:
+the next instruction starts at 0x3005, and 0x3005 + 0x7b = 0x3080. A backward
 call gives a negative value, stored in two's complement, like the `b4 ff ff ff`
 in the figure.
 
