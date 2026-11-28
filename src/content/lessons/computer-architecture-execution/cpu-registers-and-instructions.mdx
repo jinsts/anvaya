@@ -249,14 +249,14 @@ changes only the register. A test runs this case in the interpreter.
   Implement `solve(word)` in `starter.ts`: split a 16-bit teaching instruction
   into opcode, register and immediate with shifts and masks, and throw a
   `RangeError` for reserved opcodes and values outside 16 bits. Before running
-  the tests, decode `0x2a0b` and say why `0x3000` must be rejected.
+  the tests, decode `0x1c42` and say why `0xf000` must be rejected.
 </LabCard>
 
 <details>
 <summary>Check after attempting</summary>
 
-`0x2a0b` is opcode 2, register 10 (hexadecimal a) and immediate 11 (hexadecimal
-0b). `0x3000` has opcode 3, which this format does not define; decoding it
+`0x1c42` is opcode 1, register 12 (hexadecimal c) and immediate 66 (hexadecimal
+42). `0xf000` has opcode 15, which this format does not define; decoding it
 anyway would invent an operation. Shift right by 12 for the opcode, then mask
 with `0xf` and `0xff` for the other fields.
 

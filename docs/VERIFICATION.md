@@ -2692,3 +2692,18 @@ fails all 5 cases. `pnpm subject:report` raises no new flag. No figure changed.
 Same command and environment as the first entry of 2026-11-25: zero type
 errors, warnings or hints; formatting and lint passed; 501 tests in 71 files,
 none skipped, including the native drift check; 42 pages; 154 browser tests.
+
+## CPU registers and instructions: a prediction no hidden case uses — 2026-11-28
+
+Audit 2026-11-28 A2 (standard P5). Card 01 predicted hidden cases 3 and 4
+(`0x2a0b` and `0x3000`); it now asks for `0x1c42` and `0xf000`, which no case
+uses. The reference `decode` returns opcode 1, register 12 and immediate 66 for
+the first and throws a `RangeError` for the second, as worked by hand. The
+reveal follows. The contract is unchanged.
+
+`pnpm lab computer-architecture-execution/cpu-registers-and-instructions` still
+fails all 6 cases. `pnpm subject:report` raises no new flag. No figure changed.
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 501 tests in 71 files,
+none skipped, including the native drift check; 42 pages; 154 browser tests.
