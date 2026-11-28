@@ -283,15 +283,16 @@ still matters, but the experiment no longer tests it. The recorded build passes
 >
   Implement `solve(baseline, candidate)` in `starter.ts`: return how many times
   faster the candidate is by CPU time. Before running the tests, predict a
-  baseline of 1,000 instructions at CPI 1 against 500 instructions at CPI 3,
+  baseline of 2,000 instructions at CPI 1 against 800 instructions at CPI 3,
   both at the same frequency.
 </LabCard>
 
 <details>
   <summary>Check after attempting</summary>
 
-The baseline needs 1,000 cycles and the candidate 1,500, so the result is
-two-thirds: the candidate is slower although it runs half the instructions.
+The baseline needs 2,000 cycles and the candidate 2,400, so the result is
+2,000 ÷ 2,400 = 5/6, about 0.83: the candidate is slower although it runs 60%
+fewer instructions.
 Instruction count alone misleads whenever CPI changes with it.
 
 </details>

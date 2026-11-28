@@ -2662,3 +2662,18 @@ raises no new flag. No figure changed.
 Same command and environment as the first entry of 2026-11-25: zero type
 errors, warnings or hints; formatting and lint passed; 501 tests in 71 files,
 none skipped, including the native drift check; 42 pages; 154 browser tests.
+
+## Architecture and performance: a prediction no hidden case uses — 2026-11-28
+
+Audit 2026-11-28 A2 (standard P5). Card 01 predicted hidden case 2 (1,000
+instructions at CPI 1 against 500 at CPI 3); it now predicts 2,000 at CPI 1
+against 800 at CPI 3, which no case uses. Worked by hand (2,000 cycles against
+2,400) and from the reference `cpuSeconds`: 0.8333333333333334, 5/6. The reveal
+follows. The contract is unchanged.
+
+`pnpm lab computer-architecture-execution/architecture-and-performance` still
+fails all 9 cases. `pnpm subject:report` raises no new flag. No figure changed.
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 501 tests in 71 files,
+none skipped, including the native drift check; 42 pages; 154 browser tests.
