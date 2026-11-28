@@ -1432,3 +1432,78 @@
 .fork-stepper .fork-events li.next {
   border: 2px solid var(--accent);
 }
+/* Fair-scheduler stepper. */
+.sched-stepper .operation-controls label {
+  flex: 1 1 12rem;
+}
+.sched-strip {
+  display: grid;
+  grid-template-columns: repeat(36, minmax(0, 1fr));
+  margin: var(--space-3) 0;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  background: var(--bg);
+  font-family: var(--font-mono);
+  font-size: 60%;
+  line-height: 1.4rem;
+  text-align: center;
+}
+.sched-strip span {
+  min-width: 0;
+  overflow: hidden;
+  border-right: 1px solid var(--surface);
+}
+.sched-stepper .t-A {
+  background: var(--chart-1);
+}
+.sched-stepper .t-B {
+  background: var(--chart-2);
+}
+.sched-stepper .t-C {
+  background: var(--chart-3);
+}
+.sched-strip .ran {
+  color: var(--text);
+}
+.sched-strip .ran.t-A {
+  background: var(--tone-blue-soft);
+}
+.sched-strip .ran.t-B {
+  background: var(--tone-amber-soft);
+}
+.sched-strip .ran.t-C {
+  background: var(--tone-teal-soft);
+}
+.sched-stepper ul.sched-candidates {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0 0 var(--space-3);
+  padding: 0;
+  list-style: none;
+}
+.sched-candidates li {
+  display: grid;
+  grid-template-columns: 1.5rem minmax(0, 1fr) 7rem;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 2px var(--space-1);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+}
+.sched-candidates li.picked {
+  border-color: var(--accent);
+}
+.sched-track {
+  height: 0.8rem;
+  border-bottom: 1px solid var(--border);
+}
+.sched-bar {
+  display: block;
+  height: 100%;
+}
+.sched-value {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}

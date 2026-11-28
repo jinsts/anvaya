@@ -104,6 +104,34 @@ export const ARTIFACTS: Artifact[] = [
   },
 ];
 
+/** share and wake lines from scheduling/fair.c. */
+function fairRecords(csv: string) {
+  const shares: {
+    round: number;
+    nice: number[];
+    cpuUs: number[];
+    runUs: number;
+  }[] = [];
+  const wakes: { round: number; neighbour: boolean; lateNs: number }[] = [];
+  for (const line of csv.trim().split('\n')) {
+    const [kind, ...fields] = line.split(',');
+    const n = fields.map(Number);
+    if (n.some((x) => !Number.isInteger(x) || x < 0))
+      throw new Error(`Invalid scheduling line ${line}`);
+    if (kind === 'share')
+      shares.push({
+        round: n[0]!,
+        nice: [n[1]!, n[2]!],
+        cpuUs: [n[3]!, n[4]!],
+        runUs: n[5]!,
+      });
+    else if (kind === 'wake')
+      wakes.push({ round: n[0]!, neighbour: n[1] === 1, lateNs: n[2]! });
+    else throw new Error(`Invalid scheduling line ${line}`);
+  }
+  return { shares, wakes };
+}
+
 export const MEASUREMENTS: Measurement[] = [
   // system-calls: serve's whole run, with strace's own summary of it.
   {
@@ -144,6 +172,15 @@ export const MEASUREMENTS: Measurement[] = [
       traced: 'strace -f -e trace=getpid',
       records: costRecords(stdout),
     }),
+  },
+  // scheduling: two busy processes at nice 0/0 and 0/5 on one CPU, and a
+  // process that sleeps 10 ms at a time, without and with a busy neighbour.
+  {
+    source: 'scheduling/fair.c',
+    flags: C17,
+    args: { quick: ['100', '10', '1'], full: ['2000', '100', '5'] },
+    file: 'scheduling/fair.json',
+    parse: (csv) => fairRecords(csv),
   },
 ];
 

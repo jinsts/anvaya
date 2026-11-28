@@ -106,8 +106,8 @@ sections:
       - operating-systems-runtime-internals/system-calls
       - operating-systems-runtime-internals/processes
       - operating-systems-runtime-internals/threads
+      - operating-systems-runtime-internals/scheduling
     planned:
-      - 'Scheduling: Sharing a CPU fairly'
       - 'Context switches: What switching costs'
   - id: os-memory
     title: Memory

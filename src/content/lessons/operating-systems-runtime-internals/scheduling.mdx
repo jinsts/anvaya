@@ -1,0 +1,305 @@
+---
+title: 'Scheduling: Sharing a CPU fairly'
+shortTitle: Scheduling
+summary: Compute the order and CPU shares a weighted fair scheduler gives busy and sleeping tasks, see how nice values become weights, and compare the model with what Linux did on one pinned CPU.
+subject: operating-systems-runtime-internals
+path: engineering-fundamentals
+difficulty: intermediate
+estimatedMinutes: 30
+learningObjectives:
+  - Compute the run order and CPU shares a weighted fair scheduler gives tasks with different nice values
+  - Explain how virtual runtime lets a task that sleeps run soon after it wakes without monopolizing the CPU
+  - Read a recorded measurement of CPU shares and wake-up delays against the model, and say where Linux differs
+prerequisites:
+  - operating-systems-runtime-internals/threads
+tags: [kernel, execution, performance]
+skills: [profiling-measurement, trade-off-analysis, implementation]
+status: draft
+drafter: agent
+interviewQuestions:
+  - prompt: What is the difference between preemptive and cooperative scheduling?
+    answer: >-
+      A cooperative scheduler switches only when the running task gives up the
+      CPU, by blocking, yielding or finishing, so one task in a loop can keep
+      every other waiting. A preemptive scheduler can stop a task that is
+      still running, on a timer interrupt or when another task wakes, and run
+      another. Linux schedules processes and threads preemptively; some
+      runtimes schedule their own tasks cooperatively on top of the kernel's
+      threads, which later chapters show.
+  - prompt: Two CPU-bound processes share one CPU, one at nice 0 and one at nice 5. What share does each get?
+    answer: >-
+      Under Linux's weighted fair scheduling the shares follow the weights:
+      1024 at nice 0 and 335 at nice 5, so about 75% and 25%. Each step of
+      nice changes the weight by about 1.25 times, so the ratio depends only
+      on the difference. This assumes both are runnable all the time, on the
+      same CPU, in the same scheduling group; in this lesson's recording the
+      second process received 24.7% to 24.8%.
+    followUps:
+      - Why would the same two processes each get a whole CPU on a machine with two idle CPUs?
+  - prompt: Why does an I/O-bound task usually get low latency even when CPU-bound tasks are running?
+    answer: >-
+      A fair scheduler tracks how much CPU each task has had, scaled by its
+      weight, and runs the one that has had least. A task that mostly sleeps
+      uses little CPU, so when it wakes it is at or near the front instead of
+      behind the busy tasks, and it runs within about one slice; Linux can
+      also preempt the running task at once when it wakes. Its credit is
+      limited, though, so a long sleep does not let it monopolize the CPU
+      afterwards.
+  - prompt: Why can a CPU-bound background job hurt the tail latency of a service on the same machine?
+    answer: >-
+      When both want the same CPU, a request that arrives while the job holds
+      it may have to wait for the job's slice to end. Most requests are lucky,
+      but the unlucky ones wait milliseconds, which shows in the p99 rather
+      than the median. In this lesson's recording a sleeping process beside a
+      busy one ran within about 0.04 ms at the median, while about one
+      wake-up in four waited 2 to 4 ms. Fixes are separating them onto
+      different CPUs, raising the job's nice value or putting it in a
+      cgroup with a lower weight.
+sources:
+  - label: 'OSTEP, chapter 9 — CFS: virtual runtime, the weight table, sleeping tasks'
+    url: https://pages.cs.wisc.edu/~remzi/OSTEP/cpu-sched-lottery.pdf
+  - label: 'OSTEP, chapter 7 — preemptive schedulers, response time and time slices'
+    url: https://pages.cs.wisc.edu/~remzi/OSTEP/cpu-sched.pdf
+  - label: 'sched(7) — SCHED_OTHER, the nice value as a per-thread attribute, autogroups'
+    url: https://man7.org/linux/man-pages/man7/sched.7.html
+  - label: 'Linux kernel: EEVDF Scheduler — lag, eligibility and virtual deadlines'
+    url: https://docs.kernel.org/scheduler/sched-eevdf.html
+  - label: 'Linux kernel: CFS Scheduler — the ideal multitasking CPU and virtual runtime'
+    url: https://docs.kernel.org/scheduler/sched-design-CFS.html
+  - label: 'getpriority(2) — raising your own nice value needs no privilege'
+    url: https://man7.org/linux/man-pages/man2/setpriority.2.html
+  - label: 'sched_setaffinity(2) — pinning a thread to a set of CPUs'
+    url: https://man7.org/linux/man-pages/man2/sched_setaffinity.2.html
+  - label: 'PR_SET_TIMERSLACK(2const) — timer slack and its 50 µs default'
+    url: https://man7.org/linux/man-pages/man2/PR_SET_TIMERSLACK.2const.html
+---
+
+import FairRecording from '../../../components/diagrams/FairRecording.astro';
+import SchedDecisions from '../../../components/diagrams/SchedDecisions.astro';
+import SchedTimeline from '../../../components/diagrams/SchedTimeline.astro';
+import SchedStepper from '../../../components/interactive/SchedStepper';
+
+import fairSource from '../../../../labs/operating-systems-runtime-internals/scheduling/fair.c?raw';
+import model from '../../../../labs/operating-systems-runtime-internals/scheduling/fair.ts?raw';
+
+## A web server beside a batch job
+
+A machine runs a web server and a nightly batch job that wants every cycle it
+can get. Both are runnable, the CPU can run one at a time, and the kernel's
+scheduler chooses. Two questions decide whether the server's users notice: how
+much of the CPU each one gets, and how long the server waits when a request
+wakes it.
+
+Think of a shared kitchen with one stove and a ledger. Each cook writes down
+how long they have used the stove, and whoever has the smallest total cooks
+next; a junior cook's minutes are written down at triple weight, so they get
+less stove time. The analogy stops at preemption: a cook finishes the step in
+hand, but the scheduler takes the CPU away at the end of a slice, or sooner,
+whatever the task was doing. OSTEP notes that virtually all modern schedulers
+are preemptive.
+
+## Virtual runtime and weights
+
+Linux's default policy for ordinary threads is `SCHED_OTHER`, which the kernel
+calls `SCHED_NORMAL` (sched(7)). Its idea, in the kernel documentation's
+words, is to model an "ideal, precise multi-tasking CPU" that runs every
+runnable task at once, each at an equal fraction of its speed. Real hardware
+runs one task at a time, so the scheduler keeps a **virtual runtime** for
+each task and runs the one with the lowest: the task that is furthest behind
+(CFS Scheduler).
+
+The **nice value**, from -20 to 19, turns into a **weight**: 1024 at nice 0,
+3121 at nice -5, 335 at nice 5 (OSTEP chapter 9). A task's virtual runtime
+grows by its real runtime × 1024 / weight, so a light task's grows faster and
+it is picked less often. sched(7) puts it as a factor of 1.25 for each step of
+nice. On Linux the nice value belongs to each thread, not to the process, as
+the [threads lesson](/learn/operating-systems-runtime-internals/threads/)
+noted. Raising your own nice value needs no privilege; lowering it does
+(getpriority(2)).
+
+Linux 6.6 began moving from CFS to **EEVDF**, which keeps virtual runtime and
+weights but adds two ideas: a task's **lag**, how much CPU it is owed, makes it
+eligible, and among eligible tasks the one with the earliest **virtual
+deadline** runs. A waking task can preempt the running one if its deadline is
+earlier (EEVDF Scheduler). This lesson's model leaves that out and keeps the
+CFS rules OSTEP describes; the recording below shows what the difference does.
+
+Predict before you read on: two busy processes on one CPU, one at nice 0 and
+one at nice 5. What share of the CPU does the second one get?
+
+<details>
+<summary>Check after predicting</summary>
+
+About a quarter. The weights are 1024 and 335, so the second gets
+335 / (1024 + 335) = 24.7% and the first 75.3%. The ratio depends only on the
+difference in nice: nice 5 against nice 10 gives almost the same split,
+335 to 110.
+
+</details>
+
+## Step through the decisions
+
+The model runs three tasks on one CPU with 3 ms slices: A busy at nice 0, B
+busy at nice 5, and C at nice 0, which runs for 1 ms and then sleeps for 3,
+like a server handling short requests. It decides when a slice ends or the
+running task goes to sleep, and picks the lowest virtual runtime. A task that
+wakes takes the larger of its own virtual runtime and the lowest among the
+runnable tasks: it cannot bank the time it slept and then hold the CPU to
+catch up, but it is not sent to the back either (OSTEP chapter 9).
+
+<SchedStepper client:visible />
+
+<details>
+<summary>Check after stepping: the same decisions without JavaScript</summary>
+
+<SchedDecisions />
+
+B runs only when A has run about three times as long, because B's virtual
+runtime grows three times as fast. C runs at almost every decision after it
+wakes, because it has used so little: its virtual runtime is pulled up only
+to A's level, and on a tie the task that ran longest ago wins.
+
+</details>
+
+<SchedTimeline />
+
+Over 36 ms A ran 21 ms, B 9 ms and C 6 ms. Between A and B that is 70% to
+30%, not 75% to 25%: so short a run is still rounding to whole slices, and
+over a few seconds the model converges to the weights. C usually ran the
+moment it woke, because it woke as A's slice ended; once it waited 3 ms for
+A's whole slice.
+
+<details>
+<summary>Inspect the tested model and expected output</summary>
+
+<CodeExample
+  title="A weighted fair scheduler on one CPU"
+  code={model}
+  verified
+  output={
+    "order: A3 B3 C1 A3 C1 A3 C1 A3 B3 C1 A3 C1 A3 C1 A3 B3\ncpu over 36 ms: A 21 ms, B 9 ms, C 6 ms\nC's waits after waking: 0, 0, 3, 0, 0 ms\nbusy pair at nice 0 and 5: 75.3% and 24.7%"
+  }
+/>
+
+</details>
+
+The tests check the weight table, a decision sequence for nice 0 against nice
+5 computed by hand, that a waking task is placed at the lowest runnable
+virtual runtime rather than its own, that a long run converges to the weights'
+shares, and that the model's shares match the recording below.
+
+## What Linux did
+
+`fair.c` pins every process it starts to one CPU with `sched_setaffinity`
+(sched_setaffinity(2)), so they compete. It runs two busy processes for 2 s at
+nice 0 and 0, then 0 and 5, and reads each one's CPU time from the kernel's
+accounting. Then it runs a process that sleeps until every 10 ms mark and
+works for 1 ms, and notes how late it woke, alone and beside a busy process.
+It sets its timer slack to 1 ns, because by default the kernel may fire a
+timer up to 50 µs late to group wake-ups (PR_SET_TIMERSLACK(2const)).
+
+<FairRecording />
+
+The shares match the weights to within a few tenths of a percent. The wake-up
+delays are where Linux departs from the model. Beside a busy process, most
+wake-ups ran sooner than when the CPU was idle: the waking process preempted
+the busy one at once, and an idle CPU probably first had to leave a
+power-saving state, which the recording does not show directly. About one
+wake-up in four waited 2 to 4 ms, about one slice of the busy process, which
+fits EEVDF's rule that a waking task preempts only when its virtual deadline
+is earlier; working out which wake-ups wait needs the kernel source, which
+this lesson does not go into. The measurement ran on a cloud virtual machine,
+not on the owner's WSL2 machine, so other hardware will give other delays.
+
+<details>
+<summary>Inspect fair.c</summary>
+
+<CodeExample title="fair.c" code={fairSource} language="c" />
+
+</details>
+
+A common mistake is to expect a nice value to work across a whole machine.
+With autogroups enabled, processes started from different sessions, such as
+two terminals, are in different groups, and CPU time is shared between the
+groups first; nice then only ranks processes within a group (sched(7)).
+`fair.c` starts both processes itself, so they share a group.
+
+## Practice
+
+<LabCard
+  title="01 / Write the scheduler"
+  command="pnpm lab operating-systems-runtime-internals/scheduling"
+>
+  Implement `solve(tasks, quantum, duration)` in `starter.ts`: run busy and
+  sleeping tasks on one CPU millisecond by millisecond under the rules in the
+  lab's README and return who ran in order and each task's CPU time. Before
+  running the tests, work out by hand the order and CPU time for A at nice 0 and
+  B at nice 10, both busy, with 1 ms slices over 10 ms.
+</LabCard>
+
+<details>
+<summary>Check after attempting</summary>
+
+A runs first (a tie at 0, and A is listed first); then B, whose virtual
+runtime jumps by 1024 / 110 ≈ 9.3 ms; then A for the remaining eight
+milliseconds, because its virtual runtime stays below 9.3 ms until the end.
+The order is A, B, A, with A 9 ms and B 1 ms.
+
+</details>
+
+<LabCard title="02 / Protect the web server">
+  The batch job and the web server from the start of this lesson run on a
+  four-CPU machine, and the server's p99 latency doubles while the job runs.
+  Name three changes that would help, and say what each one costs.
+</LabCard>
+
+<details>
+<summary>Check after attempting</summary>
+
+Raise the job's nice value: the server wins more decisions, and the job runs
+slower while the server is busy, though it still gets every cycle the server
+does not use. Pin the job to fewer CPUs than the machine has with
+`sched_setaffinity`, leaving the server CPUs of its own, at the cost of the
+job's throughput. Or put each in a cgroup with its own weight, which also
+works across sessions. Each trades the job's speed for the server's tail
+latency; measure the p99 before and after.
+
+</details>
+
+## Check your reasoning
+
+<ConceptCheck
+  id="scheduling-sleeper-credit"
+  question="A process slept for ten seconds while a busy process ran. When it wakes, why does it not run for ten seconds straight to catch up?"
+  options={[
+    {
+      label:
+        'Its virtual runtime is raised to the lowest among the runnable tasks, so it starts level with the busy one instead of ten seconds behind.',
+      correct: true,
+      explanation:
+        'Placing a waking task at the lowest runnable virtual runtime gives it the next turn without letting it monopolize the CPU. EEVDF reaches a similar result by letting a sleeper’s lag decay.',
+    },
+    {
+      label: 'Its virtual runtime kept growing while it slept.',
+      explanation:
+        'Virtual runtime grows only while a task runs. Without the adjustment on waking, it would be ten seconds behind.',
+    },
+    {
+      label: 'The scheduler gives every task the same fixed slice in turn.',
+      explanation:
+        'Slices end a turn, but the choice of who runs next is by virtual runtime. With its old value, the sleeper would win every decision for ten seconds.',
+    },
+  ]}
+/>
+
+## Two-minute recap
+
+- Linux's ordinary threads share a CPU by virtual runtime: the runnable task
+  that is furthest behind runs next.
+- Nice values become weights, about 1.25 times per step; busy tasks' shares
+  follow the weights (24.7% at nice 5 against nice 0, as recorded).
+- A task that sleeps uses little CPU, so it runs soon after waking; its
+  credit is capped so that it cannot take over the CPU afterwards.
+- EEVDF, which Linux adopted from 6.6, also decides when a task wakes: most
+  wake-ups preempted the busy process at once, and about one in four waited a
+  slice, which shows in tail latency.

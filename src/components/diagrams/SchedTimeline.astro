@@ -1,0 +1,162 @@
+---
+import DiagramFrame from '../learning/DiagramFrame.astro';
+import {
+  EXAMPLE,
+  runs,
+  simulate,
+} from '../../../labs/operating-systems-runtime-internals/scheduling/fair';
+// The running example of the lesson on one CPU, millisecond by millisecond, from
+// the tested model.
+const { tasks, quantum, duration } = EXAMPLE;
+const result = simulate(tasks, quantum, duration);
+// When each sleeping task woke: a millisecond after its last run of a
+// burst, plus its sleep.
+const wakeTimes: Record<string, number[]> = {};
+for (const task of tasks) {
+  if (task.run === undefined) continue;
+  const times: number[] = [];
+  let ran = 0;
+  result.timeline.forEach((name, time) => {
+    if (name === task.name && ++ran % task.run! === 0)
+      times.push(time + 1 + task.sleep!);
+  });
+  wakeTimes[task.name] = times.filter((t) => t < duration);
+}
+const describe = (name: string) =>
+  runs(result.timeline)
+    .filter((r) => r.task === name)
+    .map((r) => (r.end - r.start === 1 ? `${r.start}` : `${r.start}–${r.end}`))
+    .join(', ');
+const ticks = [0, 12, 24, 36];
+---
+
+<DiagramFrame
+  caption={`Who ran in each millisecond of the lesson's example on one CPU, from the tested model with ${quantum} ms slices: A busy at nice 0, B busy at nice 5, and C at nice 0, which runs 1 ms and then sleeps ${tasks[2]!.sleep} ms. Marks show when C woke. Over ${duration} ms A ran ${result.cpu.A} ms, B ${result.cpu.B} ms and C ${result.cpu.C} ms.`}
+>
+  <div class="sched-timeline" style={`--cols: ${duration}`}>
+    {tasks.map((task) => (
+      <div class="row">
+        <span class="label">
+          <strong>{task.name}</strong>
+          <span>
+            nice {task.nice ?? 0}
+            {task.run ? ', sleeps' : ', busy'}
+          </span>
+        </span>
+        <span class="track" aria-hidden="true">
+          {result.timeline.map((name, time) => (
+            <span
+              class:list={[
+                'cell',
+                name === task.name && `t-${task.name}`,
+                wakeTimes[task.name]?.includes(time) && 'wake',
+              ]}
+            />
+          ))}
+        </span>
+        <span class="total">{result.cpu[task.name]} ms</span>
+        <span class="sr-only">
+          {`${task.name} ran in milliseconds ${describe(task.name)}.`}
+          {wakeTimes[task.name]
+            ? ` It woke at ${wakeTimes[task.name]!.join(', ')}.`
+            : ''}
+        </span>
+      </div>
+    ))}
+    <div class="row axis" aria-hidden="true">
+      <span class="label">ms</span>
+      <span class="track">
+        {ticks.map((t) => (
+          <span class="tick" style={`left: ${(t / duration) * 100}%`}>
+            {t}
+          </span>
+        ))}
+      </span>
+      <span class="total"></span>
+    </div>
+  </div>
+</DiagramFrame>
+<style>
+  .sched-timeline {
+    display: grid;
+    gap: var(--space-2);
+  }
+  .row {
+    display: grid;
+    grid-template-columns: 6.5rem minmax(0, 1fr) 3.5rem;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--text-xs);
+  }
+  .label {
+    display: grid;
+  }
+  .label span {
+    color: var(--muted);
+  }
+  .track {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+    height: 1.4rem;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    background: var(--bg);
+  }
+  .cell {
+    position: relative;
+    border-right: 1px solid var(--surface);
+  }
+  .t-A {
+    background: var(--chart-1);
+  }
+  .t-B {
+    background: var(--chart-2);
+  }
+  .t-C {
+    background: var(--chart-3);
+  }
+  .cell.wake::before {
+    position: absolute;
+    top: -0.45rem;
+    left: 0;
+    width: 0;
+    height: 0;
+    border-right: 0.3rem solid transparent;
+    border-left: 0.3rem solid transparent;
+    border-top: 0.4rem solid var(--text);
+    transform: translateX(-50%);
+    content: '';
+  }
+  .total {
+    font-family: var(--font-mono);
+    text-align: right;
+  }
+  .axis .track {
+    display: block;
+    height: 1rem;
+    border: 0;
+    background: none;
+  }
+  .tick {
+    position: absolute;
+    top: 0;
+    font-family: var(--font-mono);
+    color: var(--muted);
+    transform: translateX(-50%);
+  }
+  .tick:last-child {
+    transform: translateX(-100%);
+  }
+  .tick:first-child {
+    transform: none;
+  }
+  @media (max-width: 40rem) {
+    .row {
+      grid-template-columns: 3.5rem minmax(0, 1fr) 2.5rem;
+    }
+    .label span {
+      display: none;
+    }
+  }
+</style>

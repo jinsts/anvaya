@@ -1867,3 +1867,70 @@ For the owner: the office analogy; the twelve resources chosen; "CPU time
 used" classed as shared for threads (the process's total) and separate for a
 child; NPTL's per-thread nice value, which the lesson mentions and the
 scheduling lesson uses.
+
+## Scheduling lesson — 2026-11-28
+
+Drafts `operating-systems-runtime-internals/scheduling`, Chapter 1's fourth
+page, with the draft-lesson skill. The learner computes the order and CPU
+shares a weighted fair scheduler gives busy and sleeping tasks, sees nice
+values become weights, and compares the model with what Linux did on one
+pinned CPU. Figures: the `SchedStepper` island over the model's decisions
+for the running example (a prediction before each decision), the same
+decisions as a table in a "Check after stepping" disclosure, a
+millisecond-by-millisecond timeline computed by the model, and the
+recording's shares and wake-up delays.
+
+Evidence: `fair.c` pins its children to one CPU (`sched_setaffinity`, no
+privilege), runs busy pairs at nice 0/0 and 0/5 for 2 s each and reads
+their CPU time with `wait4`, then times 100 wake-ups of a process that sleeps
+until every 10 ms mark (timer slack 1 ns), alone and beside a busy process.
+Five rounds, orders swapped each round, recorded through the shared runner as
+`fair.json` on 2026-11-28 in the cloud container (Linux 6.18.44, KVM, 4
+vCPUs), not on the owner's WSL2 machine. The second busy process received
+24.67–24.76% at nice 5 (model 24.65%) and 49.94–50.07% at nice 0. Alone, the
+median wake-up was 114 µs late and none reached 1 ms; beside the busy
+process the median was 36 µs, and 128 of 500 waited 2–5 ms (one 9 ms). An
+earlier exploratory run during a gate showed the same pattern with more
+noise and was discarded.
+
+Model and tests: `fair.ts` runs tasks millisecond by millisecond: weights
+from the kernel table in OSTEP chapter 9, vruntime in whole nanoseconds,
+decisions at slice ends, sleeps and idle wake-ups, lowest vruntime first with
+ties to the task that ran longest ago, and a waking task placed at the
+larger of its own vruntime and the lowest runnable one. Eight model tests
+pass, including a decision sequence for nice 0 against nice 5 computed by
+hand in the test (the independent check), convergence to the weights' shares
+over 3 s, and agreement with the recording's shares and the shape of its
+wake-ups; eleven hidden contract cases pass; `pnpm lab
+operating-systems-runtime-internals/scheduling` fails all eleven against the
+starter. Two component tests cover the stepper and a keyboard test in
+`tests/e2e/operating-systems.spec.ts` steps it.
+
+Sources opened on 2026-11-26 and 2026-11-28 before citing: OSTEP chapters 7
+and 9; sched(7), getpriority(2), sched_setaffinity(2) and
+PR_SET_TIMERSLACK(2const) on man7.org; the kernel's EEVDF and CFS pages on
+docs.kernel.org. No fitting problem exists in the registered bank; none is
+linked.
+
+Same command as the previous entry: zero type errors, warnings or hints;
+formatting and lint passed; 522 tests passed and 1 skipped in 77 files (the
+Docker test); 44 pages; 164 browser tests. `pnpm subject:report
+operating-systems-runtime-internals/scheduling`: no flags.
+
+First-run failures and fixes: `astro check` failed on `FairRecording.astro`
+because a comment with an odd number of apostrophes and a non-null assertion
+before a division (`x! / y`) made the compiler misread the frontmatter; the
+comment was reworded and the divisions rewritten. The lesson first listed a
+skill (`performance`) that is not in the catalog; the build named it.
+
+Visual review: `pnpm shots` captured the stepper, the timeline and the
+recording at 1280 and 390 px in both themes and the page without
+JavaScript; a scratch script captured the stepper after three decisions at
+both widths. No overflow; the intro text of the stepper was rewritten after
+review.
+
+For the owner: the kitchen analogy; the model's wake rule follows OSTEP's
+CFS description, not EEVDF, and the lesson says so; "an idle CPU probably
+first had to leave a power-saving state" is a hypothesis, marked as such;
+the 2–5 ms waits are described, not explained, because explaining which
+wake-ups wait needs the kernel source; the recording comes from a VM.
