@@ -6,6 +6,8 @@ Implement `solve` in `starter.ts` before opening `example.ts`: return `'hit'` or
 ⌊address ÷ 16⌋ can live only in set block mod `sets`. A miss fills an empty way
 first and otherwise evicts the way used longest ago, and a hit counts as a use.
 For example, reads of 0, 16, 0 in one set of two ways give miss, miss, hit.
+Throw a `RangeError` for a set count that is not a power of two, fewer than one
+way, or a negative address.
 
 Run `pnpm lab computer-architecture-execution/cache-organization`. The attempt
 throws until you implement it; the ordinary quality gate checks the reference

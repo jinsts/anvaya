@@ -2520,3 +2520,23 @@ none skipped, including the native drift check; 42 pages; 154 browser tests.
 
 For owner review: the audit's judgments, and standard feedback S5 on whether a
 predicted hidden case can count as P5's "one worked case".
+
+## Cache organization: refusal cases and a fresh prediction — 2026-11-28
+
+Audit 2026-11-28 A1 and A2 (standard P2 and P5). The contract gains three
+refusal cases: a set count that is not a power of two, zero ways and a negative
+address, each expecting a `RangeError` the model already throws. Card 01 and the
+README state the refusals. Card 01 predicted hidden cases 3 and 4; it now
+predicts 0, 64, 128, 64, 0 in one set of two ways and 0, 16, 64, 0, 16 in two
+sets of two ways, which no case uses, and its reveal explains both. Case 1
+repeated the lesson's static trace; its last read is now 64, a hit, instead of 0. The new predictions and refusals were run through the reference model before
+writing the reveal: miss, miss, miss, hit, miss; miss, miss, miss, hit, hit;
+three `RangeError`s.
+
+`pnpm lab computer-architecture-execution/cache-organization` fails all 8
+cases; the reference passes them (24 tests in the lab folder). `pnpm
+subject:report` raises no new flag. No figure changed.
+
+Same command and environment as the first entry of 2026-11-25: zero type
+errors, warnings or hints; formatting and lint passed; 488 tests in 71 files,
+none skipped, including the native drift check; 42 pages; 154 browser tests.
